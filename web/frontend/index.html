@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>碱性 OER AEM 工作台</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0; }
+    .app { display: flex; flex-direction: column; height: 100vh; }
+    .header { padding: 12px 24px; background: #16213e; border-bottom: 1px solid #0f3460; font-size: 18px; font-weight: bold; }
+    .tabs { display: flex; background: #16213e; border-bottom: 1px solid #0f3460; padding: 0 24px; }
+    .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; color: #888; font-size: 14px; }
+    .tab.active { color: #e94560; border-bottom-color: #e94560; }
+    .main { display: flex; flex: 1; overflow: hidden; }
+    .left-panel { width: 420px; background: #16213e; padding: 16px; overflow-y: auto; border-right: 1px solid #0f3460; }
+    .right-panel { flex: 1; padding: 12px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr 1fr; gap: 10px; }
+    .right-panel.single-col { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+    .chart-box { background: #1a1a2e; border: 1px solid #0f3460; border-radius: 6px; padding: 8px; min-height: 250px; }
+    .chart-box.large { grid-column: 1 / -1; grid-row: 1 / 3; }
+    .section-title { font-size: 13px; font-weight: bold; color: #e94560; margin: 12px 0 6px 0; text-transform: uppercase; letter-spacing: 1px; }
+    .param-row { display: flex; align-items: center; margin: 3px 0; font-size: 12px; }
+    .param-label { width: 120px; flex-shrink: 0; color: #aaa; text-align: right; padding-right: 8px; }
+    .param-input { flex: 1; background: #0f3460; border: 1px solid #1a1a4e; color: #e0e0e0; padding: 4px 8px; border-radius: 4px; font-size: 12px; width: 100%; }
+    .param-input:focus { border-color: #e94560; outline: none; }
+    .param-unit { width: 50px; flex-shrink: 0; color: #666; font-size: 11px; padding-left: 6px; }
+    .param-group { margin-bottom: 4px; }
+    .btn { padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; width: 100%; margin-top: 10px; }
+    .btn-primary { background: #e94560; color: white; }
+    .btn-primary:hover { background: #d63851; }
+    .btn-primary:disabled { background: #555; cursor: not-allowed; }
+    .status-bar { padding: 8px 16px; background: #16213e; border-top: 1px solid #0f3460; font-size: 12px; color: #888; display: flex; justify-content: space-between; }
+    .placeholder { display: flex; align-items: center; justify-content: center; height: 100%; color: #555; font-size: 16px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+const API_BASE = 'http://localhost:8000';
+
+// ===================== 参数面板 =====================
+const PARAM_GROUPS = [
+  {
+    title: '热力学描述符',
+    params: [
+      { key: 'G_OH', label: 'G_OH', unit: 'eV', step: 0.01 },
+      { key: 'G_O', label: 'G_O', unit: 'eV', step: 0.01 },
+      { key: 'scaling_OOH_OH', label: 'scaling_OOH_OH', unit: 'eV', step: 0.01 },
+    ]
+  },
+  {
+    title: '预氧化',
+    params: [
+      { key: 'E0_pre', label: 'E0_pre', unit: 'V', step: 0.01 },
+      { key: 'k0_pre', label: 'k0_pre', unit: 's⁻¹', step: 10, isLog: true },
+    ]
+  },
+  {
+    title: 'AEM 动力学',
+    params: [
+      { key: 'k0_1', label: 'k0₁ (*→*OH)', unit: 's⁻¹', step: 100, isLog: true },
+      { key: 'k0_2', label: 'k0₂ (*OH→*O)', unit: 's⁻¹', step: 100, isLog: true },
+      { key: 'k0_3', label: 'k0₃ (*O→*OOH)', unit: 's⁻¹', step: 1, isLog: true },
+      { key: 'k0_4', label: 'k0₄ (*OOH→*)', unit: 's⁻¹', step: 10, isLog: true },
+    ]
+  },
+  {
+    title: 'FTacV 扫描参数',
+    params: [
+      { key: 'E_start', label: 'E_start', unit: 'V', step: 0.1 },
+      { key: 'E_end', label: 'E_end', unit: 'V', step: 0.1 },
+      { key: 'f', label: '频率', unit: 'Hz', step: 1 },
+      { key: 'dE', label: '振幅', unit: 'V', step: 0.01 },
+    ]
+  },
+  {
+    title: '电极与电路',
+    params: [
+      { key: 'Ru', label: 'Ru', unit: 'Ω', step: 1 },
+      { key: 'Cdl', label: 'Cdl', unit: 'F/cm²', step: 1e-6, isExp: true },
+      { key: 'A', label: '面积', unit: 'cm²', step: 0.01 },
+      { key: 'gamma', label: 'Γ_total', unit: 'mol/cm²', step: 1e-10, isExp: true },
+    ]
+  },
+];
+
+function ParamPanel({ params, onChange, onSimulate, loading }) {
+  const handleChange = (key, value) => {
+    onChange({ ...params, [key]: parseFloat(value) || 0 });
+  };
+
+  return (
+    <div>
+      <div style={{ fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>模型设置</div>
+      {PARAM_GROUPS.map((group) => (
+        <div key={group.title} className="param-group">
+          <div className="section-title">{group.title}</div>
+          {group.params.map((p) => (
+            <div className="param-row" key={p.key}>
+              <span className="param-label">{p.label}</span>
+              <input
+                className="param-input"
+                type="number"
+                step={p.step || 0.01}
+                value={params[p.key] ?? ''}
+                onChange={(e) => handleChange(p.key, e.target.value)}
+              />
+              <span className="param-unit">{p.unit}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+      <button className="btn btn-primary" onClick={onSimulate} disabled={loading}>
+        {loading ? '模拟中...' : '运行模拟'}
+      </button>
+    </div>
+  );
+}
+
+// ===================== ECharts 嵌入组件 =====================
+function ChartBox({ id, option, style }) {
+  const chartRef = useRef(null);
+  const instanceRef = useRef(null);
+
+  useEffect(() => {
+    if (!chartRef.current) return;
+    if (!instanceRef.current) {
+      instanceRef.current = echarts.init(chartRef.current, 'dark');
+    }
+    instanceRef.current.setOption(option, true);
+  }, [option]);
+
+  useEffect(() => {
+    const handleResize = () => instanceRef.current?.resize();
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      instanceRef.current?.dispose();
+    };
+  }, []);
+
+  return <div ref={chartRef} className="chart-box" style={style} id={id} />;
+}
+
+// ===================== Tab 1: 参数与单次模拟 =====================
+function SimTab() {
+  const [params, setParams] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [status, setStatus] = useState('就绪');
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/params/defaults`)
+      .then(r => r.json())
+      .then(setParams)
+      .catch(() => console.warn('无法连接后端'));
+  }, []);
+
+  const simulate = async () => {
+    setLoading(true); setError(null); setStatus('求解 ODE 中...');
+    try {
+      const res = await fetch(`${API_BASE}/api/simulate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setResult(data);
+        setStatus(`完成 (${data.time_elapsed?.toFixed(1) || '?'}s)`);
+      } else {
+        setError(data.error);
+        setStatus('失败');
+      }
+    } catch (e) {
+      setError(e.message);
+      setStatus('连接失败');
+    }
+    setLoading(false);
+  };
+
+  const cvOption = result ? {
+    tooltip: { trigger: 'axis' },
+    legend: { bottom: 0, textStyle: { color: '#aaa', fontSize: 10 } },
+    xAxis: { name: 'E (V vs RHE)', nameLocation: 'center', nameGap: 25 },
+    yAxis: { name: 'i (mA)' },
+    series: [{ name: 'Total Current', type: 'line', data: result.E_actual.map((e,i) => [e, result.i_total[i]*1e3]), smooth: true, lineStyle: { color: '#e94560', width: 1 }, symbol: 'none' }],
+    grid: { top: 20, right: 20, bottom: 40, left: 50 },
+  } : null;
+
+  const covOption = result ? {
+    tooltip: { trigger: 'axis' },
+    legend: { bottom: 0, textStyle: { color: '#aaa', fontSize: 10 } },
+    xAxis: { name: 'E (V vs RHE)', nameLocation: 'center', nameGap: 25 },
+    yAxis: { name: 'Coverage', max: 1 },
+    series: [
+      { name: 'θ_* (inactive)', type: 'line', data: result.E_actual.map((e,i) => [e, result.coverage_star[i]]), smooth: true, symbol: 'none' },
+      { name: 'θ_*ox (active)', type: 'line', data: result.E_actual.map((e,i) => [e, result.coverage_ox[i]]), smooth: true, symbol: 'none' },
+      { name: 'θ_*ox-OH', type: 'line', data: result.E_actual.map((e,i) => [e, result.coverage_OH[i]]), smooth: true, symbol: 'none' },
+      { name: 'θ_*ox-O', type: 'line', data: result.E_actual.map((e,i) => [e, result.coverage_O[i]]), smooth: true, symbol: 'none' },
+      { name: 'θ_*ox-OOH', type: 'line', data: result.E_actual.map((e,i) => [e, result.coverage_OOH[i]]), smooth: true, symbol: 'none' },
+    ],
+    grid: { top: 20, right: 20, bottom: 40, left: 50 },
+  } : null;
+
+  const breakdownOption = result ? (() => {
+    const oxTotal = result.E_actual.map((e, i) => [
+      e, result.coverage_ox[i] + result.coverage_OH[i] + result.coverage_O[i] + result.coverage_OOH[i]
+    ]);
+    return {
+      tooltip: { trigger: 'axis' },
+      legend: { bottom: 0, textStyle: { color: '#aaa', fontSize: 10 } },
+      xAxis: { name: 'E (V vs RHE)', nameLocation: 'center', nameGap: 25 },
+      yAxis: { name: 'Coverage', max: 1 },
+      series: [
+        { name: 'θ_* (reduced)', type: 'line', data: result.E_actual.map((e,i) => [e, result.coverage_star[i]]), smooth: true, symbol: 'none', lineStyle: { color: '#4fc3f7' } },
+        { name: 'θ_total-ox (oxidized)', type: 'line', data: oxTotal, smooth: true, symbol: 'none', lineStyle: { color: '#ef5350' }, areaStyle: { opacity: 0.15 } },
+      ],
+      grid: { top: 20, right: 20, bottom: 40, left: 50 },
+    };
+  })() : null;
+
+  return (
+    <div className="main">
+      <div className="left-panel">
+        <ParamPanel params={params} onChange={setParams} onSimulate={simulate} loading={loading} />
+      </div>
+      <div className="right-panel">
+        {!result && !error && <div className="chart-box large"><div className="placeholder">点击"运行模拟"开始</div></div>}
+        {error && <div className="chart-box large"><div className="placeholder" style={{color:'#e94560'}}>错误: {error}</div></div>}
+        {result && <>
+          <ChartBox id="cv-plot" option={cvOption} />
+          <ChartBox id="breakdown-plot" option={breakdownOption} />
+          <ChartBox id="coverage-plot" option={covOption} />
+          <div className="chart-box" style={{fontSize:12,padding:12}}>
+            <div style={{color:'#e94560',fontWeight:'bold',marginBottom:8}}>参数摘要</div>
+            <div>E⁰_pre = {result.E01 ? (params.E0_pre)?.toFixed(2) : '-'} V (预氧化)</div>
+            <div>E⁰₁ = {result.E01?.toFixed(3)} | E⁰₂ = {result.E02?.toFixed(3)} | E⁰₃ = {result.E03?.toFixed(3)} | E⁰₄ = {result.E04?.toFixed(3)} V</div>
+            <div>理论过电位 η = {result.eta_theoretical?.toFixed(3)} V</div>
+            <div style={{marginTop:4,color:'#888'}}>耗时: {result.time_elapsed?.toFixed(1)}s | 点数: {result.E_actual?.length}</div>
+          </div>
+        </>}
+      </div>
+    </div>
+  );
+}
+
+// ===================== Tab 2 & 3: 占位 =====================
+function PlaceholderTab({ title, description }) {
+  return (
+    <div className="main">
+      <div className="right-panel single-col">
+        <div className="chart-box large">
+          <div className="placeholder">
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:24,marginBottom:12}}>🚧</div>
+              <div style={{fontSize:16,color:'#888'}}>{title}</div>
+              <div style={{fontSize:13,color:'#555',marginTop:8}}>{description}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===================== App 根组件 =====================
+function App() {
+  const [activeTab, setActiveTab] = useState('sim');
+
+  return (
+    <div className="app">
+      <div className="header">碱性 OER AEM 工作台 — Co₃O₄ / CoOₓ(OH)ᵧ FTacV 参数反演</div>
+      <div className="tabs">
+        {[
+          { id: 'sim', label: '参数与单次模拟' },
+          { id: 'cmaes', label: 'CMA-ES 优化' },
+          { id: 'mcmc', label: 'MCMC 后验分析' },
+        ].map(t => (
+          <div key={t.id} className={`tab ${activeTab === t.id ? 'active' : ''}`}
+               onClick={() => setActiveTab(t.id)}>{t.label}</div>
+        ))}
+      </div>
+      {activeTab === 'sim' && <SimTab />}
+      {activeTab === 'cmaes' && <PlaceholderTab title="CMA-ES 优化" description="参数反演算法接入中..." />}
+      {activeTab === 'mcmc' && <PlaceholderTab title="MCMC 后验分析" description="不确定性量化模块接入中..." />}
+      <div className="status-bar">
+        <span>后端: {API_BASE}</span>
+        <span>Python 核心 v0.1 | 碱性 OER AEM 模型</span>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

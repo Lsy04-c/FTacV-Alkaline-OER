@@ -1,0 +1,26 @@
+# MATLAB
+*.asv
+*.mexw64
+*.mexa64
+*.mexmaci64
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.eggs/
+*.egg-info/
+dist/
+build/
+
+# PDF / binary data files (large)
+*.pdf
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Environment
+venv/
+.env
