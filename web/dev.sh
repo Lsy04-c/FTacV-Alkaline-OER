@@ -18,4 +18,5 @@ else
 fi
 
 echo "[dev.sh] 使用解释器: $PY"
-exec "$PY" -m uvicorn backend.main:app --host 0.0.0.0 --port 7100 "$@"
+# --reload 监听 backend/ 下的 Python 改动并自动重启，避免预览跑旧代码
+exec "$PY" -m uvicorn backend.main:app --host 0.0.0.0 --port 7100 --reload --reload-dir backend --reload-dir ../python "$@"
