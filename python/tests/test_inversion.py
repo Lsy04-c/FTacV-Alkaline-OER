@@ -13,6 +13,7 @@ from oer_aem.inversion import (
     InversionConfig,
     InversionObjective,
     TPEInverter,
+    assess_fit_quality,
     decode_vector,
     encode_params,
     make_synthetic_target,
@@ -82,3 +83,17 @@ def test_tpe_inverter_runs_small_budget():
     assert len(result.best_x) == len(DEFAULT_PARAM_SPECS)
     assert result.n_trials == 3
     assert result.n_forward >= 1
+    assert result.fit_quality['level'] in {'excellent', 'acceptable', 'rough', 'poor'}
+    assert 'message' in result.fit_quality
+
+
+def test_assess_fit_quality_marks_review_ready():
+    excellent = assess_fit_quality(best_value=0.0, feature_grid_size=32)
+    acceptable = assess_fit_quality(best_value=8.0, feature_grid_size=32)
+    poor = assess_fit_quality(best_value=1e6, feature_grid_size=32)
+
+    assert excellent['level'] == 'excellent'
+    assert excellent['ready_for_review'] is True
+    assert acceptable['ready_for_review'] is True
+    assert poor['ready_for_review'] is False
+    assert poor['completion_percent'] < acceptable['completion_percent']

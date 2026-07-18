@@ -104,6 +104,52 @@ class InversionResult:
     n_calls: int = 0
     n_ode_fail: int = 0
     n_tafel_fail: int = 0
+    fit_quality: Dict[str, Any] = field(default_factory=dict)
+
+
+def assess_fit_quality(best_value: float, feature_grid_size: int) -> Dict[str, Any]:
+    """Convert the objective value to a human-readable fit-completion signal.
+
+    The objective stores summed squared residuals divided by the channel count.
+    This helper converts it back to sigma-unit RMSE per residual element:
+    DC + seven harmonics over the common E grid, plus one Tafel residual.
+    """
+
+    if not np.isfinite(best_value) or best_value < 0:
+        sigma_rmse = float("inf")
+    else:
+        n_terms = max(1, 8 * int(feature_grid_size) + 1)
+        sigma_rmse = float(np.sqrt((best_value * 9.0) / n_terms))
+
+    if sigma_rmse <= 0.75:
+        level = "excellent"
+        ready = True
+        message = "拟合已经进入可人工复核区间，可以开始看参数是否有机理意义。"
+    elif sigma_rmse <= 1.25:
+        level = "acceptable"
+        ready = True
+        message = "拟合程度基本够用，建议检查残差分布和参数物理合理性。"
+    elif sigma_rmse <= 2.0:
+        level = "rough"
+        ready = False
+        message = "拟合仍偏粗，只适合判断趋势，不建议直接解释机理。"
+    else:
+        level = "poor"
+        ready = False
+        message = "拟合不足，优先检查扫描参数、基线、边界和可识别性。"
+
+    if np.isfinite(sigma_rmse):
+        completion = float(np.clip(100.0 * (2.0 - sigma_rmse) / 2.0, 0.0, 100.0))
+    else:
+        completion = 0.0
+
+    return {
+        "level": level,
+        "ready_for_review": ready,
+        "sigma_rmse": sigma_rmse,
+        "completion_percent": completion,
+        "message": message,
+    }
 
 
 def encode_params(params: Mapping[str, float], specs: Sequence[ParamSpec] = DEFAULT_PARAM_SPECS) -> np.ndarray:
@@ -390,4 +436,5 @@ class TPEInverter:
             n_calls=int(objective.n_calls),
             n_ode_fail=int(objective.n_ode_fail),
             n_tafel_fail=int(objective.n_tafel_fail),
+            fit_quality=assess_fit_quality(float(study.best_value), self.config.feature_grid_size),
         )
