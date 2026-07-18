@@ -7,6 +7,21 @@ from typing import Dict, Any, Tuple, List, Optional
 
 import numpy as np
 from scipy.signal import butter, filtfilt, hilbert
+from scipy.signal.windows import tukey
+
+
+def _apply_edge_taper(signal: np.ndarray, alpha: float = 0.1) -> np.ndarray:
+    """对信号两端加 Tukey 余弦渐变窗（默认首尾各 5%）。
+
+    FTacV 信号的首尾存在启停瞬态与非周期斜坡，矩形 FFT 选带后做 IFFT
+    会在窗口两端产生 Gibbs 振铃，淹没高次谐波的真实包络。
+    加窗压制两端不连续性，中部信号不受影响。
+    """
+    n = len(signal)
+    if n < 16:
+        return signal
+    w = tukey(n, alpha=alpha)
+    return signal * w
 
 
 def _design_lowpass_sos(fc: float, fs: float, order: int = 6) -> np.ndarray:
@@ -91,7 +106,7 @@ def _clean_current(current: np.ndarray) -> np.ndarray:
 
 def extract_dc_fft(signal: np.ndarray, df: float, params: Dict[str, Any]) -> np.ndarray:
     """通过 FFT 提取 DC 分量。"""
-    signal = _clean_current(signal)
+    signal = _apply_edge_taper(_clean_current(signal))
     L = len(signal)
     Y = np.fft.fft(signal)
     f_axis = df * np.arange(L) / L
@@ -104,11 +119,14 @@ def extract_dc_fft(signal: np.ndarray, df: float, params: Dict[str, Any]) -> np.
 
 
 def extract_harmonics(signal: np.ndarray, df: float, params: Dict[str, Any]) -> np.ndarray:
-    """提取 1-7 次谐波包络。"""
-    signal = _clean_current(signal)
+    """提取 1-7 次谐波包络。band 带宽自动适配 FFT 频率分辨率。"""
+    signal = _apply_edge_taper(_clean_current(signal))
     L = len(signal)
-    band = np.asarray(params['band'])
     f0 = params['f']
+
+    # 自动计算最小带宽：至少覆盖 3 个 FFT bin
+    df_res = df / L
+    min_bw = max(0.5 * f0, df_res * 5)  # 至少 0.5*f 或 5 bins
 
     if params.get('use_fft', True):
         Y = np.fft.fft(signal)
@@ -118,8 +136,9 @@ def extract_harmonics(signal: np.ndarray, df: float, params: Dict[str, Any]) -> 
 
         for k in range(7):
             H = k + 1
-            bw = band[H]
             center_freq = H * f0
+            # 自适应带宽
+            bw = _auto_band(params, H, f0, min_bw)
 
             lb = center_freq - bw / 2.0
             ub = center_freq + bw / 2.0
@@ -131,11 +150,10 @@ def extract_harmonics(signal: np.ndarray, df: float, params: Dict[str, Any]) -> 
             mask_analytic[pos_mask] = 2.0
             harmonics[:, k] = np.abs(np.fft.ifft(Y * mask_analytic))
     else:
-        # 时域带通 + Hilbert 包络
         harmonics = np.zeros((L, 7))
         for i in range(7):
             H = i + 1
-            bw = band[H]
+            bw = _auto_band(params, H, f0, min_bw)
             lower = H * f0 - bw / 2.0
             upper = H * f0 + bw / 2.0
             epsf = max(1e-9, 1e-6 * df)
@@ -145,7 +163,7 @@ def extract_harmonics(signal: np.ndarray, df: float, params: Dict[str, Any]) -> 
                 YHarC = np.zeros(L)
             else:
                 bp_filters = params.get('bp_filters', None)
-                if bp_filters is not None and bp_filters[i] is not None:
+                if bp_filters is not None and i < len(bp_filters) and bp_filters[i] is not None:
                     YHarC = filtfilt(bp_filters[i], signal)
                 else:
                     sos = _design_bandpass_sos(lower, upper, df, order=4)
@@ -156,6 +174,15 @@ def extract_harmonics(signal: np.ndarray, df: float, params: Dict[str, Any]) -> 
             harmonics[:, i] = np.abs(hilbert(YHarC))
 
     return harmonics
+
+
+def _auto_band(params: dict, H: int, f0: float, min_bw: float) -> float:
+    """自适应带宽：取用户设置的 band[H] 和自动计算的最小值中较大者。"""
+    band = params.get('band', None)
+    if band is not None and H < len(band):
+        user_bw = float(band[H])
+        return max(user_bw, min_bw)
+    return min_bw
 
 
 def process_current(current: np.ndarray, df: float, params: Dict[str, Any]) -> np.ndarray:

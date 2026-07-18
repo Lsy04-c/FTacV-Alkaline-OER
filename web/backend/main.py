@@ -95,12 +95,8 @@ async def simulate(p: SimParams) -> Dict[str, Any]:
         i_total = np.asarray(i_total_raw).reshape(-1)
         tdc = params['E_start'] + t * params['v']
 
-        # DC 分量（低通滤波 → 包络）
-        if params.get('lp_filter_sos') is not None:
-            from scipy.signal import filtfilt
-            I_dc = np.abs(filtfilt(params['lp_filter_sos'], i_total))
-        else:
-            I_dc = np.abs(i_total)
+        # DC 分量（与谐波同流程：FFT 选带 + 边缘加窗）
+        I_dc = OERSignal.process_current(i_total, df, params)[:, 0]
 
         # 1-7 次谐波
         I_harm = OERSignal.extract_harmonics(i_total, df, params)
