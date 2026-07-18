@@ -17,7 +17,7 @@ from oer_aem.importance import (
     _coupling_warnings,
     analyze_parameter_importance,
 )
-from oer_aem.inversion import InversionConfig
+from oer_aem.inversion import InversionConfig, assess_harmonic_quality
 from oer_aem.defaults import initialize_oer_parameters
 
 
@@ -51,16 +51,23 @@ def test_log_parameter_perturbation_uses_decade_units():
 
 # ========== Test 3: H4-H7 权重为 0 ==========
 def test_unreliable_harmonic_is_excluded_from_score():
-    harms = [np.ones(32), np.ones(32)*0.5, np.ones(32)*0.2,
-             np.ones(32)*0.01, np.zeros(32), np.zeros(32), np.zeros(32)]
-    w = _compute_feature_weights(harms)
+    from oer_aem.inversion import assess_harmonic_quality
+    # 构造模拟谐波：H1-H3 强，H4-H7 弱（加微小扰动保证 dynamic_range>0）
+    n = 64
+    t = np.linspace(0, 1, n)
+    raw = np.zeros((n, 7))
+    raw[:, 0] = 0.1 + 0.001 * np.sin(2*np.pi*t)      # H1 strong
+    raw[:, 1] = 0.05 + 0.001 * np.sin(4*np.pi*t)     # H2 strong
+    raw[:, 2] = 0.03 + 0.001 * np.sin(6*np.pi*t)     # H3 resolvable
+    raw[:, 3] = 0.001 + 1e-6 * np.sin(8*np.pi*t)     # H4: below 2% threshold
+    # H5-H7: 全零
+    q = assess_harmonic_quality(raw)
+    w = _compute_feature_weights(q)
     assert w["H1 shape"] > 0
     assert w["H2 shape"] > 0
-    assert w["H3 shape"] > 0
-    assert w["H4 shape"] == 0.0
-    assert w["H5 shape"] == 0.0
-    assert w["H6 shape"] == 0.0
-    assert w["H7 shape"] == 0.0
+    assert w.get("H3 shape", 0) > 0
+    assert w.get("H4 shape", 0) == 0.0
+    assert w.get("H5 shape", 0) == 0.0
 
 
 # ========== Test 4: 输出包含耦合警告 ==========

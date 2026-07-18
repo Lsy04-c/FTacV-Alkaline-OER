@@ -120,7 +120,7 @@ def _run_forward(params: Dict[str, Any], config: InversionConfig
     if features is None:
         return None
 
-    # 补充标量特征
+    # ---- 归一化特征（extract_features 已输出） ----
     dc_env = features["dc"]
     harms = features["harm"]
     e_grid = features["e_grid"]
@@ -134,6 +134,17 @@ def _run_forward(params: Dict[str, Any], config: InversionConfig
 
     onset = _extract_onset(dc_env, e_grid)
     features["onset"] = onset
+
+    # ---- 真实幅值特征（非归一化，用于敏感性计算） ----
+    df_raw = 1.0 / max(np.mean(np.diff(t)), 1e-12)
+    proc = OERSignal.process_current(i_total, df_raw, p)
+    raw_dc = np.asarray(proc[:, 0], dtype=float)
+    features["dc_amplitude_raw"] = float(np.max(raw_dc)) if len(raw_dc) > 0 else 0.0
+    features["dc_shape_raw"] = raw_dc
+    for k in range(7):
+        rh = np.asarray(proc[:, k+1], dtype=float)
+        features[f"H{k+1}_peak_amplitude_raw"] = float(np.max(np.abs(rh))) if len(rh) > 0 else 0.0
+        features[f"H{k+1}_shape_raw"] = rh
 
     return features
 
@@ -174,18 +185,27 @@ def _feature_distance(fa: Dict[str, Any], fb: Dict[str, Any], name: str) -> floa
         return float(abs(float(a_arr[0]) - float(b_arr[0])) / denom)
 
 
-def _compute_feature_weights(raw_harmonics: List[np.ndarray]) -> Dict[str, float]:
-    """根据原始谐波 RMS 自动计算特征权重。H4-H7 仅诊断，权重为 0。"""
-    rms = np.array([np.sqrt(np.mean(h ** 2)) for h in raw_harmonics])
-    max_rms = max(np.max(rms), 1e-30)
-    rel = rms / max_rms
+def _compute_feature_weights(harmonic_quality: Dict[str, Any]) -> Dict[str, float]:
+    """从实验数据谐波质量报告计算特征权重（不依赖模型正演）。
 
-    w = {"DC shape": 1.0, "DC amplitude": 1.0, "Tafel": 1.0, "onset": 0.5}
-    for k in range(7):
-        hw = float(np.clip(rel[k] if k < 3 else 0.0, 0.0, 1.0))
-        w[f"H{k+1} shape"] = hw
-        w[f"H{k+1} peak amplitude"] = hw
-        w[f"H{k+1} peak potential"] = hw * 0.5 if k < 3 else 0.0
+    harmonic_quality 应为 assess_harmonic_quality() 的返回值，
+    也可来自 /api/data/analyze 的 harmonic_quality 字段。
+    """
+    channels = harmonic_quality.get("channels", [])
+    fit = set(harmonic_quality.get("fit_harmonics", [1,2,3]))
+
+    w = {"DC shape": 1.0, "DC amplitude": 1.0, "DC shape_raw": 1.0,
+         "DC amplitude_raw": 1.0, "Tafel": 1.0, "onset": 0.5}
+    for ch in channels:
+        k = ch["harmonic"]
+        chosen = k in fit
+        rel = float(ch.get("relative_rms", 0.0))
+        hw = float(np.clip(rel if chosen else 0.0, 0.0, 1.0))
+        w[f"H{k} shape"] = hw
+        w[f"H{k} peak amplitude"] = hw
+        w[f"H{k} peak potential"] = hw * 0.5 if chosen else 0.0
+        w[f"H{k} shape_raw"] = hw
+        w[f"H{k} peak amplitude_raw"] = hw
     return w
 
 # ============================================================
@@ -285,6 +305,8 @@ def analyze_parameter_importance(
     base_params: Dict[str, Any],
     config: Optional[InversionConfig] = None,
     feature_weights: Optional[Dict[str, float]] = None,
+    exp_harmonic_quality: Optional[Dict[str, Any]] = None,
+    fit_harmonics: Optional[List[int]] = None,
 ) -> Dict[str, Any]:
     """运行局部单参数敏感性分析，返回结构化重要性报告。
 
@@ -295,7 +317,12 @@ def analyze_parameter_importance(
     config : InversionConfig, optional
         扫描配置。为 None 时自动从 base_params 推导。
     feature_weights : dict, optional
-        手动指定特征权重。为 None 时从原始谐波 RMS 自动计算。
+        手动指定特征权重。为 None 时从 exp_harmonic_quality 自动计算。
+    exp_harmonic_quality : dict, optional
+        实验数据的谐波质量报告（assess_harmonic_quality 返回值）。
+        用于自动计算特征权重和决定 active harmonics。
+    fit_harmonics : List[int], optional
+        1-based 谐波列表（如 [1,2,3]）。传入时覆盖 exp_harmonic_quality 中的 fit_harmonics。
 
     Returns
     -------
@@ -319,29 +346,35 @@ def analyze_parameter_importance(
     if base_features is None:
         return {"success": False, "error": "基准正演失败，无法继续分析。"}
 
-    # ---- 原始谐波 RMS（用于权重计算） ----
-    p0 = copy.deepcopy(base_params)
-    p0 = apply_alkaline_aem(p0)
-    p0 = OERPhysics.initialize_system(p0)
-    _, _, _, i0 = OERPhysics.solve_ode_system(p0)
-    df = OERSignal.safe_df(np.linspace(0, config.total_time, config.n_points))
-    raw_harm = OERSignal.extract_harmonics(i0, df, p0)
+    # ---- 谐波权重与 active harmonics（来自实验数据） ----
+    if exp_harmonic_quality is None:
+        exp_harmonic_quality = {"fit_harmonics": fit_harmonics or [1,2,3,4,5,6,7],
+                                "channels": []}
+    if fit_harmonics is not None:
+        exp_harmonic_quality = dict(exp_harmonic_quality)
+        exp_harmonic_quality["fit_harmonics"] = fit_harmonics
 
     if feature_weights is None:
-        feature_weights = _compute_feature_weights([raw_harm[:, k] for k in range(7)])
+        feature_weights = _compute_feature_weights(exp_harmonic_quality)
 
-    active_names = [
-        "DC shape", "DC amplitude",
-        "H1 shape", "H2 shape", "H3 shape",
-        "H1 peak amplitude", "H2 peak amplitude", "H3 peak amplitude",
-        "H1 peak potential", "H2 peak potential", "H3 peak potential",
-        "Tafel", "onset",
-    ]
-    diag_names = [
-        "H4 shape", "H5 shape", "H6 shape", "H7 shape",
-        "H4 peak amplitude", "H5 peak amplitude",
-        "H6 peak amplitude", "H7 peak amplitude",
-    ]
+    use_fit = set(exp_harmonic_quality.get("fit_harmonics", [1,2,3,4,5,6,7]))
+    use_diag = {1,2,3,4,5,6,7} - use_fit
+
+    def _build_names(tag_set, suffix):
+        names = []
+        for k in sorted(tag_set):
+            for sfx in ["shape", "peak amplitude", "peak potential", "shape_raw", "peak amplitude_raw"]:
+                name = f"H{k} {sfx}"
+                if name in feature_weights and feature_weights[name] > 0:
+                    names.append(name)
+        return names
+
+    active_names = (
+        ["DC shape", "DC shape_raw", "DC amplitude", "DC amplitude_raw"]
+        + _build_names(use_fit, "")
+        + ["Tafel", "onset"]
+    )
+    diag_names = _build_names(use_diag, "")
 
     # ---- 扰动循环 ----
     perturbed: Dict[Tuple[str, str], Dict] = {}
