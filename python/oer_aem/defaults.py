@@ -23,35 +23,42 @@ def initialize_oer_parameters() -> dict:
     params['result_root'] = ""
 
     # ==================== AEM 热力学参数（物理描述符） ====================
-    params['G_OH'] = 1.55             # *OH 吸附自由能 (eV)
-    params['G_O'] = 3.10              # *O 吸附自由能 (eV)
-    params['scaling_OOH_OH'] = 3.2    # *OOH/*OH 标度偏移（可调）
+    # 依据：Man et al. 2011 ChemCatChem 3, 1159（标度关系 + Co3O4 火山图位置）
+    # ΔG_O−ΔG_OH = 1.57 eV ≈ Co3O4 在该文中的描述符值（最优 1.6），η_理论 ≈ 0.40 V
+    # G_OH 绝对值泛函敏感（DFT+U 会移动吸附腿），作为拟合描述符使用
+    params['G_OH'] = 1.23             # *OH 吸附自由能 (eV, 调低以降低过电位)
+    params['G_O'] = 2.80              # *O 吸附自由能 (eV)
+    params['scaling_OOH_OH'] = 3.2    # *OOH/*OH 标度偏移 (Man 2011: 3.20±0.2 eV)
 
     # ==================== 预氧化参数 ====================
-    params['E0_pre'] = 1.50           # Co³⁺/⁴⁺ 氧化电位 (V vs RHE)
-    params['k0_pre'] = 100.0          # 预氧化速率 (s⁻¹)
+    # 依据：1 M KOH 中 Co3+/4+ 氧化峰 1.43–1.5 V vs RHE（碱性 CoOx 文献一致区间）
+    # 注意：Bonke 2016 的 E0cat=1.9–2.1 V 是 pH 9.2 硼酸体系，不可移植
+    params['E0_pre'] = 1.45           # Co³⁺/⁴⁺ 氧化电位 (V vs RHE)
+    params['k0_pre'] = 500.0          # 预氧化速率 (s⁻¹, Bonke k0cat=90–325 同量级，待标定)
 
     # ==================== AEM 动力学参数 ====================
-    params['k0_1'] = 1e4    # *ox → *ox-OH
-    params['k0_2'] = 1e4    # *ox-OH → *ox-O
-    params['k0_3'] = 10.0   # *ox-O → *ox-OOH (O–O 键形成，较慢)
+    # BV 标准速率常数无文献表值，属反演目标量
+    # 默认值置于 FTacV 敏感窗口（k0 ~ 2πf ≈ 57 s⁻¹）附近，保证谐波对各步有区分度
+    params['k0_1'] = 1e3    # *ox → *ox-OH
+    params['k0_2'] = 5e2    # *ox-OH → *ox-O
+    params['k0_3'] = 50.0   # *ox-O → *ox-OOH (PDS, 最慢)
     params['k0_4'] = 1e3    # *ox-OOH → *ox + O₂
 
     # ==================== 电极与电解液参数 ====================
     params['electrode_type'] = 'Planar'
-    params['A'] = 0.196              # 电极面积 (cm²)
-    params['Ru'] = 75.0              # 未补偿电阻 (Ω)
-    params['Cdl'] = 60e-6            # 双电层电容 (F/cm²)
-    params['gamma'] = 1e-9           # 活性位点总浓度 (mol/cm²)
+    params['A'] = 0.196              # 电极面积 (cm², 5 mm 圆盘；微纳电极需改)
+    params['Ru'] = 10.0              # 未补偿电阻 (Ω, 需 EIS 实测)
+    params['Cdl'] = 60e-6            # 双电层电容 (F/cm², 典型 20–60 µF/cm²)
+    params['gamma'] = 1e-9           # 活性位点总浓度 (mol/cm², 单分子层量级, 需预氧化峰电量标定)
 
     # ==================== FTacV 扫描参数 ====================
     params['Eref'] = 0.0             # 参比偏置 (V)
     params['E_start'] = 0.9          # 起始电位 (V vs RHE)
-    params['E_end'] = 1.8            # 终止电位 (V vs RHE)
-    params['n_points'] = 8192        # 总采样点数
-    params['points_per_cycle'] = 64  # 每周期点数
+    params['E_end'] = 2.0            # 终止电位 (V vs RHE, 覆盖 OER 全范围)
+    params['n_points'] = 16384       # 总采样点数（确保谐波分辨率）
+    params['points_per_cycle'] = 256  # 每周期点数（7th 谐波 ≈37 pts/cycle）
     params['f'] = 9.02               # 正弦频率 (Hz)
-    params['dE'] = 0.08              # 交流振幅 (V)
+    params['dE'] = 0.15              # 交流振幅 (V, 增大以激发高次谐波非线性)
 
     # ==================== 物理常数 ====================
     params['F'] = 96485.0            # 法拉第常数 (C/mol)
@@ -67,7 +74,7 @@ def initialize_oer_parameters() -> dict:
     params['objective_mode'] = 'ftacv'
 
     # ==================== 谐波与滤波 ====================
-    params['band'] = np.ones(8) * 0.01
+    params['band'] = np.ones(8) * 1.0
     params['harmonic_weights'] = np.ones(8)
 
     # ==================== 优化设置 ====================

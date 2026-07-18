@@ -72,7 +72,7 @@ for k in range(4, 7):
 ax6.set_xlabel('E_dc (V vs RHE)'); ax6.set_ylabel('normalized envelope')
 ax6.set_title('Harmonics 5-7'); ax6.legend(fontsize=7); ax6.grid(alpha=0.3)
 
-fig.suptitle('Fixed-model full-scan FTacV simulation (defaults: f=9.02 Hz, dE=0.15 V, Γ=1e-7)', fontsize=12)
+fig.suptitle('Fixed-model FTacV simulation (defaults: f=9.02 Hz, dE=0.15 V, Γ=1e-9, k0 in sensitive window)', fontsize=12)
 fig.tight_layout()
 out = os.path.join(os.path.dirname(__file__), 'fixed_simulation_diagnostics.png')
 fig.savefig(out, dpi=180, bbox_inches='tight')
