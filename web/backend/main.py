@@ -12,6 +12,7 @@ from typing import Optional, List, Dict, Any
 
 from oer_aem import OERPhysics, OERSignal, initialize_oer_parameters
 from oer_aem.calibration import calibrate as calibrate_ftacv
+from oer_aem.inversion import InversionConfig, TPEInverter
 
 app = FastAPI(title="OER-FTAcV API", version="0.2.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -48,6 +49,31 @@ class SimParams(BaseModel):
 class ExpDataIn(BaseModel):
     """实验数据：[[E, i, t], ...]（V, A, s）"""
     rows: List[List[float]]
+
+
+class InversionTargetIn(BaseModel):
+    """反演目标特征：tdc + DC + 1-7 次谐波 + Tafel。"""
+    tdc: List[float]
+    dc: List[float]
+    harmonics: List[List[float]]
+    tafel: float
+
+
+class InversionConfigIn(BaseModel):
+    E_start: float = 0.924
+    E_end: float = 1.923
+    f: float = 1.0
+    dE: float = 0.16
+    n_points: int = 8192
+    points_per_cycle: int = 256
+    feature_grid_size: int = 200
+
+
+class TPEInversionIn(BaseModel):
+    target: InversionTargetIn
+    config: InversionConfigIn = InversionConfigIn()
+    n_trials: int = 20
+    seed: int = 42
 
 
 def _to_list(arr):
@@ -121,7 +147,30 @@ def _serialize(val):
     if isinstance(val, (np.floating,)): return float(val)
     if isinstance(val, np.ndarray): return val.tolist()
     if isinstance(val, (list, tuple)): return [_serialize(v) for v in val]
+    if isinstance(val, dict): return {k: _serialize(v) for k, v in val.items()}
     return val
+
+
+def _build_inversion_target(payload: InversionTargetIn, cfg: InversionConfig) -> Dict[str, Any]:
+    tdc = np.asarray(payload.tdc, dtype=float).reshape(-1)
+    dc = np.asarray(payload.dc, dtype=float).reshape(-1)
+    harmonics = [np.asarray(h, dtype=float).reshape(-1) for h in payload.harmonics]
+    if len(harmonics) != 7:
+        raise ValueError(f"需要 7 个谐波通道，当前为 {len(harmonics)}")
+    if tdc.size < 2 or dc.size != tdc.size or any(h.size != tdc.size for h in harmonics):
+        raise ValueError("tdc、dc、harmonics 长度不一致或点数不足")
+    order = np.argsort(tdc)
+    x = tdc[order]
+    _, keep = np.unique(x, return_index=True)
+    x = x[keep]
+    if x.size < 2:
+        raise ValueError("tdc 去重后点数不足")
+    return {
+        "dc": np.interp(cfg.e_grid, x, dc[order][keep]),
+        "harm": [np.interp(cfg.e_grid, x, h[order][keep]) for h in harmonics],
+        "tafel": float(payload.tafel),
+        "e_grid": cfg.e_grid,
+    }
 
 
 # ===== API 路由 =====
@@ -221,6 +270,45 @@ async def simulate(p: SimParams) -> Dict[str, Any]:
         }
     except Exception as e:
         return {'success': False, 'error': str(e)}
+
+
+@app.post("/api/inversion/tpe")
+async def invert_tpe(req: TPEInversionIn) -> Dict[str, Any]:
+    """运行小预算 TPE 参数反演，并返回拟合完成度提示。"""
+    try:
+        c = req.config
+        cfg = InversionConfig(
+            E_start=c.E_start,
+            E_end=c.E_end,
+            f=c.f,
+            dE=c.dE,
+            n_points=max(128, min(int(c.n_points), 8192)),
+            points_per_cycle=max(16, min(int(c.points_per_cycle), 256)),
+            feature_grid_size=max(16, min(int(c.feature_grid_size), 200)),
+        )
+        n_trials = max(1, min(int(req.n_trials), 200))
+        target = _build_inversion_target(req.target, cfg)
+
+        t0 = time.perf_counter()
+        result = TPEInverter(config=cfg, seed=req.seed).run(target, n_trials=n_trials)
+        elapsed = time.perf_counter() - t0
+
+        return {
+            "success": True,
+            "best_value": result.best_value,
+            "best_x": _serialize(result.best_x),
+            "best_params": _serialize(result.best_params),
+            "fit_quality": _serialize(result.fit_quality),
+            "n_trials": result.n_trials,
+            "n_forward": result.n_forward,
+            "n_calls": result.n_calls,
+            "n_ode_fail": result.n_ode_fail,
+            "n_tafel_fail": result.n_tafel_fail,
+            "history": _serialize(result.history),
+            "time_elapsed": elapsed,
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 from fastapi.responses import FileResponse

@@ -285,10 +285,9 @@ function singleLine(data,color,name){
 }
 
 /* ===================== Tab1 ===================== */
-function SimTab() {
+function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
   const [params,setParams]=useState({}); const [loading,setLoading]=useState(false);
   const [result,setResult]=useState(null); const [error,setError]=useState(null);
-  const [expData,setExpData]=useState(null); const [expAnalysis,setExpAnalysis]=useState(null);
 
   useEffect(()=>{fetch(`${API_BASE}/api/params/defaults`).then(r=>r.json()).then(setParams).catch(()=>{});},[]);
 
@@ -425,7 +424,42 @@ function SimTab() {
 }
 
 /* ===================== Tab 2&3 ===================== */
-function CmaesTab() {
+function CmaesTab({ expData, expAnalysis }) {
+  const [nTrials,setNTrials]=useState(5);
+  const [nPoints,setNPoints]=useState(512);
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState(null);
+  const [result,setResult]=useState(null);
+  const canRun=!!(expAnalysis&&expAnalysis.calib&&expAnalysis.calib.tafel&&expAnalysis.calib.tafel.success);
+
+  const runInversion=async()=>{
+    if(!canRun) return;
+    setLoading(true); setError(null); setResult(null);
+    try{
+      const m=expAnalysis.meta;
+      const payload={
+        target:{
+          tdc:expAnalysis.tdc,
+          dc:expAnalysis.dc,
+          harmonics:expAnalysis.harmonics,
+          tafel:expAnalysis.calib.tafel.tafel_slope,
+        },
+        config:{
+          E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,
+          n_points:nPoints,points_per_cycle:64,feature_grid_size:64,
+        },
+        n_trials:nTrials,
+      };
+      const res=await fetch(`${API_BASE}/api/inversion/tpe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const data=await res.json();
+      data.success?setResult(data):setError(data.error);
+    }catch(e){setError(e.message);}
+    setLoading(false);
+  };
+
+  const quality=result?.fit_quality;
+  const qualityColor=quality?.ready_for_review?'#2e9d6e':(quality?'#f57c00':'#97a2b1');
+
   return (
     <div className="main">
       <div className="left-panel">
@@ -434,22 +468,45 @@ function CmaesTab() {
         <div className="summary-row"><strong>TPE 反演核心已接入</strong></div>
         <div className="summary-row">参数: k0_1-4, G_OH, G_O, scaling_OOH_OH, gamma</div>
         <div className="summary-row">目标: DC + H1-H7 + Tafel slope</div>
-        <div className="summary-row meta">CMA-ES 页暂保留为优化工作区；下一步接 API 后可直接从实验数据启动反演。</div>
-        <button className="btn btn-primary" disabled>等待反演 API 接入</button>
+        <div className="section-title">快速反演设置</div>
+        <div className="param-row">
+          <span className="param-label">trials</span>
+          <input className="param-input" type="number" min="1" max="200" value={nTrials} onChange={e=>setNTrials(Math.max(1,parseInt(e.target.value)||1))}/>
+          <span className="param-unit">次</span>
+        </div>
+        <div className="param-row">
+          <span className="param-label">n_points</span>
+          <input className="param-input" type="number" min="128" max="8192" value={nPoints} onChange={e=>setNPoints(Math.max(128,parseInt(e.target.value)||512))}/>
+          <span className="param-unit">点</span>
+        </div>
+        <div className="summary-row meta">
+          {expData?`实验数据: ${expData.name}`:'请先在「参数与单次模拟」页上传实验数据。'}
+          {expAnalysis&&expAnalysis.calib&&!expAnalysis.calib.tafel.success&&<><br/>Tafel 未识别，暂不能启动反演。</>}
+        </div>
+        <button className="btn btn-primary" onClick={runInversion} disabled={!canRun||loading}>
+          {loading?'反演中...':'启动 TPE 反演'}
+        </button>
+        {error&&<div className="summary-row" style={{color:'#e53935',marginTop:10}}>错误: {error}</div>}
       </div>
       <div className="right-panel">
         <div className="summary-box">
-          <div className="chart-head" style={{marginBottom:4}}>已完成</div>
-          <div className="summary-row">核心模块: <strong>oer_aem.inversion</strong></div>
-          <div className="summary-row">合成目标: <strong>make_synthetic_target</strong></div>
-          <div className="summary-row">目标函数: <strong>InversionObjective</strong></div>
-          <div className="summary-row">优化器: <strong>TPEInverter</strong></div>
+          <div className="chart-head" style={{marginBottom:4}}>拟合完成度</div>
+          {quality?<>
+            <div className="summary-row">等级: <strong style={{color:qualityColor}}>{quality.level}</strong></div>
+            <div className="summary-row">完成度: <strong>{quality.completion_percent.toFixed(1)}%</strong></div>
+            <div className="summary-row">sigma-RMSE: <strong>{quality.sigma_rmse.toFixed(3)}</strong></div>
+            <div className="summary-row" style={{color:qualityColor}}>{quality.message}</div>
+          </>:<div className="summary-row">反演完成后，这里会提示是否已经“差不多可以看机理”。</div>}
         </div>
         <div className="summary-box">
-          <div className="chart-head" style={{marginBottom:4}}>下一版页面</div>
-          <div className="summary-row">上传实验数据后，复用模拟页的 DC/H1-H7/Tafel 特征。</div>
-          <div className="summary-row">设置 trials / n_points / bounds 后启动 TPE。</div>
-          <div className="summary-row">输出 best_params、best_value、history 和失败计数。</div>
+          <div className="chart-head" style={{marginBottom:4}}>反演结果</div>
+          {result?<>
+            <div className="summary-row">best_value: <strong>{result.best_value.toExponential(3)}</strong></div>
+            <div className="summary-row">n_forward: <strong>{result.n_forward}</strong> · ODE fail: <strong>{result.n_ode_fail}</strong></div>
+            {Object.entries(result.best_params).map(([k,v])=>
+              <div className="summary-row" key={k}>{k}: <strong>{Number(v).toExponential(3)}</strong></div>
+            )}
+          </>:<div className="summary-row">暂无结果。建议先用 5-10 trials 检查接口，再提高预算。</div>}
         </div>
       </div>
     </div>
@@ -469,6 +526,8 @@ function PlaceholderTab({ title, description }) {
 /* ===================== App ===================== */
 function App() {
   const [tab,setTab]=useState('sim');
+  const [expData,setExpData]=useState(null);
+  const [expAnalysis,setExpAnalysis]=useState(null);
   return (<div className="app">
     <div className="header">
       碱性 OER AEM 工作台<span className="sub">Co₃O₄ / CoOₓ(OH)ᵧ FTacV 参数反演</span>
@@ -478,8 +537,8 @@ function App() {
         <div key={t.id} className={`tab ${tab===t.id?'active':''}`} onClick={()=>setTab(t.id)}>{t.label}</div>
       ))}
     </div>
-    <div style={{display:tab==='sim'?'contents':'none'}}><SimTab/></div>
-    <div style={{display:tab==='cmaes'?'contents':'none'}}><CmaesTab/></div>
+    <div style={{display:tab==='sim'?'contents':'none'}}><SimTab expData={expData} setExpData={setExpData} expAnalysis={expAnalysis} setExpAnalysis={setExpAnalysis}/></div>
+    <div style={{display:tab==='cmaes'?'contents':'none'}}><CmaesTab expData={expData} expAnalysis={expAnalysis}/></div>
     <div style={{display:tab==='mcmc'?'contents':'none'}}><PlaceholderTab title="MCMC 后验分析" description="不确定性量化模块接入中..."/></div>
     <div className="status-bar">
       <span><span className="dot"></span>后端: {API_BASE}</span>
