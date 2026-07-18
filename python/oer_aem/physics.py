@@ -96,6 +96,12 @@ def initialize_system(params: Dict[str, Any]) -> Dict[str, Any]:
     return params
 
 
+def _safe_exp(x):
+    """安全的 exp，防止 BV 指数过大导致 overflow。"""
+    x = np.asarray(x, dtype=float)
+    return np.exp(np.clip(x, -708, 708))
+
+
 def _oer_model_rhs(t: float, y: np.ndarray, params: Dict[str, Any]) -> np.ndarray:
     """ODE 右端函数（内部实现）。"""
     y = np.asarray(y, dtype=float)
@@ -134,21 +140,26 @@ def _oer_model_rhs(t: float, y: np.ndarray, params: Dict[str, Any]) -> np.ndarra
     eta_3 = phi_s - params['E03']
     eta_4 = phi_s - params['E04']
 
-    # BV 速率常数
-    k_fwd_pre = params['k0_pre'] * np.exp(b * RTF * eta_pre)
-    k_rev_pre = params['k0_pre'] * np.exp(-a * RTF * eta_pre)
+    # BV 速率常数（safe_exp + 积截断，防止 k0·exp 双溢出）
+    _pre_fwd =  b * RTF * eta_pre; _pre_rev = -a * RTF * eta_pre
+    k_fwd_pre = min(params['k0_pre'] * _safe_exp(_pre_fwd), 1e100) if _pre_fwd < 600 else 1e100
+    k_rev_pre = min(params['k0_pre'] * _safe_exp(_pre_rev), 1e100) if _pre_rev < 600 else 1e100
 
-    k_fwd_1 = params['k0_1'] * np.exp(b * RTF * eta_1)
-    k_rev_1 = params['k0_1'] * np.exp(-a * RTF * eta_1)
+    _1_fwd =  b * RTF * eta_1; _1_rev = -a * RTF * eta_1
+    k_fwd_1 = min(params['k0_1'] * _safe_exp(_1_fwd), 1e100) if _1_fwd < 600 else 1e100
+    k_rev_1 = min(params['k0_1'] * _safe_exp(_1_rev), 1e100) if _1_rev < 600 else 1e100
 
-    k_fwd_2 = params['k0_2'] * np.exp(b * RTF * eta_2)
-    k_rev_2 = params['k0_2'] * np.exp(-a * RTF * eta_2)
+    _2_fwd =  b * RTF * eta_2; _2_rev = -a * RTF * eta_2
+    k_fwd_2 = min(params['k0_2'] * _safe_exp(_2_fwd), 1e100) if _2_fwd < 600 else 1e100
+    k_rev_2 = min(params['k0_2'] * _safe_exp(_2_rev), 1e100) if _2_rev < 600 else 1e100
 
-    k_fwd_3 = params['k0_3'] * np.exp(b * RTF * eta_3)
-    k_rev_3 = params['k0_3'] * np.exp(-a * RTF * eta_3)
+    _3_fwd =  b * RTF * eta_3; _3_rev = -a * RTF * eta_3
+    k_fwd_3 = min(params['k0_3'] * _safe_exp(_3_fwd), 1e100) if _3_fwd < 600 else 1e100
+    k_rev_3 = min(params['k0_3'] * _safe_exp(_3_rev), 1e100) if _3_rev < 600 else 1e100
 
-    k_fwd_4 = params['k0_4'] * np.exp(b * RTF * eta_4)
-    k_rev_4 = params['k0_4'] * np.exp(-a * RTF * eta_4)
+    _4_fwd =  b * RTF * eta_4; _4_rev = -a * RTF * eta_4
+    k_fwd_4 = min(params['k0_4'] * _safe_exp(_4_fwd), 1e100) if _4_fwd < 600 else 1e100
+    k_rev_4 = min(params['k0_4'] * _safe_exp(_4_rev), 1e100) if _4_rev < 600 else 1e100
 
     # 各步速率（正向 - 反向）
     r_pre = k_fwd_pre * theta_star * a_OH - k_rev_pre * theta_ox * a_H2O
@@ -165,8 +176,10 @@ def _oer_model_rhs(t: float, y: np.ndarray, params: Dict[str, Any]) -> np.ndarra
     dtheta_OOH = r_3 - r_4
 
     # 表面电位演化
+    # 电荷守恒：(E_app - phi_s)/Ru = Cdl*A*dphi_s/dt + F*A*gamma*Σr
+    # 法拉第项为负号：净氧化电流对双电层放电，使 phi_s 低于 E_app（即 IR 降）
     r_elec_sum = r_pre + r_1 + r_2 + r_3 + r_4
-    dphi_s = (E_app - phi_s) * params['invRC'] + params['gammaF_Cdl'] * r_elec_sum
+    dphi_s = (E_app - phi_s) * params['invRC'] - params['gammaF_Cdl'] * r_elec_sum
 
     dydt = np.array([dtheta_star, dtheta_ox, dtheta_OH, dtheta_O, dtheta_OOH, dphi_s])
 
@@ -226,11 +239,17 @@ class OERPhysics:
                 t_span=t_span,
                 y0=y0,
                 t_eval=t_eval,
-                method='BDF',
-                rtol=1e-5,
+                method='Radau',
+                rtol=1e-4,
                 atol=1e-6,
-                max_step=t_span[1] / 100.0,
+                max_step=t_span[1] / 50.0,
             )
+            if not sol.success:
+                # solve_ivp 刚性失败时不抛异常，必须显式检查，
+                # 否则截断的解会被当作完整仿真送入下游
+                raise RuntimeError(
+                    f'ODE 求解在 t = {sol.t[-1]:.4g} / {t_span[1]:.4g} s 处中断: {sol.message}'
+                )
             t = sol.t
             y = sol.y.T
             E_dc = params['E_start'] + params['v'] * t
@@ -265,9 +284,9 @@ class OERPhysics:
                 fun=lambda t, y: _oer_model_rhs(t, y, params_ss),
                 t_span=(0.0, ss_time),
                 y0=y0_guess,
-                method='BDF',
-                rtol=1e-6,
-                atol=1e-8,
+                method='Radau',
+                rtol=1e-4,
+                atol=1e-6,
                 max_step=ss_time / 50.0,
             )
             y0 = sol.y[:, -1]
