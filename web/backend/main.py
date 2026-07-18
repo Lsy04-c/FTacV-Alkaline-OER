@@ -12,7 +12,13 @@ from typing import Optional, List, Dict, Any
 
 from oer_aem import OERPhysics, OERSignal, initialize_oer_parameters
 from oer_aem.calibration import calibrate as calibrate_ftacv
-from oer_aem.inversion import InversionConfig, TPEInverter
+from oer_aem.inversion import (
+    DEFAULT_PARAM_SPECS,
+    InversionConfig,
+    TPEInverter,
+    assess_harmonic_quality,
+    make_param_specs_from_physical_bounds,
+)
 
 app = FastAPI(title="OER-FTAcV API", version="0.2.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -74,6 +80,8 @@ class TPEInversionIn(BaseModel):
     config: InversionConfigIn = InversionConfigIn()
     initial_params: Optional[Dict[str, float]] = None
     fixed_params: Dict[str, float] = {}
+    param_bounds: Dict[str, List[float]] = {}
+    fit_harmonics: Optional[List[int]] = None
     n_trials: int = 20
     seed: int = 42
 
@@ -115,6 +123,7 @@ def _analyze_ftacv_data(rows: np.ndarray) -> Dict[str, Any]:
     sp = {'f': f0, 'band': np.ones(8), 'use_fft': True}
     I_dc = OERSignal.extract_dc_fft(i_raw, fs, sp)
     I_harm = OERSignal.extract_harmonics(i_raw, fs, sp)
+    harmonic_quality = assess_harmonic_quality(I_harm)
 
     # 独立标定（丢弃前 1/4 瞬态段）：CdlA、Tafel 斜率、预氧化可分离性
     cut = len(t) // 4
@@ -139,6 +148,8 @@ def _analyze_ftacv_data(rows: np.ndarray) -> Dict[str, Any]:
         'i_raw': _to_list(i_raw),
         'dc': _to_list(norm(I_dc)),
         'harmonics': [_to_list(norm(I_harm[:, kk])) for kk in range(7)],
+        'harmonic_quality': _serialize(harmonic_quality),
+        'suggested_fit_harmonics': harmonic_quality['fit_harmonics'],
         'calib': calib_brief,
     }
 
@@ -279,6 +290,8 @@ async def invert_tpe(req: TPEInversionIn) -> Dict[str, Any]:
     """运行小预算 TPE 参数反演，并返回拟合完成度提示。"""
     try:
         c = req.config
+        fit_harmonics = tuple(int(h) for h in ([1, 2, 3, 4, 5, 6, 7] if req.fit_harmonics is None else req.fit_harmonics))
+        param_specs = make_param_specs_from_physical_bounds(req.param_bounds, DEFAULT_PARAM_SPECS)
         cfg = InversionConfig(
             E_start=c.E_start,
             E_end=c.E_end,
@@ -287,13 +300,15 @@ async def invert_tpe(req: TPEInversionIn) -> Dict[str, Any]:
             n_points=max(128, min(int(c.n_points), 8192)),
             points_per_cycle=max(16, min(int(c.points_per_cycle), 256)),
             feature_grid_size=max(16, min(int(c.feature_grid_size), 200)),
+            param_specs=param_specs,
             fixed_params=tuple(sorted((str(k), float(v)) for k, v in req.fixed_params.items())),
+            fit_harmonics=fit_harmonics,
         )
         n_trials = max(1, min(int(req.n_trials), 200))
         target = _build_inversion_target(req.target, cfg)
 
         t0 = time.perf_counter()
-        result = TPEInverter(config=cfg, seed=req.seed, initial_params=req.initial_params).run(target, n_trials=n_trials)
+        result = TPEInverter(config=cfg, specs=param_specs, seed=req.seed, initial_params=req.initial_params).run(target, n_trials=n_trials)
         elapsed = time.perf_counter() - t0
 
         return {
@@ -309,6 +324,8 @@ async def invert_tpe(req: TPEInversionIn) -> Dict[str, Any]:
             "n_tafel_fail": result.n_tafel_fail,
             "history": _serialize(result.history),
             "fixed_params": _serialize(req.fixed_params),
+            "param_bounds": _serialize(req.param_bounds),
+            "fit_harmonics": _serialize(fit_harmonics),
             "time_elapsed": elapsed,
         }
     except Exception as e:

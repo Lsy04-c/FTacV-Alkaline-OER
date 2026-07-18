@@ -60,6 +60,7 @@ class InversionConfig:
     seed: int = 42
     param_specs: Tuple[ParamSpec, ...] = DEFAULT_PARAM_SPECS
     fixed_params: Tuple[Tuple[str, float], ...] = ()
+    fit_harmonics: Tuple[int, ...] = (1, 2, 3, 4, 5, 6, 7)
 
     @property
     def total_time(self) -> float:
@@ -108,7 +109,11 @@ class InversionResult:
     fit_quality: Dict[str, Any] = field(default_factory=dict)
 
 
-def assess_fit_quality(best_value: float, feature_grid_size: int) -> Dict[str, Any]:
+def assess_fit_quality(
+    best_value: float,
+    feature_grid_size: int,
+    fit_harmonics: Sequence[int] = (1, 2, 3, 4, 5, 6, 7),
+) -> Dict[str, Any]:
     """Convert the objective value to a human-readable fit-completion signal.
 
     The objective stores summed squared residuals divided by the channel count.
@@ -119,8 +124,10 @@ def assess_fit_quality(best_value: float, feature_grid_size: int) -> Dict[str, A
     if not np.isfinite(best_value) or best_value < 0:
         sigma_rmse = float("inf")
     else:
-        n_terms = max(1, 8 * int(feature_grid_size) + 1)
-        sigma_rmse = float(np.sqrt((best_value * 9.0) / n_terms))
+        n_channels = 1 + len(tuple(fit_harmonics))
+        n_terms = max(1, n_channels * int(feature_grid_size) + 1)
+        divisor = 2.0 + len(tuple(fit_harmonics))
+        sigma_rmse = float(np.sqrt((best_value * divisor) / n_terms))
 
     if sigma_rmse <= 0.75:
         level = "excellent"
@@ -150,6 +157,58 @@ def assess_fit_quality(best_value: float, feature_grid_size: int) -> Dict[str, A
         "sigma_rmse": sigma_rmse,
         "completion_percent": completion,
         "message": message,
+        "fit_harmonics": [int(h) for h in fit_harmonics],
+    }
+
+
+def assess_harmonic_quality(
+    harmonics: Sequence[Sequence[float]] | np.ndarray,
+    min_relative_rms: float = 0.02,
+    min_abs_rms: float = 1e-12,
+) -> Dict[str, Any]:
+    """Select experimentally resolvable harmonics from raw harmonic envelopes.
+
+    The decision is based on raw amplitude before per-channel normalization.
+    A harmonic whose RMS is far below the strongest channel can look large after
+    normalization, but it carries weak experimental information and should not
+    dominate the inversion objective.
+    """
+
+    arr = np.asarray(harmonics, dtype=float)
+    if arr.ndim != 2:
+        raise ValueError("harmonics must be a 2D array")
+    if arr.shape[1] == 7:
+        channel_arr = arr
+    elif arr.shape[0] == 7:
+        channel_arr = arr.T
+    else:
+        raise ValueError("harmonics must contain 7 channels")
+
+    rms = np.sqrt(np.mean(channel_arr**2, axis=0))
+    max_rms = float(np.max(rms)) if rms.size else 0.0
+    threshold = max(float(min_abs_rms), float(min_relative_rms) * max(max_rms, 1e-30))
+    channels = []
+    fit_harmonics = []
+    for idx, value in enumerate(rms, start=1):
+        dynamic_range = float(np.max(channel_arr[:, idx - 1]) - np.min(channel_arr[:, idx - 1]))
+        selected = bool(np.isfinite(value) and value >= threshold and dynamic_range > 0.0)
+        if selected:
+            fit_harmonics.append(idx)
+        channels.append(
+            {
+                "harmonic": idx,
+                "rms": float(value),
+                "relative_rms": float(value / max(max_rms, 1e-30)),
+                "dynamic_range": dynamic_range,
+                "fit": selected,
+            }
+        )
+
+    return {
+        "fit_harmonics": fit_harmonics,
+        "threshold_rms": threshold,
+        "max_rms": max_rms,
+        "channels": channels,
     }
 
 
@@ -190,6 +249,82 @@ def decode_vector(x: Sequence[float], specs: Sequence[ParamSpec] = DEFAULT_PARAM
         else:
             raise ValueError(f"Unsupported parameter encoding kind: {kind}")
     return decoded
+
+
+def normalize_vector(x: Sequence[float], specs: Sequence[ParamSpec] = DEFAULT_PARAM_SPECS) -> np.ndarray:
+    """Map encoded optimizer coordinates to unit coordinates.
+
+    The values in ``x`` are already in encoded coordinates: log10 for kinetic
+    constants and gamma, linear for thermodynamic terms. Normalizing this layer
+    keeps the search geometry comparable without changing the physical model.
+    """
+
+    arr = np.asarray(x, dtype=float).reshape(-1)
+    if len(arr) != len(specs):
+        raise ValueError(f"Expected {len(specs)} parameters, got {len(arr)}")
+    z = []
+    for value, (name, _, lo, hi) in zip(arr, specs):
+        width = float(hi - lo)
+        if width <= 0:
+            raise ValueError(f"{name} has invalid bounds [{lo:g}, {hi:g}]")
+        if value < lo or value > hi:
+            raise ValueError(f"{name} encoded value {value:g} outside bounds [{lo:g}, {hi:g}]")
+        z.append((float(value) - lo) / width)
+    return np.asarray(z, dtype=float)
+
+
+def denormalize_vector(z: Sequence[float], specs: Sequence[ParamSpec] = DEFAULT_PARAM_SPECS) -> np.ndarray:
+    """Map unit coordinates back to encoded optimizer coordinates."""
+
+    arr = np.asarray(z, dtype=float).reshape(-1)
+    if len(arr) != len(specs):
+        raise ValueError(f"Expected {len(specs)} parameters, got {len(arr)}")
+    x = []
+    for value, (name, _, lo, hi) in zip(arr, specs):
+        if value < 0.0 or value > 1.0:
+            raise ValueError(f"{name} normalized value {value:g} outside [0, 1]")
+        x.append(float(lo) + float(value) * float(hi - lo))
+    return np.asarray(x, dtype=float)
+
+
+def make_param_specs_from_physical_bounds(
+    bounds: Mapping[str, Sequence[float]],
+    specs: Sequence[ParamSpec] = DEFAULT_PARAM_SPECS,
+) -> Tuple[ParamSpec, ...]:
+    """Override parameter bounds using physical units.
+
+    For log-encoded parameters the caller supplies physical positive bounds,
+    e.g. ``k0_1: (1, 1e4)``, and this function converts them to log10 bounds.
+    Linear parameters are kept in their original physical units.
+    """
+
+    overrides = {str(k): tuple(v) for k, v in bounds.items()}
+    names = {name for name, _, _, _ in specs}
+    unknown = sorted(set(overrides) - names)
+    if unknown:
+        raise KeyError(f"Unknown parameter bounds: {', '.join(unknown)}")
+
+    updated: List[ParamSpec] = []
+    for name, kind, lo, hi in specs:
+        if name not in overrides:
+            updated.append((name, kind, lo, hi))
+            continue
+        raw = overrides[name]
+        if len(raw) != 2:
+            raise ValueError(f"{name} bounds must contain [low, high]")
+        phys_lo, phys_hi = float(raw[0]), float(raw[1])
+        if not np.isfinite(phys_lo) or not np.isfinite(phys_hi) or phys_lo >= phys_hi:
+            raise ValueError(f"{name} bounds must be finite and increasing")
+        if kind == "log10":
+            if phys_lo <= 0.0 or phys_hi <= 0.0:
+                raise ValueError(f"{name} log10 bounds must be positive in physical units")
+            lo_new, hi_new = float(np.log10(phys_lo)), float(np.log10(phys_hi))
+        elif kind == "linear":
+            lo_new, hi_new = phys_lo, phys_hi
+        else:
+            raise ValueError(f"Unsupported parameter encoding kind: {kind}")
+        updated.append((name, kind, lo_new, hi_new))
+    return tuple(updated)
 
 
 @lru_cache(maxsize=16)
@@ -341,6 +476,10 @@ class InversionObjective:
         self.n_tafel_fail = 0
         self.best_value = np.inf
         self.best_x: Optional[np.ndarray] = None
+        self.fit_harmonics = tuple(int(h) for h in self.config.fit_harmonics)
+        invalid = [h for h in self.fit_harmonics if h < 1 or h > 7]
+        if invalid:
+            raise ValueError(f"fit_harmonics must be between 1 and 7, got {invalid}")
 
     def _evaluate(self, x: np.ndarray) -> float:
         self.n_forward += 1
@@ -351,7 +490,8 @@ class InversionObjective:
 
         features = extract_features(current, self.config)
         total = float(np.sum(((features["dc"] - self.target["dc"]) / self.config.sigma_dc) ** 2))
-        for idx in range(7):
+        for harmonic in self.fit_harmonics:
+            idx = harmonic - 1
             total += float(
                 np.sum(((features["harm"][idx] - self.target["harm"][idx]) / self.config.sigma_harm) ** 2)
             )
@@ -361,7 +501,7 @@ class InversionObjective:
             total += self.config.tafel_fail_resid**2
         else:
             total += float(((features["tafel"] - self.target["tafel"]) / self.config.sigma_tafel) ** 2)
-        return total / 9.0
+        return total / float(2 + len(self.fit_harmonics))
 
     def __call__(self, x: Sequence[float]) -> float:
         arr = np.asarray(x, dtype=float).reshape(-1)
@@ -391,12 +531,12 @@ class TPEInverter:
         self.initial_params = dict(initial_params) if initial_params is not None else None
 
     def _suggest(self, trial: Any) -> np.ndarray:
-        values = []
+        z_values = []
         for name, kind, lo, hi in self.specs:
             if kind not in {"log10", "linear"}:
                 raise ValueError(f"Unsupported parameter encoding kind: {kind}")
-            values.append(trial.suggest_float(name, lo, hi))
-        return np.asarray(values, dtype=float)
+            z_values.append(trial.suggest_float(f"z_{name}", 0.0, 1.0))
+        return denormalize_vector(z_values, self.specs)
 
     def run(self, target: Mapping[str, Any], n_trials: int = 100) -> InversionResult:
         import optuna
@@ -408,14 +548,18 @@ class TPEInverter:
             n_startup_trials=min(self.n_startup_trials, max(1, n_trials)),
         )
         study = optuna.create_study(direction="minimize", sampler=sampler)
+        initial_x: Optional[np.ndarray] = None
         if self.initial_params is not None:
             initial_x = encode_params(self.initial_params, self.specs)
+            initial_z = normalize_vector(initial_x, self.specs)
             study.enqueue_trial(
-                {name: float(value) for (name, _, _, _), value in zip(self.specs, initial_x)}
+                {f"z_{name}": float(value) for (name, _, _, _), value in zip(self.specs, initial_z)}
             )
         history: List[Dict[str, Any]] = []
 
         def optuna_objective(trial: Any) -> float:
+            if trial.number == 0 and initial_x is not None:
+                return objective(initial_x)
             return objective(self._suggest(trial))
 
         def callback(study_: Any, trial: Any) -> None:
@@ -434,7 +578,8 @@ class TPEInverter:
         study.optimize(optuna_objective, n_trials=n_trials, callbacks=[callback])
         best_x = objective.best_x
         if best_x is None:
-            best_x = np.asarray([study.best_params[name] for name, _, _, _ in self.specs], dtype=float)
+            best_z = np.asarray([study.best_params[f"z_{name}"] for name, _, _, _ in self.specs], dtype=float)
+            best_x = denormalize_vector(best_z, self.specs)
         return InversionResult(
             success=bool(len(study.trials) == n_trials and np.isfinite(study.best_value)),
             best_value=float(study.best_value),
@@ -446,5 +591,9 @@ class TPEInverter:
             n_calls=int(objective.n_calls),
             n_ode_fail=int(objective.n_ode_fail),
             n_tafel_fail=int(objective.n_tafel_fail),
-            fit_quality=assess_fit_quality(float(study.best_value), self.config.feature_grid_size),
+            fit_quality=assess_fit_quality(
+                float(study.best_value),
+                self.config.feature_grid_size,
+                self.config.fit_harmonics,
+            ),
         )

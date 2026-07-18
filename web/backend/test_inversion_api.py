@@ -53,6 +53,11 @@ def test_tpe_inversion_endpoint_returns_fit_quality():
             "E0_pre": 1.52,
             "k0_pre": 120.0,
         },
+        "param_bounds": {
+            "k0_1": [10.0, 1000.0],
+            "G_OH": [1.1, 1.4],
+        },
+        "fit_harmonics": [1, 2, 3],
         "n_trials": 1,
     }
 
@@ -65,4 +70,7 @@ def test_tpe_inversion_endpoint_returns_fit_quality():
     assert "fit_quality" in data
     assert data["history"][0]["source"] == "initial"
     assert data["fixed_params"]["Cdl"] == 150e-6
+    assert data["fit_harmonics"] == [1, 2, 3]
+    assert 10.0 <= data["best_params"]["k0_1"] <= 1000.0
+    assert 1.1 <= data["best_params"]["G_OH"] <= 1.4
     assert data["fit_quality"]["level"] in {"excellent", "acceptable", "rough", "poor"}

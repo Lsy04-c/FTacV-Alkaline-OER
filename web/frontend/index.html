@@ -284,6 +284,22 @@ function singleLine(data,color,name){
   return {type:'line',name,data,smooth:true,symbol:'none',lineStyle:{color:color||'#1976d2',width:1.6}};
 }
 
+const AEM_PARAM_BOUNDS = {
+  k0_1:[1e-2,1e4],
+  k0_2:[1e-2,1e4],
+  k0_3:[1e-2,1e4],
+  k0_4:[1e-2,1e4],
+  G_OH:[0.9,1.7],
+  G_O:[2.3,3.3],
+  scaling_OOH_OH:[2.9,3.5],
+  gamma:[1e-10,1e-8],
+};
+
+function formatHarmonics(list){
+  if(!list||!list.length) return '无，仅 DC/Tafel';
+  return list.map(h=>`H${h}`).join(', ');
+}
+
 /* ===================== Tab1 ===================== */
 function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
   const [params,setParams]=useState({}); const [loading,setLoading]=useState(false);
@@ -328,6 +344,7 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
     setInvLoading(true);setInvError(null);setInvResult(null);setError(null);
     try{
       const m=expAnalysis.meta;
+      const fitHarmonics = expAnalysis.suggested_fit_harmonics || [1,2,3,4,5,6,7];
       const payload={
         target:{tdc:expAnalysis.tdc,dc:expAnalysis.dc,harmonics:expAnalysis.harmonics,tafel:expAnalysis.calib.tafel.tafel_slope},
         config:{E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,n_points:invPoints,points_per_cycle:64,feature_grid_size:64},
@@ -338,6 +355,8 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
         fixed_params:{
           Cdl:params.Cdl,Ru:params.Ru,A:params.A,E0_pre:params.E0_pre,k0_pre:params.k0_pre,
         },
+        param_bounds:AEM_PARAM_BOUNDS,
+        fit_harmonics:fitHarmonics,
         n_trials:invTrials,
       };
       const res=await fetch(`${API_BASE}/api/inversion/tpe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
@@ -360,6 +379,9 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
         <div className="file-info" style={{marginTop:-6,marginBottom:10,lineHeight:1.8}}>
           识别: f=<strong>{expAnalysis.meta.f.toFixed(2)} Hz</strong> · dE=<strong>{expAnalysis.meta.dE.toFixed(3)} V</strong> · v=<strong>{(expAnalysis.meta.v*1000).toFixed(1)} mV/s</strong><br/>
           范围: {expAnalysis.meta.E_start.toFixed(3)} → {expAnalysis.meta.E_end.toFixed(3)} V · {Math.round(expAnalysis.meta.f*expAnalysis.meta.duration)} 周期
+          {expAnalysis.suggested_fit_harmonics&&<>
+            <br/>建议拟合通道: <strong>{formatHarmonics(expAnalysis.suggested_fit_harmonics)}</strong> · 其它谐波仅诊断
+          </>}
           {expAnalysis.calib&&expAnalysis.calib.cdl.success&&(<>
             <br/>标定: Cdl·A=<strong>{(expAnalysis.calib.cdl.CdlA*1e6).toFixed(1)} µF</strong>（相位超前 {expAnalysis.calib.cdl.phase_lead_deg.toFixed(0)}°）
             {expAnalysis.calib.tafel.success&&<> · Tafel=<strong>{expAnalysis.calib.tafel.tafel_slope_mV.toFixed(0)} mV/dec</strong></>}
@@ -395,6 +417,7 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
           {invError&&<div className="summary-row" style={{color:'#e53935',marginTop:8}}>反演错误: {invError}</div>}
           {invResult&&<div className="summary-row meta" style={{marginTop:8}}>
             拟合等级: <strong>{invResult.fit_quality.level}</strong> · 完成度 <strong>{invResult.fit_quality.completion_percent.toFixed(1)}%</strong><br/>
+            拟合通道: <strong>{formatHarmonics(invResult.fit_harmonics)}</strong><br/>
             {invResult.fit_quality.message}
           </div>}
         </div>
@@ -468,7 +491,8 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
             series:hSeries, legend:!!expAnalysis
           });
           if(result){hOpt.xAxis.min=xMin; hOpt.xAxis.max=xMax;}
-          return <ChartBox key={`h${k}`} id={`h${k}`} title={lab} option={hOpt}/>;
+          const active = invResult ? (invResult.fit_harmonics||[]).includes(k+1) : (expAnalysis?.suggested_fit_harmonics||[]).includes(k+1);
+          return <ChartBox key={`h${k}`} id={`h${k}`} title={`${lab}${active?' · 拟合':' · 诊断'}`} option={hOpt}/>;
         })}
         <div className="summary-box">
           <div className="chart-head" style={{marginBottom:4}}>{result?'正演参数摘要':'实验数据摘要'}</div>
@@ -482,7 +506,7 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
             <div className="summary-row">当前只显示实验数据特征；尚未运行模型正演。</div>
             <div className="summary-row">反演入口已在左侧，不需要切换到单独优化页。</div>
           </>}
-          {invResult&&<div className="summary-row meta">反演: {invResult.fit_quality.level} · {invResult.fit_quality.completion_percent.toFixed(1)}% · nfev={invResult.n_forward}</div>}
+          {invResult&&<div className="summary-row meta">反演: {invResult.fit_quality.level} · {invResult.fit_quality.completion_percent.toFixed(1)}% · {formatHarmonics(invResult.fit_harmonics)} · nfev={invResult.n_forward}</div>}
         </div>
       </div>
     </div>
