@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
 from oer_aem import OERPhysics, OERSignal, initialize_oer_parameters
+from oer_aem.calibration import calibrate as calibrate_ftacv
 
 app = FastAPI(title="OER-FTAcV API", version="0.2.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -87,6 +88,16 @@ def _analyze_ftacv_data(rows: np.ndarray) -> Dict[str, Any]:
     I_dc = OERSignal.extract_dc_fft(i_raw, fs, sp)
     I_harm = OERSignal.extract_harmonics(i_raw, fs, sp)
 
+    # 独立标定（丢弃前 1/4 瞬态段）：CdlA、Tafel 斜率、预氧化可分离性
+    cut = len(t) // 4
+    calib = calibrate_ftacv(E_raw[cut:], i_raw[cut:], t[cut:], i_dc=I_dc[cut:])
+    # 只保留前端需要的小字段
+    calib_brief = {
+        'cdl': calib['cdl'] if calib['cdl'].get('success') else {'success': False, 'error': calib['cdl'].get('error')},
+        'tafel': calib['tafel'] if calib['tafel'].get('success') else {'success': False, 'error': calib['tafel'].get('error')},
+        'preox': calib['preox'],
+    }
+
     norm = lambda a: (a / max(np.max(np.abs(a)), 1e-30))
     return {
         'success': True,
@@ -100,6 +111,7 @@ def _analyze_ftacv_data(rows: np.ndarray) -> Dict[str, Any]:
         'i_raw': _to_list(i_raw),
         'dc': _to_list(norm(I_dc)),
         'harmonics': [_to_list(norm(I_harm[:, kk])) for kk in range(7)],
+        'calib': calib_brief,
     }
 
 

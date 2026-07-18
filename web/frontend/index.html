@@ -329,7 +329,18 @@ function SimTab() {
         <div className="file-info" style={{marginTop:-6,marginBottom:10,lineHeight:1.8}}>
           识别: f=<strong>{expAnalysis.meta.f.toFixed(2)} Hz</strong> · dE=<strong>{expAnalysis.meta.dE.toFixed(3)} V</strong> · v=<strong>{(expAnalysis.meta.v*1000).toFixed(1)} mV/s</strong><br/>
           范围: {expAnalysis.meta.E_start.toFixed(3)} → {expAnalysis.meta.E_end.toFixed(3)} V · {Math.round(expAnalysis.meta.f*expAnalysis.meta.duration)} 周期
+          {expAnalysis.calib&&expAnalysis.calib.cdl.success&&(<>
+            <br/>标定: Cdl·A=<strong>{(expAnalysis.calib.cdl.CdlA*1e6).toFixed(1)} µF</strong>（相位超前 {expAnalysis.calib.cdl.phase_lead_deg.toFixed(0)}°）
+            {expAnalysis.calib.tafel.success&&<> · Tafel=<strong>{expAnalysis.calib.tafel.tafel_slope_mV.toFixed(0)} mV/dec</strong></>}
+            <br/><span style={{color:'#97a2b1'}}>预氧化峰: {expAnalysis.calib.preox.separable?'直流可见（定量仍需反演）':'与 OER 重叠，不可直流分离'} · Γ/Ru 由反演/EIS 获得</span>
+          </>)}
         </div>
+      )}
+      {expAnalysis&&expAnalysis.calib&&expAnalysis.calib.cdl.success&&(
+        <button className="btn-secondary" style={{marginTop:0,marginBottom:4}}
+          onClick={()=>{const A=params.A||0.196;setParams(p=>({...p,Cdl:+(expAnalysis.calib.cdl.CdlA/A).toExponential(4)}));}}>
+          ✓ 应用 Cdl 标定（按当前 A={params.A||0.196} cm² 反解）
+        </button>
       )}
       {expAnalysis&&<button className="btn-secondary" style={{marginTop:0,marginBottom:4}} onClick={()=>syncParams(true)}>⟳ 快速同步（64 周期·v×4，约 10 秒）</button>}
       {expAnalysis&&<button className="btn-secondary" style={{marginTop:0,marginBottom:8}} onClick={()=>syncParams(false)}>⟳ 完整同步（256 周期·与实验一致，约 1 分钟）</button>}

@@ -17,6 +17,7 @@ from .objective import OERObjective
 from .io import OERIO
 from .core import OERCore
 from .defaults import initialize_oer_parameters
+from .calibration import calibrate, derive_per_area
 
 __all__ = [
     "apply_alkaline_aem",
@@ -28,4 +29,6 @@ __all__ = [
     "OERIO",
     "OERCore",
     "initialize_oer_parameters",
+    "calibrate",
+    "derive_per_area",
 ]
