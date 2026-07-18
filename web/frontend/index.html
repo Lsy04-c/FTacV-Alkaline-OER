@@ -302,10 +302,12 @@ function SimTab() {
     }catch(e){setError('数据解析失败: '+e.message);}
   };
   const clearExp=()=>{setExpData(null);setExpAnalysis(null);};
-  // 用识别出的采集参数同步仿真设置（周期数≤256，n_points 取 2 的幂）
-  const syncParams=()=>{
+  // 同步仿真参数。fast=true：64 周期、扫描速率×4，约 10 秒，定性对比；
+  // fast=false：与实验完全一致的 v 和 f（256 周期），约 1 分钟，定量对比。
+  const syncParams=(fast)=>{
     if(!expAnalysis) return; const m=expAnalysis.meta;
-    const cycles=Math.max(1,Math.min(Math.round(m.f*m.duration),256));
+    const maxCycles=fast?64:256;
+    const cycles=Math.max(1,Math.min(Math.round(m.f*m.duration),maxCycles));
     const n=Math.min(Math.pow(2,Math.ceil(Math.log2(cycles*256))),65536);
     setParams(p=>({...p,E_start:+m.E_start.toFixed(4),E_end:+m.E_end.toFixed(4),f:+m.f.toFixed(4),dE:+m.dE.toFixed(4),n_points:n}));
   };
@@ -329,7 +331,8 @@ function SimTab() {
           范围: {expAnalysis.meta.E_start.toFixed(3)} → {expAnalysis.meta.E_end.toFixed(3)} V · {Math.round(expAnalysis.meta.f*expAnalysis.meta.duration)} 周期
         </div>
       )}
-      {expAnalysis&&<button className="btn-secondary" style={{marginTop:0,marginBottom:8}} onClick={syncParams}>⟳ 用数据同步仿真参数</button>}
+      {expAnalysis&&<button className="btn-secondary" style={{marginTop:0,marginBottom:4}} onClick={()=>syncParams(true)}>⟳ 快速同步（64 周期·v×4，约 10 秒）</button>}
+      {expAnalysis&&<button className="btn-secondary" style={{marginTop:0,marginBottom:8}} onClick={()=>syncParams(false)}>⟳ 完整同步（256 周期·与实验一致，约 1 分钟）</button>}
       {expData&&<button className="btn-secondary" style={{marginTop:0}} onClick={clearExp}>清除实验数据</button>}
       <ParamPanel params={params} onChange={setParams} onSimulate={simulate} loading={loading}/>
     </div>

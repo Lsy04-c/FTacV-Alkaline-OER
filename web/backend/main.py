@@ -152,6 +152,8 @@ async def simulate(p: SimParams) -> Dict[str, Any]:
 
         params['n_points'] = min(params['n_points'], 65536)
         params['total_time'] = (params['n_points'] / params['points_per_cycle']) / params['f']
+        # v 依赖 E 范围和 total_time，二者被用户参数覆盖后必须重算，否则扫描范围错误
+        params['v'] = (params['E_end'] - params['E_start']) / params['total_time']
         params['t_span'] = np.linspace(0, params['total_time'], params['n_points'])
 
         t0 = time.perf_counter()

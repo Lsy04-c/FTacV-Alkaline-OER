@@ -239,9 +239,12 @@ class OERPhysics:
                 t_span=t_span,
                 y0=y0,
                 t_eval=t_eval,
-                method='Radau',
-                rtol=1e-4,
-                atol=1e-6,
+                # 收敛性验证（256 周期全扫描）：rtol=1e-4 下 Radau 与 LSODA 的 H1
+                # 包络仅相关 0.78，未收敛；rtol=1e-6 时两者波形相关 1.0、谐波一致。
+                # LSODA 在该问题上比 Radau 快约 3 倍。
+                method='LSODA',
+                rtol=1e-6,
+                atol=1e-8,
                 max_step=t_span[1] / 50.0,
             )
             if not sol.success:

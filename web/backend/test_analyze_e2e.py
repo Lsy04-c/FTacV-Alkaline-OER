@@ -37,18 +37,24 @@ for k, h in enumerate(harm):
     pk = int(np.argmax(np.abs(h)))
     print(f'  H{k+1}: max={np.abs(h).max():.3f} 峰值@tdc={res["tdc"][pk]:.3f} V')
 
-# ---- 3. /api/simulate 同步参数（256 周期 65536 点）----
+# ---- 3. /api/simulate 同步参数（快速档：64 周期 16384 点）----
 sim_in = {
     'E_start': meta['E_start'], 'E_end': meta['E_end'],
     'f': meta['f'], 'dE': meta['dE'],
-    'n_points': 65536, 'points_per_cycle': 256,
+    'n_points': 16384, 'points_per_cycle': 256,
 }
 t0 = time.perf_counter()
 r2 = client.post('/api/simulate', json=sim_in)
 dt2 = time.perf_counter() - t0
 res2 = r2.json()
 if res2.get('success'):
-    print(f'\nsimulate 65536 pts (256 cyc): {dt2:.1f} s (ode {res2["time_elapsed"]:.1f} s)')
+    tdc = np.array(res2['tdc'])
+    assert abs(tdc[0] - meta['E_start']) < 0.02, f'tdc 起点错误: {tdc[0]}'
+    assert abs(tdc[-1] - meta['E_end']) < 0.02, f'tdc 终点错误: {tdc[-1]}（应为 {meta["E_end"]:.3f}，v 未随参数重算的回归）'
+    E_a = np.array(res2['E_actual'])
+    assert E_a.max() < meta['E_end'] + 2 * meta['dE'] + 0.5, f'E_actual 超界: {E_a.max()}'
+    print(f'\nsimulate {sim_in["n_points"]} pts ({sim_in["n_points"]//256} cyc): {dt2:.1f} s (ode {res2["time_elapsed"]:.1f} s)')
+    print(f'tdc: {tdc[0]:.3f} -> {tdc[-1]:.3f} V ✓  E_actual max: {E_a.max():.3f} V ✓')
     sh = np.array(res2['harmonics'][0])
     eh = harm[0]
     n = min(len(sh), len(eh))
