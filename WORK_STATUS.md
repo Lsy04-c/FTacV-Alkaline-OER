@@ -1,61 +1,343 @@
 # OER-FTAcV 工作进展总结（2026-07-18）
 
-> 项目：碱性 OER AEM 微观动力学建模与 FTacV 参数反演平台（Co₃O₄/CoOₓ(OH)ᵧ，1 M KOH 微纳体系）
-> 目标：实验 FTacV 数据 → 微观动力学模型 → 参数反演 → 敏感性判断 → 解释反应中真正重要的因素
+项目：碱性 OER AEM 微观动力学建模与 FTacV 参数反演平台
+负责人：刘拾玉
+目标体系：Co3O4 / CoOx(OH)y 碱性 OER
+当前目标：用 FTacV 解释反应机理，判断不同参数或反应步骤对体系的真实影响。
 
 ---
 
-## 一、已完成任务
+## 1. 当前判断
 
-### 1. 机理与代码修复（Python 核心）
-- **法拉第项符号 bug（关键）**：`python/oer_aem/physics.py` dphi_s 方程法拉第项符号改正（`+`→`−`）。MATLAB 侧 `OER_Physics.m:181` 仍是旧 `+` 号，**按你的要求暂未处理**（commit `7f474bc`）。
-- **ODE 求解收敛性**：发现 rtol=1e-4 在 256 周期长积分下不收敛（Radau 与 LSODA 的 H1 包络仅相关 0.78）；收紧到 rtol=1e-6 后两求解器波形相关 1.0、7 次谐波一致——**模型本身适定，是精度设置不够**。主求解器改 LSODA（rtol=1e-6），比 Radau 快约 3 倍。
-- **谐波提取边缘振铃**：加 Tukey 窗修复（commit `ecfd5e2`）。一次谐波波形经锁相放大交叉验证正确（与 FFT 包络相关 0.9992）。
-- **参数文献化**：Γ=1e-9 mol/cm²、Cdl=60 µF/cm²、k⁰=1e3/5e2/50/1e3、E0_pre=1.45、G_OH=1.23、G_O=2.80，core/web 默认值统一。**注意：k⁰ 默认值是"敏感窗口演示值"，无化学依据**。
+这套代码已经从早期 demo 进入“可运行的机理反演原型”阶段，但算法还不能作为最终科研结论使用。
 
-### 2. Web 工作台（FastAPI + React 单文件）
-- 预览链路修复（dev.sh 解释器选择），并加 `--reload` 热重载（监听 backend/ 与 python/），杜绝"跑旧代码"（commit `0e16336`）。
-- **实验数据接入**（commit `6131668`）：上传 FTacV 数据自动识别 f/dE/v/电位范围/周期数（ftacv4-ref.txt：f=1.00 Hz、dE=0.160 V、v=3.90 mV/s、0.924→1.923 V、256 周期）；「快速同步」（64 周期 v×4 定性）/「完整同步」（256 周期与实验一致，定量）双档按钮；CV/DC/1-7 次谐波全部 Sim/Exp 叠加显示。
-- **v 未重算 bug（关键）**：用户参数改变后扫描速率 v 仍按默认值 0.155 V/s 计算，导致电位实际扫到 ~40 V、所有图表全错。已修并加回归断言（commit `57c1cd4`）。
+当前算法能做：
 
-### 3. 独立标定模块 `python/oer_aem/calibration.py`（commit `c5e80c5`）
-三 regime（真实/小Γ/大Γ 合成）验证确立的可识别性结论：
-- **可测**：Cdl·A（交流 1f 投影法，合成恢复误差 3%；实测 **28.9 µF**，相位超前 83°≈纯电容）；Tafel 斜率（实测 **≈100 mV/dec**，自适应十倍电流窗口）。
-- **拒绝报数**：Γ·A 与 E0_pre——合成验证证明"Nernstian 峰+指数背景"直流拟合在本机理下是结构性错误模型（即使峰可见误差仍达 ~1500%）；Ru 在 ~1 Hz 不可识别（需 EIS）。预氧化块只做可分离性定性诊断。
-- 已接入 `/api/data/analyze` 和前端（显示标定结果 + 「应用 Cdl 标定」按钮）。
+- 上传实验 FTacV 数据；
+- 自动识别 f、dE、扫描范围、扫描速率；
+- 提取 DC 与 1-7 次谐波；
+- 运行 OER AEM 正演模型；
+- 用 TPE 搜索机理参数；
+- 用当前参数或反演参数正演并与实验叠加；
+- 给出拟合完成度提示；
+- 按实验谐波强度自动建议拟合通道。
 
-### 4. 反演算法压测（commit `ed43f4a`，`python/bench_inversion.py` + `bench_inversion_results.json`）
-TPE vs 多起点 L-BFGS-B，3 场景 × 200 评估预算：
-- **TPE 全胜**（目标值好 1.5-8 倍）；L-BFGS-B 数值梯度被 ODE 数值噪声+罚值平台摧毁，9 起点全假收敛 → 梯度类方法排除。
-- **热力学参数抗噪可辨**（G_OH 误差 0.02-0.07 eV），**动力学参数怕噪**。
-- **可辨识性硬伤**：k⁰ ≫ 2πf（≈6 s⁻¹ @ 1 Hz）的快步骤在目标函数中结构性不可辨识——不是优化器问题，**反演快动力学须提高调制频率**。
-- 单次正演实测仅 0.6-0.8 s → 生产预算可达 1000-2000 次评估（12-25 分钟/样本，8 样本并行过夜数百个）。
-- 已定方案：log 参数化（k⁰/Γ 跨数量级）、噪声归一化权重（算法自动判权）、物理硬边界 + Tafel 软约束、样本级并行。
+当前算法还不能直接证明：
 
-### 5. 质量保障
-- pytest 6/6 全程通过；`web/backend/test_analyze_e2e.py` 全链路回归（含 tdc 端点断言防 v 回归）。
+- 某个参数就是真实控制因素；
+- 反演得到的 k0 或吸附能一定唯一；
+- 高阶谐波不匹配一定来自 OER 机理；
+- 基底背景、电容泄漏、预氧化残余电流已经被正确分离。
+
+结论：**现在的方向是对的，但目标函数、谐波权重、背景扣除和参数可识别性仍需要重新设计。**
 
 ---
 
-## 二、未达成目标 / 遗留问题
+## 2. 最近完成的代码进展
 
-1. **TPE 反演标签页未建成**（刚开工被中断）：核心模块 `python/oer_aem/inversion.py`、反演作业 API、前端 TPE 标签页、合成自验证（budget=600 恢复测试）均未开始。压测显示 200 次评估不足（收敛点 137-183 次且未走平），需 1000-2000 预算。
-2. **8 参数全恢复未达成**：压测中无一场景全恢复（k⁰ 动力学参数尤其差），需验证更大预算下的表现；快 k⁰ 的不可辨识性需要实验侧配合（更高调制频率的数据）。
-3. **Γ 与 E0_pre 仍无实测值**：只能等反演；Ru 需 EIS 数据。
-4. **MATLAB 侧符号 bug 未修**（你明确暂缓）；MATLAB 与 Python 的一致性对账未做。
-5. **仿真与实验谐波仍不匹配**（H1 相关仅 ~0.27）：演示参数所致，待反演解决；DC 已吻合（r=0.99）。
-6. **CMA-ES/MCMC 标签页**：CMA-ES 已明确弃用（标签页待替换）；MCMC 二期再说（当前成本跑不起）。
-7. 你未提交的 `PROJECT_SUMMARY.md` 改动和未跟踪文件 `web/backend/test` 保持原样未动。
+### 2.1 TPE 反演核心
+
+已建立 `python/oer_aem/inversion.py`，包含：
+
+- `DEFAULT_PARAM_SPECS`
+- `InversionConfig`
+- `InversionResult`
+- `encode_params`
+- `decode_vector`
+- `params_from_vector`
+- `forward_current`
+- `extract_features`
+- `make_synthetic_target`
+- `InversionObjective`
+- `TPEInverter`
+- `assess_fit_quality`
+
+对应提交：
+
+- `3bb8b97 feat(inversion): add TPE inversion core`
+- `28a1711 feat(inversion): report fit quality`
+
+### 2.2 前端反演流程统一
+
+已取消单独、容易误解的 CMA-ES 页面，把实验数据、正演、反演放在同一个页面。
+
+当前主页面为：
+
+```text
+实验 · 正演 · 反演
+```
+
+当前图线语义：
+
+- `Experiment` / `Exp DC`：实验数据；
+- `当前参数正演`：用户当前参数的正演；
+- `反演参数正演`：TPE 反演后参数的正演；
+- 没有反演前，不再把正演线称作拟合线。
+
+对应提交：
+
+- `3435ba4 fix(frontend): preserve simulation state across tabs`
+- `79651e2 feat(web): connect TPE inversion workflow`
+- `812d914 fix(frontend): unify experiment inversion workflow`
+
+### 2.3 初始参数与固定参数
+
+反演时现在会：
+
+- 把当前页面参数作为 `initial_params`；
+- 把 `Cdl`、`Ru`、`A`、`E0_pre`、`k0_pre` 作为 `fixed_params`；
+- 第一轮 trial 优先评估当前经验初值；
+- 避免优化器一开始就跳到完全无物理依据的参数区。
+
+对应提交：
+
+- `f8bf5ab fix(inversion): honor priors and initial parameters`
+
+### 2.4 参数归一化、经验边界、谐波筛选
+
+已新增：
+
+- 参数先映射到 `[0, 1]` 归一化空间搜索；
+- 再按物理边界解码回真实参数；
+- API 支持传入 `param_bounds`；
+- 实验数据分析时用原始谐波 RMS 判断哪些谐波可分辨；
+- 反演目标函数只拟合可分辨谐波，其余谐波只作为诊断图保留；
+- 前端显示哪些谐波参与拟合，哪些只做诊断。
+
+真实数据 `ftacv4-ref.txt` 当前判定：
+
+```text
+拟合通道：H1, H2, H3
+诊断通道：H4, H5, H6, H7
+```
+
+对应提交：
+
+- `3edb8de feat(inversion): normalize search and select harmonics`
 
 ---
 
-## 三、下一步（恢复工作时按此接续）
+## 3. 当前算法的主要问题
 
-1. 建 `python/oer_aem/inversion.py`：从 `bench_inversion.py` 提炼参数编码/特征提取/自适应 Tafel 通道/缓存/TPE 运行器（详细任务规格在本会话 14:21 消息中，可直接重发给子代理）。
-2. Web API：/api/inversion start|status|cancel|result（内存作业表，≤3 并发线程）。
-3. 前端：替换 'cmaes' 标签页为"TPE 反演"（合成自测/实验数据双模式、收敛曲线、结果表、一键应用参数回第一页）。
-4. 合成自验证 budget≥600：8 参数恢复误差表达标后再开真实数据。
-5. 长期：ECSA/Γ 实测方法、更高频率 FTacV 数据、MCMC 后验（需代理模型降本）。
+### 3.1 目标函数还不够物理化
 
-**git 最新提交**：`ed43f4a`（压测）← `c5e80c5`（标定）← `57c1cd4`（v 修复+求解器）← `0e16336`（热重载）← `6131668`（数据接入）
-**预览**：项目根 `/Users/liushiyu/OER-FTAcV/web`，`npm run dev` 或 Kimi Work 预览卡片（逻辑端口 7100）。
+现在目标函数主要比较：
+
+- DC；
+- 选定谐波包络；
+- Tafel 斜率。
+
+问题是：
+
+- 每个谐波归一化后会丢失真实幅值信息；
+- 电容背景和基底背景可能混进 DC；
+- 低电位基线不为零会影响反演；
+- Tafel 区间如果不是纯动力学区，会误导动力学参数；
+- 只用包络可能丢失相位信息。
+
+下一版目标函数应考虑：
+
+- 实验噪声；
+- 空白基底背景；
+- 谐波 SNR；
+- 重复实验稳定性；
+- 幅值和相位是否同时可用；
+- DC、H1-Hn、Tafel 各自的物理可信度。
+
+### 3.2 参数可识别性不足
+
+当前能找到一组参数让目标函数下降，但这不等于参数唯一。
+
+高风险参数包括：
+
+- `k0_1`、`k0_2`、`k0_3`、`k0_4`
+- `gamma`
+- `Cdl`
+- `Ru`
+- `G_OH`
+- `G_O`
+- `scaling_OOH_OH`
+
+原因：
+
+- 快步骤在 1 Hz 左右可能不可分辨；
+- 多个参数可能对同一谐波产生相似影响；
+- `gamma`、`A`、`Cdl`、背景电流可能互相补偿；
+- 标度关系减少自由度，但也会引入参数相关。
+
+### 3.3 HER 代码不能直接照搬
+
+HER 代码已有：
+
+- `log_` 参数化；
+- 手动经验边界；
+- CMA-ES 内部 `[0, 1]` 归一化采样；
+- DC + H1-H7 相对误差目标函数；
+- `harmonic_weights = [1,1,1,1,1,1,1,1]`。
+
+但 HER 没有：
+
+- 自动判断实验谐波是否可分辨；
+- 按 SNR 或重复性给谐波降权；
+- 系统处理基底背景；
+- 证明各参数的可识别性。
+
+因此 OER 不能只复制 HER 的“全谐波等权拟合”。
+
+---
+
+## 4. 刘拾玉接下来设计新算法时建议固定的问题边界
+
+新算法不应回答“怎样让曲线最好看”，而应回答：
+
+```text
+在给定实验质量和机理模型下，哪些参数能被 FTacV 可靠识别？
+哪些参数只能给趋势、范围或下限？
+哪些谐波应该进入目标函数？
+哪些信号只应作为诊断？
+```
+
+建议把新算法拆成四层。
+
+### 4.1 数据可信度层
+
+输入实验数据后先判断：
+
+- DC 基线是否稳定；
+- 空白 Ti 板是否有背景；
+- H1-H7 的原始幅值；
+- H1-H7 的 SNR；
+- 谐波峰是否和噪声/旁瓣可区分；
+- 重复实验中谐波是否稳定。
+
+输出：
+
+```text
+fit_channels
+diagnostic_channels
+channel_weights
+warning_flags
+```
+
+### 4.2 参数边界层
+
+边界不能只为了拟合而放宽，应分来源：
+
+- 文献边界；
+- 实验标定边界；
+- 仪器测量边界；
+- 机理硬约束；
+- 暂时工程边界。
+
+每个边界最好带来源标签：
+
+```text
+fixed / measured / literature / weak_prior / engineering
+```
+
+### 4.3 目标函数层
+
+目标函数建议包含：
+
+```text
+loss = w_dc * L_dc
+     + sum(w_hn * L_hn)
+     + w_tafel * L_tafel
+     + penalty_physical
+```
+
+其中 `w_hn` 不应手动全等，而应来自：
+
+- SNR；
+- 谐波重复性；
+- 空白背景占比；
+- 该谐波对参数的敏感度；
+- 是否处于可分辨频段。
+
+### 4.4 可识别性层
+
+反演后必须做：
+
+- 单参数扰动；
+- 局部敏感性矩阵；
+- 合成数据回收；
+- 参数相关性诊断；
+- 多起点稳定性；
+- 去掉某个谐波后的结果变化。
+
+最终输出不应只是 `best_params`，还应输出：
+
+```text
+identifiable_params
+weakly_identifiable_params
+unidentifiable_params
+dominant_factors
+model_warnings
+```
+
+---
+
+## 5. 下一步代码建议
+
+等新算法设计明确后，优先改底层，不急着改 UI。
+
+建议顺序：
+
+1. 写 `algorithm_design.md`，定义目标函数、权重、边界、可识别性输出。
+2. 在 `python/tests/test_inversion.py` 先写测试。
+3. 在 `python/oer_aem/inversion.py` 实现新算法核心。
+4. 用合成数据验证参数能否回收。
+5. 用 `ftacv4-ref.txt` 做真实数据诊断，不强求拟合。
+6. 再接 API 和前端展示。
+
+---
+
+## 6. 当前验证状态
+
+最近一次完整验证：
+
+```bash
+.venv/bin/python -m compileall -q python/oer_aem web/backend
+.venv/bin/python -m pytest python/tests web/backend/test_inversion_api.py -q
+```
+
+结果：
+
+```text
+17 passed, 1 warning
+```
+
+页面检查：
+
+```text
+http://localhost:7100/
+```
+
+页面能加载；控制台无本次 JSX 运行错误。现有提示主要是 CDN/Babel/form/favicon，不影响当前算法功能。
+
+---
+
+## 7. Git 状态
+
+最新已推送提交：
+
+```text
+3edb8de feat(inversion): normalize search and select harmonics
+```
+
+远程：
+
+```text
+origin/main -> git@github.com:Lsy04-c/FTacV-Alkaline-OER.git
+```
+
+当前仍有未提交文件，暂未处理：
+
+```text
+M PROJECT_SUMMARY.md
+?? preox_check.png
+?? sim_vs_exp_current.png
+?? web/backend/test
+```
+
+这些文件不是本次算法更新的一部分，后续处理前需要单独确认。
