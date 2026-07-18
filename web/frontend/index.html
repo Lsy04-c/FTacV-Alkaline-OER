@@ -228,7 +228,7 @@ function ParamPanel({ params, onChange, onSimulate, loading }) {
       </div>))}
     </div>))}
     <button className="btn btn-primary" onClick={onSimulate} disabled={loading}>
-      {loading?'模拟中...':'▶  运行模拟'}
+      {loading?'正演中...':'▶  运行当前参数正演'}
     </button>
   </div>);
 }
@@ -288,6 +288,8 @@ function singleLine(data,color,name){
 function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
   const [params,setParams]=useState({}); const [loading,setLoading]=useState(false);
   const [result,setResult]=useState(null); const [error,setError]=useState(null);
+  const [invTrials,setInvTrials]=useState(10); const [invPoints,setInvPoints]=useState(512);
+  const [invLoading,setInvLoading]=useState(false); const [invResult,setInvResult]=useState(null); const [invError,setInvError]=useState(null);
 
   useEffect(()=>{fetch(`${API_BASE}/api/params/defaults`).then(r=>r.json()).then(setParams).catch(()=>{});},[]);
 
@@ -300,7 +302,7 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
       if(!data.success) setError('数据解析失败: '+data.error); else setExpAnalysis(data);
     }catch(e){setError('数据解析失败: '+e.message);}
   };
-  const clearExp=()=>{setExpData(null);setExpAnalysis(null);};
+  const clearExp=()=>{setExpData(null);setExpAnalysis(null);setResult(null);setInvResult(null);setInvError(null);};
   // 同步仿真参数。fast=true：64 周期、扫描速率×4，约 10 秒，定性对比；
   // fast=false：与实验完全一致的 v 和 f（256 周期），约 1 分钟，定量对比。
   const syncParams=(fast)=>{
@@ -312,13 +314,36 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
   };
 
   const simulate=async()=>{
-    setLoading(true);setError(null);
+    setLoading(true);setError(null);setInvResult(null);
     try{
       const res=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...params})});
       const data=await res.json();
-      data.success?setResult(data):setError(data.error);
+      if(data.success){data.source='manual';setResult(data);}else setError(data.error);
     }catch(e){setError(e.message);}
     setLoading(false);
+  };
+
+  const runInversion=async()=>{
+    if(!(expAnalysis&&expAnalysis.calib&&expAnalysis.calib.tafel&&expAnalysis.calib.tafel.success)) return;
+    setInvLoading(true);setInvError(null);setInvResult(null);setError(null);
+    try{
+      const m=expAnalysis.meta;
+      const payload={
+        target:{tdc:expAnalysis.tdc,dc:expAnalysis.dc,harmonics:expAnalysis.harmonics,tafel:expAnalysis.calib.tafel.tafel_slope},
+        config:{E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,n_points:invPoints,points_per_cycle:64,feature_grid_size:64},
+        n_trials:invTrials,
+      };
+      const res=await fetch(`${API_BASE}/api/inversion/tpe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const data=await res.json();
+      if(!data.success){setInvError(data.error);setInvLoading(false);return;}
+      setInvResult(data);
+
+      const simParams={...params,...data.best_params,E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,n_points:invPoints,points_per_cycle:64};
+      const simRes=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(simParams)});
+      const simData=await simRes.json();
+      if(simData.success){simData.source='inversion';setResult(simData);}else setError('反演参数正演失败: '+simData.error);
+    }catch(e){setInvError(e.message);}
+    setInvLoading(false);
   };
 
   const left=(
@@ -344,50 +369,76 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
       {expAnalysis&&<button className="btn-secondary" style={{marginTop:0,marginBottom:4}} onClick={()=>syncParams(true)}>⟳ 快速同步（64 周期·v×4，约 10 秒）</button>}
       {expAnalysis&&<button className="btn-secondary" style={{marginTop:0,marginBottom:8}} onClick={()=>syncParams(false)}>⟳ 完整同步（256 周期·与实验一致，约 1 分钟）</button>}
       {expData&&<button className="btn-secondary" style={{marginTop:0}} onClick={clearExp}>清除实验数据</button>}
+      {expAnalysis&&(
+        <div>
+          <div className="section-title">TPE 机理反演</div>
+          <div className="param-row">
+            <span className="param-label">trials</span>
+            <input className="param-input" type="number" min="1" max="200" value={invTrials} onChange={e=>setInvTrials(Math.max(1,parseInt(e.target.value)||1))}/>
+            <span className="param-unit">次</span>
+          </div>
+          <div className="param-row">
+            <span className="param-label">n_points</span>
+            <input className="param-input" type="number" min="128" max="8192" value={invPoints} onChange={e=>setInvPoints(Math.max(128,parseInt(e.target.value)||512))}/>
+            <span className="param-unit">点</span>
+          </div>
+          <button className="btn btn-primary" style={{marginTop:8}} onClick={runInversion} disabled={invLoading||!(expAnalysis.calib&&expAnalysis.calib.tafel&&expAnalysis.calib.tafel.success)}>
+            {invLoading?'反演中...':'启动反演并显示反演参数正演'}
+          </button>
+          {invError&&<div className="summary-row" style={{color:'#e53935',marginTop:8}}>反演错误: {invError}</div>}
+          {invResult&&<div className="summary-row meta" style={{marginTop:8}}>
+            拟合等级: <strong>{invResult.fit_quality.level}</strong> · 完成度 <strong>{invResult.fit_quality.completion_percent.toFixed(1)}%</strong><br/>
+            {invResult.fit_quality.message}
+          </div>}
+        </div>
+      )}
       <ParamPanel params={params} onChange={setParams} onSimulate={simulate} loading={loading}/>
     </div>
   );
-
-  if(!result&&!error) return (<div className="main">{left}<div className="right-panel single-col"><div className="chart-box large"><div className="placeholder">点击「运行模拟」开始 · 结果图表将在此处展示</div></div></div></div>);
-  if(error) return (<div className="main">{left}<div className="right-panel single-col"><div className="chart-box large"><div className="placeholder" style={{color:'#e53935'}}>错误: {error}</div></div></div></div>);
-
-  const E=result.E_actual; const tdc=result.tdc;
 
   // 长序列抽稀（显示用，避免 65536 点卡顿）
   const pairs=(xs,ys,mul=1)=>{const s=Math.max(1,Math.floor(xs.length/6000));const d=[];for(let i=0;i<xs.length;i+=s)d.push([xs[i],ys[i]*mul]);return d;};
   // 实验叠加线：红色虚线
   const expLine=(data,name)=>({type:'line',name,data,smooth:true,symbol:'none',lineStyle:{color:'#e94560',width:1.4,type:'dashed'}});
+  if(error) return (<div className="main">{left}<div className="right-panel single-col"><div className="chart-box large"><div className="placeholder" style={{color:'#e53935'}}>错误: {error}</div></div></div></div>);
+  if(!result&&!expAnalysis) return (<div className="main">{left}<div className="right-panel single-col"><div className="chart-box large"><div className="placeholder">上传实验数据后显示实验特征；点击「运行当前参数正演」后叠加模型预测。</div></div></div></div>);
+
+  const E=result?result.E_actual:null; const tdc=result?result.tdc:null;
   const expTdc=expAnalysis?expAnalysis.tdc:null;
-  const xMin=expTdc?Math.min(tdc[0],expTdc[0]):tdc[0];
-  const xMax=expTdc?Math.max(tdc[tdc.length-1],expTdc[expTdc.length-1]):tdc[tdc.length-1];
+  const xMin=result&&expTdc?Math.min(tdc[0],expTdc[0]):(result?tdc[0]:expTdc[0]);
+  const xMax=result&&expTdc?Math.max(tdc[tdc.length-1],expTdc[expTdc.length-1]):(result?tdc[tdc.length-1]:expTdc[expTdc.length-1]);
+  const modelLabel=result?.source==='inversion'?'反演参数正演':'当前参数正演';
+  const modelColor=result?.source==='inversion'?'#2e9d6e':'#1976d2';
 
   // CV 曲线
-  const cvSeries=[singleLine(pairs(E,result.i_total,1e3),'#1976d2','Simulation')];
+  const cvSeries=[];
+  if(result) cvSeries.push(singleLine(pairs(E,result.i_total,1e3),modelColor,modelLabel));
   if(expData){const s=Math.max(1,Math.floor(expData.rows.length/6000));cvSeries.push(expLine(expData.rows.filter((_,i)=>i%s===0).map(r=>[r[0],r[1]*1e3]),'Experiment'));}
   const cvOpt=makeOpt({xName:'电位 (V vs RHE)',yName:'i (mA)',series:cvSeries,legend:true});
 
   // 功率谱（对数纵轴）
   const psOpt=makeOpt({
     xName:'频率 (Hz)', yName:'|FFT|',
-    series:[singleLine(pairs(result.ps_freq,result.ps_mag),'#7b1fa2','PS')],
+    series:result?[singleLine(pairs(result.ps_freq,result.ps_mag),'#7b1fa2','PS')]:[],
     yOpt:{type:'log',min:1e-6}
   });
 
   // 覆盖度
-  const covSeries=[
+  const covSeries=result?[
     {name:'θ_*',type:'line',data:pairs(E,result.coverage_star),smooth:true,symbol:'none',lineStyle:{width:1.4}},
     {name:'θ_*ox',type:'line',data:pairs(E,result.coverage_ox),smooth:true,symbol:'none',lineStyle:{width:1.4}},
     {name:'θ_*ox-OH',type:'line',data:pairs(E,result.coverage_OH),smooth:true,symbol:'none',lineStyle:{width:1.4}},
     {name:'θ_*ox-O',type:'line',data:pairs(E,result.coverage_O),smooth:true,symbol:'none',lineStyle:{width:1.4}},
     {name:'θ_*ox-OOH',type:'line',data:pairs(E,result.coverage_OOH),smooth:true,symbol:'none',lineStyle:{width:1.4}},
-  ];
+  ]:[];
   const covOpt=makeOpt({xName:'电位 (V vs RHE)',yName:'Coverage',series:covSeries,yOpt:{max:1},legend:true});
 
   // DC 分量（后端返回归一化包络），有实验数据时叠加红色虚线
-  const dcSeries=[singleLine(pairs(tdc,result.dc),'#00897b','Sim DC')];
+  const dcSeries=[];
+  if(result) dcSeries.push(singleLine(pairs(tdc,result.dc),modelColor,modelLabel));
   if(expAnalysis) dcSeries.push(expLine(pairs(expTdc,expAnalysis.dc),'Exp DC'));
   const dcOpt=makeOpt({xName:'电位 (V vs RHE)',yName:'归一化强度',series:dcSeries,legend:!!expAnalysis});
-  dcOpt.xAxis.min=xMin; dcOpt.xAxis.max=xMax;
+  if(result){dcOpt.xAxis.min=xMin; dcOpt.xAxis.max=xMax;}
 
   // 谐波（后端返回归一化包络）
   const harmLabels=['1st 谐波','2nd 谐波','3rd 谐波','4th 谐波','5th 谐波','6th 谐波','7th 谐波'];
@@ -397,116 +448,34 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
     <div className="main">
       {left}
       <div className="right-panel">
-        <ChartBox id="cv"  title="FTacV 总电流曲线模拟" option={cvOpt}/>
+        <ChartBox id="cv"  title="FTacV 总电流：实验 / 正演对比" option={cvOpt}/>
         <ChartBox id="ps"  title="功率谱 (FFT)"        option={psOpt}/>
         <ChartBox id="cov" title="OER 表面覆盖度"      option={covOpt}/>
         <ChartBox id="dc"  title="DC 分量"              option={dcOpt}/>
         {harmLabels.map((lab,k)=>{
-          const hSeries=[singleLine(pairs(tdc,result.harmonics[k]),harmColors[k],'Sim')];
+          const hSeries=[];
+          if(result) hSeries.push(singleLine(pairs(tdc,result.harmonics[k]),modelColor,modelLabel));
           if(expAnalysis) hSeries.push(expLine(pairs(expTdc,expAnalysis.harmonics[k]),'Exp'));
           const hOpt=makeOpt({
             xName:'电位 (V vs RHE)', yName:'归一化强度',
             series:hSeries, legend:!!expAnalysis
           });
-          hOpt.xAxis.min=xMin; hOpt.xAxis.max=xMax;
+          if(result){hOpt.xAxis.min=xMin; hOpt.xAxis.max=xMax;}
           return <ChartBox key={`h${k}`} id={`h${k}`} title={lab} option={hOpt}/>;
         })}
         <div className="summary-box">
-          <div className="chart-head" style={{marginBottom:4}}>参数摘要</div>
-          <div className="summary-row">E⁰_pre = <strong>{params.E0_pre?.toFixed(2)} V</strong> (预氧化)</div>
-          <div className="summary-row">E⁰₁=<strong>{result.E01?.toFixed(3)}</strong> | E⁰₂=<strong>{result.E02?.toFixed(3)}</strong> | E⁰₃=<strong>{result.E03?.toFixed(3)}</strong> | E⁰₄=<strong>{result.E04?.toFixed(3)}</strong> V</div>
-          <div className="summary-row">η_theoretical = <strong>{result.eta_theoretical?.toFixed(3)} V</strong></div>
-          <div className="summary-row meta">耗时 {result.time_elapsed?.toFixed(1)}s · {result.E_actual?.length} pts</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ===================== Tab 2&3 ===================== */
-function CmaesTab({ expData, expAnalysis }) {
-  const [nTrials,setNTrials]=useState(5);
-  const [nPoints,setNPoints]=useState(512);
-  const [loading,setLoading]=useState(false);
-  const [error,setError]=useState(null);
-  const [result,setResult]=useState(null);
-  const canRun=!!(expAnalysis&&expAnalysis.calib&&expAnalysis.calib.tafel&&expAnalysis.calib.tafel.success);
-
-  const runInversion=async()=>{
-    if(!canRun) return;
-    setLoading(true); setError(null); setResult(null);
-    try{
-      const m=expAnalysis.meta;
-      const payload={
-        target:{
-          tdc:expAnalysis.tdc,
-          dc:expAnalysis.dc,
-          harmonics:expAnalysis.harmonics,
-          tafel:expAnalysis.calib.tafel.tafel_slope,
-        },
-        config:{
-          E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,
-          n_points:nPoints,points_per_cycle:64,feature_grid_size:64,
-        },
-        n_trials:nTrials,
-      };
-      const res=await fetch(`${API_BASE}/api/inversion/tpe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      const data=await res.json();
-      data.success?setResult(data):setError(data.error);
-    }catch(e){setError(e.message);}
-    setLoading(false);
-  };
-
-  const quality=result?.fit_quality;
-  const qualityColor=quality?.ready_for_review?'#2e9d6e':(quality?'#f57c00':'#97a2b1');
-
-  return (
-    <div className="main">
-      <div className="left-panel">
-        <div className="panel-title">优化入口</div>
-        <div className="section-title">当前算法</div>
-        <div className="summary-row"><strong>TPE 反演核心已接入</strong></div>
-        <div className="summary-row">参数: k0_1-4, G_OH, G_O, scaling_OOH_OH, gamma</div>
-        <div className="summary-row">目标: DC + H1-H7 + Tafel slope</div>
-        <div className="section-title">快速反演设置</div>
-        <div className="param-row">
-          <span className="param-label">trials</span>
-          <input className="param-input" type="number" min="1" max="200" value={nTrials} onChange={e=>setNTrials(Math.max(1,parseInt(e.target.value)||1))}/>
-          <span className="param-unit">次</span>
-        </div>
-        <div className="param-row">
-          <span className="param-label">n_points</span>
-          <input className="param-input" type="number" min="128" max="8192" value={nPoints} onChange={e=>setNPoints(Math.max(128,parseInt(e.target.value)||512))}/>
-          <span className="param-unit">点</span>
-        </div>
-        <div className="summary-row meta">
-          {expData?`实验数据: ${expData.name}`:'请先在「参数与单次模拟」页上传实验数据。'}
-          {expAnalysis&&expAnalysis.calib&&!expAnalysis.calib.tafel.success&&<><br/>Tafel 未识别，暂不能启动反演。</>}
-        </div>
-        <button className="btn btn-primary" onClick={runInversion} disabled={!canRun||loading}>
-          {loading?'反演中...':'启动 TPE 反演'}
-        </button>
-        {error&&<div className="summary-row" style={{color:'#e53935',marginTop:10}}>错误: {error}</div>}
-      </div>
-      <div className="right-panel">
-        <div className="summary-box">
-          <div className="chart-head" style={{marginBottom:4}}>拟合完成度</div>
-          {quality?<>
-            <div className="summary-row">等级: <strong style={{color:qualityColor}}>{quality.level}</strong></div>
-            <div className="summary-row">完成度: <strong>{quality.completion_percent.toFixed(1)}%</strong></div>
-            <div className="summary-row">sigma-RMSE: <strong>{quality.sigma_rmse.toFixed(3)}</strong></div>
-            <div className="summary-row" style={{color:qualityColor}}>{quality.message}</div>
-          </>:<div className="summary-row">反演完成后，这里会提示是否已经“差不多可以看机理”。</div>}
-        </div>
-        <div className="summary-box">
-          <div className="chart-head" style={{marginBottom:4}}>反演结果</div>
+          <div className="chart-head" style={{marginBottom:4}}>{result?'正演参数摘要':'实验数据摘要'}</div>
           {result?<>
-            <div className="summary-row">best_value: <strong>{result.best_value.toExponential(3)}</strong></div>
-            <div className="summary-row">n_forward: <strong>{result.n_forward}</strong> · ODE fail: <strong>{result.n_ode_fail}</strong></div>
-            {Object.entries(result.best_params).map(([k,v])=>
-              <div className="summary-row" key={k}>{k}: <strong>{Number(v).toExponential(3)}</strong></div>
-            )}
-          </>:<div className="summary-row">暂无结果。建议先用 5-10 trials 检查接口，再提高预算。</div>}
+            <div className="summary-row">线条含义: <strong>{modelLabel}</strong>，不是未反演前的拟合线</div>
+            <div className="summary-row">E⁰_pre = <strong>{params.E0_pre?.toFixed(2)} V</strong> (预氧化)</div>
+            <div className="summary-row">E⁰₁=<strong>{result.E01?.toFixed(3)}</strong> | E⁰₂=<strong>{result.E02?.toFixed(3)}</strong> | E⁰₃=<strong>{result.E03?.toFixed(3)}</strong> | E⁰₄=<strong>{result.E04?.toFixed(3)}</strong> V</div>
+            <div className="summary-row">η_theoretical = <strong>{result.eta_theoretical?.toFixed(3)} V</strong></div>
+            <div className="summary-row meta">耗时 {result.time_elapsed?.toFixed(1)}s · {result.E_actual?.length} pts</div>
+          </>:<>
+            <div className="summary-row">当前只显示实验数据特征；尚未运行模型正演。</div>
+            <div className="summary-row">反演入口已在左侧，不需要切换到单独优化页。</div>
+          </>}
+          {invResult&&<div className="summary-row meta">反演: {invResult.fit_quality.level} · {invResult.fit_quality.completion_percent.toFixed(1)}% · nfev={invResult.n_forward}</div>}
         </div>
       </div>
     </div>
@@ -533,12 +502,11 @@ function App() {
       碱性 OER AEM 工作台<span className="sub">Co₃O₄ / CoOₓ(OH)ᵧ FTacV 参数反演</span>
     </div>
     <div className="tabs">
-      {[{id:'sim',label:'参数与单次模拟'},{id:'cmaes',label:'CMA-ES 优化'},{id:'mcmc',label:'MCMC 后验分析'}].map(t=>(
+      {[{id:'sim',label:'实验 · 正演 · 反演'},{id:'mcmc',label:'MCMC 后验分析'}].map(t=>(
         <div key={t.id} className={`tab ${tab===t.id?'active':''}`} onClick={()=>setTab(t.id)}>{t.label}</div>
       ))}
     </div>
     <div style={{display:tab==='sim'?'contents':'none'}}><SimTab expData={expData} setExpData={setExpData} expAnalysis={expAnalysis} setExpAnalysis={setExpAnalysis}/></div>
-    <div style={{display:tab==='cmaes'?'contents':'none'}}><CmaesTab expData={expData} expAnalysis={expAnalysis}/></div>
     <div style={{display:tab==='mcmc'?'contents':'none'}}><PlaceholderTab title="MCMC 后验分析" description="不确定性量化模块接入中..."/></div>
     <div className="status-bar">
       <span><span className="dot"></span>后端: {API_BASE}</span>
