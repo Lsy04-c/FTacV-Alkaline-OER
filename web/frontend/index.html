@@ -425,6 +425,37 @@ function SimTab() {
 }
 
 /* ===================== Tab 2&3 ===================== */
+function CmaesTab() {
+  return (
+    <div className="main">
+      <div className="left-panel">
+        <div className="panel-title">优化入口</div>
+        <div className="section-title">当前算法</div>
+        <div className="summary-row"><strong>TPE 反演核心已接入</strong></div>
+        <div className="summary-row">参数: k0_1-4, G_OH, G_O, scaling_OOH_OH, gamma</div>
+        <div className="summary-row">目标: DC + H1-H7 + Tafel slope</div>
+        <div className="summary-row meta">CMA-ES 页暂保留为优化工作区；下一步接 API 后可直接从实验数据启动反演。</div>
+        <button className="btn btn-primary" disabled>等待反演 API 接入</button>
+      </div>
+      <div className="right-panel">
+        <div className="summary-box">
+          <div className="chart-head" style={{marginBottom:4}}>已完成</div>
+          <div className="summary-row">核心模块: <strong>oer_aem.inversion</strong></div>
+          <div className="summary-row">合成目标: <strong>make_synthetic_target</strong></div>
+          <div className="summary-row">目标函数: <strong>InversionObjective</strong></div>
+          <div className="summary-row">优化器: <strong>TPEInverter</strong></div>
+        </div>
+        <div className="summary-box">
+          <div className="chart-head" style={{marginBottom:4}}>下一版页面</div>
+          <div className="summary-row">上传实验数据后，复用模拟页的 DC/H1-H7/Tafel 特征。</div>
+          <div className="summary-row">设置 trials / n_points / bounds 后启动 TPE。</div>
+          <div className="summary-row">输出 best_params、best_value、history 和失败计数。</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PlaceholderTab({ title, description }) {
   return (<div className="main"><div className="right-panel single-col"><div className="chart-box large"><div className="placeholder">
     <div style={{textAlign:'center'}}>
@@ -447,9 +478,9 @@ function App() {
         <div key={t.id} className={`tab ${tab===t.id?'active':''}`} onClick={()=>setTab(t.id)}>{t.label}</div>
       ))}
     </div>
-    {tab==='sim'&&<SimTab/>}
-    {tab==='cmaes'&&<PlaceholderTab title="CMA-ES 优化" description="参数反演算法接入中..."/>}
-    {tab==='mcmc'&&<PlaceholderTab title="MCMC 后验分析" description="不确定性量化模块接入中..."/>}
+    <div style={{display:tab==='sim'?'contents':'none'}}><SimTab/></div>
+    <div style={{display:tab==='cmaes'?'contents':'none'}}><CmaesTab/></div>
+    <div style={{display:tab==='mcmc'?'contents':'none'}}><PlaceholderTab title="MCMC 后验分析" description="不确定性量化模块接入中..."/></div>
     <div className="status-bar">
       <span><span className="dot"></span>后端: {API_BASE}</span>
       <span>Python 核心 v0.2 · 碱性 OER AEM 模型</span>
