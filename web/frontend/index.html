@@ -288,15 +288,32 @@ function singleLine(data,color,name){
 function SimTab() {
   const [params,setParams]=useState({}); const [loading,setLoading]=useState(false);
   const [result,setResult]=useState(null); const [error,setError]=useState(null);
-  const [expData,setExpData]=useState(null);
+  const [expData,setExpData]=useState(null); const [expAnalysis,setExpAnalysis]=useState(null);
 
   useEffect(()=>{fetch(`${API_BASE}/api/params/defaults`).then(r=>r.json()).then(setParams).catch(()=>{});},[]);
+
+  // 上传后自动识别采集参数并提取实验谐波
+  const handleFile=async(d)=>{
+    setExpData(d); setExpAnalysis(null);
+    try{
+      const res=await fetch(`${API_BASE}/api/data/analyze`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:d.rows})});
+      const data=await res.json();
+      if(!data.success) setError('数据解析失败: '+data.error); else setExpAnalysis(data);
+    }catch(e){setError('数据解析失败: '+e.message);}
+  };
+  const clearExp=()=>{setExpData(null);setExpAnalysis(null);};
+  // 用识别出的采集参数同步仿真设置（周期数≤256，n_points 取 2 的幂）
+  const syncParams=()=>{
+    if(!expAnalysis) return; const m=expAnalysis.meta;
+    const cycles=Math.max(1,Math.min(Math.round(m.f*m.duration),256));
+    const n=Math.min(Math.pow(2,Math.ceil(Math.log2(cycles*256))),65536);
+    setParams(p=>({...p,E_start:+m.E_start.toFixed(4),E_end:+m.E_end.toFixed(4),f:+m.f.toFixed(4),dE:+m.dE.toFixed(4),n_points:n}));
+  };
 
   const simulate=async()=>{
     setLoading(true);setError(null);
     try{
-      const body={...params};if(expData)body._exp_data=expData.rows.map(r=>({E:r[0],i:r[1],t:r[2]}));
-      const res=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const res=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...params})});
       const data=await res.json();
       data.success?setResult(data):setError(data.error);
     }catch(e){setError(e.message);}
@@ -305,8 +322,15 @@ function SimTab() {
 
   const left=(
     <div className="left-panel">
-      <FileDropZone onFileLoaded={setExpData} expData={expData}/>
-      {expData&&<button className="btn-secondary" onClick={()=>setExpData(null)}>清除实验数据</button>}
+      <FileDropZone onFileLoaded={handleFile} expData={expData}/>
+      {expAnalysis&&(
+        <div className="file-info" style={{marginTop:-6,marginBottom:10,lineHeight:1.8}}>
+          识别: f=<strong>{expAnalysis.meta.f.toFixed(2)} Hz</strong> · dE=<strong>{expAnalysis.meta.dE.toFixed(3)} V</strong> · v=<strong>{(expAnalysis.meta.v*1000).toFixed(1)} mV/s</strong><br/>
+          范围: {expAnalysis.meta.E_start.toFixed(3)} → {expAnalysis.meta.E_end.toFixed(3)} V · {Math.round(expAnalysis.meta.f*expAnalysis.meta.duration)} 周期
+        </div>
+      )}
+      {expAnalysis&&<button className="btn-secondary" style={{marginTop:0,marginBottom:8}} onClick={syncParams}>⟳ 用数据同步仿真参数</button>}
+      {expData&&<button className="btn-secondary" style={{marginTop:0}} onClick={clearExp}>清除实验数据</button>}
       <ParamPanel params={params} onChange={setParams} onSimulate={simulate} loading={loading}/>
     </div>
   );
@@ -316,31 +340,41 @@ function SimTab() {
 
   const E=result.E_actual; const tdc=result.tdc;
 
+  // 长序列抽稀（显示用，避免 65536 点卡顿）
+  const pairs=(xs,ys,mul=1)=>{const s=Math.max(1,Math.floor(xs.length/6000));const d=[];for(let i=0;i<xs.length;i+=s)d.push([xs[i],ys[i]*mul]);return d;};
+  // 实验叠加线：红色虚线
+  const expLine=(data,name)=>({type:'line',name,data,smooth:true,symbol:'none',lineStyle:{color:'#e94560',width:1.4,type:'dashed'}});
+  const expTdc=expAnalysis?expAnalysis.tdc:null;
+  const xMin=expTdc?Math.min(tdc[0],expTdc[0]):tdc[0];
+  const xMax=expTdc?Math.max(tdc[tdc.length-1],expTdc[expTdc.length-1]):tdc[tdc.length-1];
+
   // CV 曲线
-  const cvSeries=[singleLine(E.map((e,i)=>[e,result.i_total[i]*1e3]),'#1976d2','Simulation')];
-  if(expData) cvSeries.push(singleLine(expData.rows.map(r=>[r[0],r[1]*1e3]),'#e94560','Experiment'));
+  const cvSeries=[singleLine(pairs(E,result.i_total,1e3),'#1976d2','Simulation')];
+  if(expData){const s=Math.max(1,Math.floor(expData.rows.length/6000));cvSeries.push(expLine(expData.rows.filter((_,i)=>i%s===0).map(r=>[r[0],r[1]*1e3]),'Experiment'));}
   const cvOpt=makeOpt({xName:'电位 (V vs RHE)',yName:'i (mA)',series:cvSeries,legend:true});
 
   // 功率谱（对数纵轴）
   const psOpt=makeOpt({
     xName:'频率 (Hz)', yName:'|FFT|',
-    series:[singleLine(result.ps_freq.map((f,i)=>[f,result.ps_mag[i]]),'#7b1fa2','PS')],
+    series:[singleLine(pairs(result.ps_freq,result.ps_mag),'#7b1fa2','PS')],
     yOpt:{type:'log',min:1e-6}
   });
 
   // 覆盖度
   const covSeries=[
-    {name:'θ_*',type:'line',data:E.map((e,i)=>[e,result.coverage_star[i]]),smooth:true,symbol:'none',lineStyle:{width:1.4}},
-    {name:'θ_*ox',type:'line',data:E.map((e,i)=>[e,result.coverage_ox[i]]),smooth:true,symbol:'none',lineStyle:{width:1.4}},
-    {name:'θ_*ox-OH',type:'line',data:E.map((e,i)=>[e,result.coverage_OH[i]]),smooth:true,symbol:'none',lineStyle:{width:1.4}},
-    {name:'θ_*ox-O',type:'line',data:E.map((e,i)=>[e,result.coverage_O[i]]),smooth:true,symbol:'none',lineStyle:{width:1.4}},
-    {name:'θ_*ox-OOH',type:'line',data:E.map((e,i)=>[e,result.coverage_OOH[i]]),smooth:true,symbol:'none',lineStyle:{width:1.4}},
+    {name:'θ_*',type:'line',data:pairs(E,result.coverage_star),smooth:true,symbol:'none',lineStyle:{width:1.4}},
+    {name:'θ_*ox',type:'line',data:pairs(E,result.coverage_ox),smooth:true,symbol:'none',lineStyle:{width:1.4}},
+    {name:'θ_*ox-OH',type:'line',data:pairs(E,result.coverage_OH),smooth:true,symbol:'none',lineStyle:{width:1.4}},
+    {name:'θ_*ox-O',type:'line',data:pairs(E,result.coverage_O),smooth:true,symbol:'none',lineStyle:{width:1.4}},
+    {name:'θ_*ox-OOH',type:'line',data:pairs(E,result.coverage_OOH),smooth:true,symbol:'none',lineStyle:{width:1.4}},
   ];
   const covOpt=makeOpt({xName:'电位 (V vs RHE)',yName:'Coverage',series:covSeries,yOpt:{max:1},legend:true});
 
-  // DC 分量（后端返回归一化包络）
-  const dcOpt=makeOpt({xName:'电位 (V vs RHE)',yName:'归一化强度',series:[singleLine(tdc.map((v,i)=>[v,result.dc[i]]),'#00897b','DC')]});
-  dcOpt.xAxis.min=tdc[0]; dcOpt.xAxis.max=tdc[tdc.length-1];
+  // DC 分量（后端返回归一化包络），有实验数据时叠加红色虚线
+  const dcSeries=[singleLine(pairs(tdc,result.dc),'#00897b','Sim DC')];
+  if(expAnalysis) dcSeries.push(expLine(pairs(expTdc,expAnalysis.dc),'Exp DC'));
+  const dcOpt=makeOpt({xName:'电位 (V vs RHE)',yName:'归一化强度',series:dcSeries,legend:!!expAnalysis});
+  dcOpt.xAxis.min=xMin; dcOpt.xAxis.max=xMax;
 
   // 谐波（后端返回归一化包络）
   const harmLabels=['1st 谐波','2nd 谐波','3rd 谐波','4th 谐波','5th 谐波','6th 谐波','7th 谐波'];
@@ -355,11 +389,13 @@ function SimTab() {
         <ChartBox id="cov" title="OER 表面覆盖度"      option={covOpt}/>
         <ChartBox id="dc"  title="DC 分量"              option={dcOpt}/>
         {harmLabels.map((lab,k)=>{
+          const hSeries=[singleLine(pairs(tdc,result.harmonics[k]),harmColors[k],'Sim')];
+          if(expAnalysis) hSeries.push(expLine(pairs(expTdc,expAnalysis.harmonics[k]),'Exp'));
           const hOpt=makeOpt({
             xName:'电位 (V vs RHE)', yName:'归一化强度',
-            series:[singleLine(tdc.map((v,i)=>[v,result.harmonics[k][i]]),harmColors[k],'H'+(k+1))]
+            series:hSeries, legend:!!expAnalysis
           });
-          hOpt.xAxis.min=tdc[0]; hOpt.xAxis.max=tdc[tdc.length-1];
+          hOpt.xAxis.min=xMin; hOpt.xAxis.max=xMax;
           return <ChartBox key={`h${k}`} id={`h${k}`} title={lab} option={hOpt}/>;
         })}
         <div className="summary-box">
