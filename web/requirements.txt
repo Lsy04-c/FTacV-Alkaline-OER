@@ -1,4 +1,5 @@
 fastapi>=0.110
 uvicorn>=0.29
+optuna>=4.0
 numpy>=1.24
 scipy>=1.11

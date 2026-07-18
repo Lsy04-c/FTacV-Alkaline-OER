@@ -18,6 +18,16 @@ from .io import OERIO
 from .core import OERCore
 from .defaults import initialize_oer_parameters
 from .calibration import calibrate, derive_per_area
+from .inversion import (
+    DEFAULT_PARAM_SPECS,
+    InversionConfig,
+    InversionObjective,
+    InversionResult,
+    TPEInverter,
+    decode_vector,
+    encode_params,
+    make_synthetic_target,
+)
 
 __all__ = [
     "apply_alkaline_aem",
@@ -31,4 +41,12 @@ __all__ = [
     "initialize_oer_parameters",
     "calibrate",
     "derive_per_area",
+    "DEFAULT_PARAM_SPECS",
+    "InversionConfig",
+    "InversionObjective",
+    "InversionResult",
+    "TPEInverter",
+    "decode_vector",
+    "encode_params",
+    "make_synthetic_target",
 ]

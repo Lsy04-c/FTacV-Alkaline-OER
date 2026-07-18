@@ -23,6 +23,7 @@ build/
 
 # Environment
 venv/
+.venv/
 .env
 bench_artifacts/
 __pycache__/
