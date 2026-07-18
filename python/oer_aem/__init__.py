@@ -29,6 +29,11 @@ from .inversion import (
     encode_params,
     make_synthetic_target,
 )
+from .importance import (
+    analyze_parameter_importance,
+    PERTURBATION_RULES,
+    DEFAULT_PHYSICAL_BOUNDS,
+)
 
 __all__ = [
     "apply_alkaline_aem",
@@ -51,4 +56,7 @@ __all__ = [
     "decode_vector",
     "encode_params",
     "make_synthetic_target",
+    "analyze_parameter_importance",
+    "PERTURBATION_RULES",
+    "DEFAULT_PHYSICAL_BOUNDS",
 ]

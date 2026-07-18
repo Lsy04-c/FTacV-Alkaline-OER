@@ -115,6 +115,22 @@
 
 - `3edb8de feat(inversion): normalize search and select harmonics`
 
+### 2.5 参数重要性分析模块
+
+已建立 `python/oer_aem/importance.py`，实现局部单参数敏感性分析。核心入口：`analyze_parameter_importance(base_params, config)`。
+
+分析 13 个参数：k0_1~4、k0_pre、gamma（log10 扰动±0.25 decade）、G_OH、G_O、scaling_OOH_OH（±0.05 eV）、E0_pre（±30 mV）、Cdl、Ru（±20%）、A（±5%）。每个参数正负双向扰动共 26 次 ODE 正演。
+
+特征输出：DC shape/amplitude、H1-H7 shape/peak、Tafel 斜率、onset 电位。H1-H3 进入主评分，H4-H7 仅诊断。
+
+输出结构：
+- `parameter_importance`：13 参数按敏感性排序（score/level/main_features/warning）
+- `feature_sensitivity_matrix`：特征×参数变化矩阵
+- `warnings`：耦合参数提示（如 gamma/A/Cdl 同时影响 DC amplitude）
+- `feature_weights`：自动从谐波 RMS 计算的各特征权重
+
+测试：12 个测试（`python/tests/test_importance.py`），与已有 16 个测试合计 28 个全部通过。
+
 ---
 
 ## 3. 当前算法的主要问题
