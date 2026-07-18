@@ -331,6 +331,13 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
       const payload={
         target:{tdc:expAnalysis.tdc,dc:expAnalysis.dc,harmonics:expAnalysis.harmonics,tafel:expAnalysis.calib.tafel.tafel_slope},
         config:{E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,n_points:invPoints,points_per_cycle:64,feature_grid_size:64},
+        initial_params:{
+          k0_1:params.k0_1,k0_2:params.k0_2,k0_3:params.k0_3,k0_4:params.k0_4,
+          G_OH:params.G_OH,G_O:params.G_O,scaling_OOH_OH:params.scaling_OOH_OH,gamma:params.gamma,
+        },
+        fixed_params:{
+          Cdl:params.Cdl,Ru:params.Ru,A:params.A,E0_pre:params.E0_pre,k0_pre:params.k0_pre,
+        },
         n_trials:invTrials,
       };
       const res=await fetch(`${API_BASE}/api/inversion/tpe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});

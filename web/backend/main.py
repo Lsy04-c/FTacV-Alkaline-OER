@@ -72,6 +72,8 @@ class InversionConfigIn(BaseModel):
 class TPEInversionIn(BaseModel):
     target: InversionTargetIn
     config: InversionConfigIn = InversionConfigIn()
+    initial_params: Optional[Dict[str, float]] = None
+    fixed_params: Dict[str, float] = {}
     n_trials: int = 20
     seed: int = 42
 
@@ -285,12 +287,13 @@ async def invert_tpe(req: TPEInversionIn) -> Dict[str, Any]:
             n_points=max(128, min(int(c.n_points), 8192)),
             points_per_cycle=max(16, min(int(c.points_per_cycle), 256)),
             feature_grid_size=max(16, min(int(c.feature_grid_size), 200)),
+            fixed_params=tuple(sorted((str(k), float(v)) for k, v in req.fixed_params.items())),
         )
         n_trials = max(1, min(int(req.n_trials), 200))
         target = _build_inversion_target(req.target, cfg)
 
         t0 = time.perf_counter()
-        result = TPEInverter(config=cfg, seed=req.seed).run(target, n_trials=n_trials)
+        result = TPEInverter(config=cfg, seed=req.seed, initial_params=req.initial_params).run(target, n_trials=n_trials)
         elapsed = time.perf_counter() - t0
 
         return {
@@ -305,6 +308,7 @@ async def invert_tpe(req: TPEInversionIn) -> Dict[str, Any]:
             "n_ode_fail": result.n_ode_fail,
             "n_tafel_fail": result.n_tafel_fail,
             "history": _serialize(result.history),
+            "fixed_params": _serialize(req.fixed_params),
             "time_elapsed": elapsed,
         }
     except Exception as e:

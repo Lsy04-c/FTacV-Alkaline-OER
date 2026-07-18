@@ -59,6 +59,7 @@ class InversionConfig:
     tafel_fail_resid: float = 10.0
     seed: int = 42
     param_specs: Tuple[ParamSpec, ...] = DEFAULT_PARAM_SPECS
+    fixed_params: Tuple[Tuple[str, float], ...] = ()
 
     @property
     def total_time(self) -> float:
@@ -212,6 +213,7 @@ def _cached_base_params(config: InversionConfig) -> Dict[str, Any]:
             "use_fft": True,
         }
     )
+    params.update({name: float(value) for name, value in config.fixed_params})
     return params
 
 
@@ -380,11 +382,13 @@ class TPEInverter:
         specs: Sequence[ParamSpec] = DEFAULT_PARAM_SPECS,
         seed: Optional[int] = None,
         n_startup_trials: int = 10,
+        initial_params: Optional[Mapping[str, float]] = None,
     ) -> None:
         self.config = config or InversionConfig()
         self.specs = tuple(specs)
         self.seed = self.config.seed if seed is None else seed
         self.n_startup_trials = n_startup_trials
+        self.initial_params = dict(initial_params) if initial_params is not None else None
 
     def _suggest(self, trial: Any) -> np.ndarray:
         values = []
@@ -404,6 +408,11 @@ class TPEInverter:
             n_startup_trials=min(self.n_startup_trials, max(1, n_trials)),
         )
         study = optuna.create_study(direction="minimize", sampler=sampler)
+        if self.initial_params is not None:
+            initial_x = encode_params(self.initial_params, self.specs)
+            study.enqueue_trial(
+                {name: float(value) for (name, _, _, _), value in zip(self.specs, initial_x)}
+            )
         history: List[Dict[str, Any]] = []
 
         def optuna_objective(trial: Any) -> float:
@@ -418,6 +427,7 @@ class TPEInverter:
                     "value": float(trial.value),
                     "best_so_far": float(study_.best_value),
                     "n_forward": objective.n_forward,
+                    "source": "initial" if trial.number == 0 and self.initial_params is not None else "tpe",
                 }
             )
 

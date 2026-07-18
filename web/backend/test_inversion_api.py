@@ -45,6 +45,14 @@ def test_tpe_inversion_endpoint_returns_fit_quality():
             "points_per_cycle": config.points_per_cycle,
             "feature_grid_size": config.feature_grid_size,
         },
+        "initial_params": truth,
+        "fixed_params": {
+            "Cdl": 150e-6,
+            "Ru": 25.0,
+            "A": 0.196,
+            "E0_pre": 1.52,
+            "k0_pre": 120.0,
+        },
         "n_trials": 1,
     }
 
@@ -55,4 +63,6 @@ def test_tpe_inversion_endpoint_returns_fit_quality():
     assert data["success"] is True
     assert "best_params" in data
     assert "fit_quality" in data
+    assert data["history"][0]["source"] == "initial"
+    assert data["fixed_params"]["Cdl"] == 150e-6
     assert data["fit_quality"]["level"] in {"excellent", "acceptable", "rough", "poor"}

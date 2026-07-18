@@ -17,6 +17,7 @@ from oer_aem.inversion import (
     decode_vector,
     encode_params,
     make_synthetic_target,
+    params_from_vector,
 )
 
 
@@ -97,3 +98,51 @@ def test_assess_fit_quality_marks_review_ready():
     assert acceptable['ready_for_review'] is True
     assert poor['ready_for_review'] is False
     assert poor['completion_percent'] < acceptable['completion_percent']
+
+
+def test_fixed_params_are_used_in_forward_params():
+    config = InversionConfig(
+        n_points=256,
+        points_per_cycle=32,
+        feature_grid_size=32,
+        fixed_params=(('Cdl', 150e-6), ('Ru', 25.0), ('E0_pre', 1.52), ('k0_pre', 120.0)),
+    )
+    params = {
+        'k0_1': 100.0,
+        'k0_2': 50.0,
+        'k0_3': 20.0,
+        'k0_4': 80.0,
+        'G_OH': 1.23,
+        'G_O': 2.80,
+        'scaling_OOH_OH': 3.2,
+        'gamma': 1e-9,
+    }
+
+    full = params_from_vector(encode_params(params), config)
+
+    assert full['Cdl'] == pytest.approx(150e-6)
+    assert full['Ru'] == pytest.approx(25.0)
+    assert full['E0_pre'] == pytest.approx(1.52)
+    assert full['k0_pre'] == pytest.approx(120.0)
+
+
+def test_tpe_evaluates_initial_params_first():
+    pytest.importorskip("optuna")
+
+    config = InversionConfig(n_points=256, points_per_cycle=32, feature_grid_size=32)
+    truth = {
+        'k0_1': 100.0,
+        'k0_2': 50.0,
+        'k0_3': 20.0,
+        'k0_4': 80.0,
+        'G_OH': 1.23,
+        'G_O': 2.80,
+        'scaling_OOH_OH': 3.2,
+        'gamma': 1e-9,
+    }
+    target = make_synthetic_target(truth, config=config, noise_fraction=0.0)
+
+    result = TPEInverter(config=config, seed=7, initial_params=truth).run(target, n_trials=1)
+
+    assert result.best_value < 1e-12
+    assert result.history[0]['source'] == 'initial'
