@@ -44,13 +44,16 @@ def _design_bandpass_sos(low: float, high: float, fs: float, order: int = 4) -> 
 
 
 def initialize_filters(params: Dict[str, Any]) -> Dict[str, Any]:
-    """初始化 DC 低通与 1-7 次谐波带通滤波器。"""
+    """初始化 DC 低通与 1-7 次谐波带通滤波器（带宽自适应 FFT 分辨率）。"""
     params = dict(params)
     dt = params['total_time'] / (params['n_points'] - 1)
     fs = 1.0 / dt
+    df_res = fs / params['n_points']
+    min_bw = max(0.5 * params['f'], df_res * 5)
 
-    # DC 低通滤波器
-    fc = params['band'][0] / 2.0
+    # DC 低通滤波器（自适应截止频率）
+    user_dc_bw = float(params['band'][0]) if 'band' in params else 1.0
+    fc = max(user_dc_bw, min_bw) / 2.0
     params['lp_filter_sos'] = _design_lowpass_sos(fc, fs, order=6)
     params['lp_filter_fs'] = fs
     params['lp_filter_fpass'] = fc
@@ -60,7 +63,7 @@ def initialize_filters(params: Dict[str, Any]) -> Dict[str, Any]:
     bp_edges = []
     for i in range(7):
         H = i + 1
-        bw = params['band'][H]
+        bw = _auto_band(params, H, params['f'], min_bw)
         lower = H * params['f'] - bw / 2.0
         upper = H * params['f'] + bw / 2.0
         sos = _design_bandpass_sos(lower, upper, fs, order=4)
@@ -105,12 +108,15 @@ def _clean_current(current: np.ndarray) -> np.ndarray:
 
 
 def extract_dc_fft(signal: np.ndarray, df: float, params: Dict[str, Any]) -> np.ndarray:
-    """通过 FFT 提取 DC 分量。"""
+    """通过 FFT 提取 DC 分量（带宽自适应 FFT 频率分辨率）。"""
     signal = _apply_edge_taper(_clean_current(signal))
     L = len(signal)
     Y = np.fft.fft(signal)
     f_axis = df * np.arange(L) / L
-    bw_half = params['band'][0] / 2.0
+    df_res = df / L
+    min_bw = max(params.get('f', 1.0) * 0.5, df_res * 5)
+    user_bw = float(params['band'][0]) if 'band' in params else 1.0
+    bw_half = max(user_bw, min_bw) / 2.0
 
     mask = (f_axis <= bw_half) | (f_axis >= (df - bw_half))
     Y_filtered = np.zeros_like(Y)

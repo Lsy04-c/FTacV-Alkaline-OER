@@ -245,7 +245,7 @@ class OERPhysics:
                 method='LSODA',
                 rtol=1e-6,
                 atol=1e-8,
-                max_step=t_span[1] / 50.0,
+                max_step=min(t_span[1] / 50.0, 1.0 / (params['f'] * 20)),
             )
             if not sol.success:
                 # solve_ivp 刚性失败时不抛异常，必须显式检查，
