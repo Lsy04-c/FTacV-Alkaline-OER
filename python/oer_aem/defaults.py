@@ -46,7 +46,7 @@ def initialize_oer_parameters() -> dict:
 
     # ==================== 电极与电解液参数 ====================
     params['electrode_type'] = 'Planar'
-    params['A'] = 0.196              # 电极面积 (cm², 5 mm 圆盘；微纳电极需改)
+    params['A'] = 1.0                # 电极面积 (cm²)
     params['Ru'] = 10.0              # 未补偿电阻 (Ω)
     params['Cdl'] = 20e-6            # 双电层电容 (F/cm²)
     params['gamma'] = 5e-8           # 活性位点总浓度 (mol/cm²)
