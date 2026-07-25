@@ -27,6 +27,8 @@ from oer_aem.inversion import (
     InversionConfig,
     TPEInverter,
     encode_params,
+    extract_features,
+    forward_current,
     make_synthetic_target,
     normalize_vector,
 )
@@ -189,9 +191,41 @@ def _result_row(
     result,
     runtime_s: float,
     specs,
+    config: InversionConfig,
+    target: Mapping[str, Any],
 ) -> dict[str, Any]:
     components = result.loss_components
     hits = _boundary_hits(result.best_x, specs)
+    current = forward_current(result.best_x, config, specs)
+    if current is None:
+        common_dc_rmse = float("nan")
+        common_h1_h3_rmse = float("nan")
+        evaluation_forward_count = 0
+    else:
+        evaluated = extract_features(current, config)
+        common_dc_rmse = float(
+            np.sqrt(
+                np.mean(
+                    (
+                        np.asarray(evaluated["dc"])
+                        - np.asarray(target["dc"])
+                    )
+                    ** 2
+                )
+            )
+        )
+        harmonic_residuals = np.concatenate(
+            [
+                np.asarray(evaluated["harm"][idx])
+                - np.asarray(target["harm"][idx])
+                for idx in range(3)
+            ]
+        )
+        common_h1_h3_rmse = float(
+            np.sqrt(np.mean(harmonic_residuals**2))
+        )
+        evaluation_forward_count = 1
+    best = result.best_params
     return {
         "dataset": dataset,
         "target_type": target_type,
@@ -210,9 +244,19 @@ def _result_row(
         ),
         "loss_phase": components.get("phase", float("nan")),
         "loss_physical": components.get("physical", float("nan")),
+        "common_dc_rmse": common_dc_rmse,
+        "common_h1_h3_rmse": common_h1_h3_rmse,
+        "G_OH": best["G_OH"],
+        "G_O": best["G_O"],
+        "scaling_OOH_OH": best["scaling_OOH_OH"],
+        "k0_1": best["k0_1"],
+        "k0_2": best["k0_2"],
+        "k0_3": best["k0_3"],
+        "k0_4": best["k0_4"],
         "boundary_hits": len(hits),
         "boundary_parameters": ";".join(hits),
         "forward_count": result.n_forward,
+        "evaluation_forward_count": evaluation_forward_count,
         "runtime_s": runtime_s,
     }
 
@@ -249,6 +293,8 @@ def run_comparison(trials: int, smoke: bool) -> list[dict[str, Any]]:
                     result=result,
                     runtime_s=time.perf_counter() - started,
                     specs=specs,
+                    config=config,
+                    target=target,
                 )
             )
 
@@ -285,6 +331,8 @@ def run_comparison(trials: int, smoke: bool) -> list[dict[str, Any]]:
                         result=result,
                         runtime_s=time.perf_counter() - started,
                         specs=specs,
+                        config=config,
+                        target=target,
                     )
                 )
     return rows_out
