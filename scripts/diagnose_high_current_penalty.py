@@ -229,7 +229,11 @@ def _ftacv_files() -> list[str]:
 def _write_report(results: list[Dict[str, Any]], weights: Iterable[float], n_trials: int, ru: float) -> None:
     csv_path = OUT_DIR / "high_current_penalty.csv"
     with csv_path.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(results[0].keys()))
+        writer = csv.DictWriter(
+            f,
+            fieldnames=list(results[0].keys()),
+            lineterminator="\n",
+        )
         writer.writeheader()
         writer.writerows(results)
 

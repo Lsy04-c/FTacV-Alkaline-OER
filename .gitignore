@@ -30,3 +30,8 @@ __pycache__/
 
 # Isolated Codex worktrees
 .worktrees/
+
+# Regenerable or failed-download artifacts
+results/benchmarks/bench_artifacts/
+results/unused/
+docs/papers/**/failed_downloads/
