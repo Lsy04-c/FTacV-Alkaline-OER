@@ -1,0 +1,14 @@
+parameter,classification,sensitivity_norm,max_correlation
+k0_1,unresolved,0.0,0.0
+k0_2,unresolved,0.0,0.0
+k0_3,coupled,0.0091,1.0
+k0_4,unresolved,0.0,0.0
+k0_pre,unresolved,0.0,0.0
+gamma,coupled,0.0585,1.0
+G_OH,coupled,0.0493,1.0
+G_O,coupled,0.0585,1.0
+scaling_OOH_OH,coupled,0.0091,1.0
+E0_pre,coupled,0.0091,1.0
+Cdl,unresolved,0.0,0.0
+Ru,coupled,0.0091,1.0
+A,unresolved,0.0,0.0

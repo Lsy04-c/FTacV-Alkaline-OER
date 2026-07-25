@@ -1,0 +1,46 @@
+{
+  "git_commit": "fbfe49fad7c25c1d9d1693be2d057cb4211b738a",
+  "command": "scripts/run_architecture_validation.py --smoke",
+  "seed": 42,
+  "smoke": true,
+  "n_trials": 2,
+  "n_forward": 2,
+  "best_value": 0.0,
+  "best_params": {
+    "k0_1": 100.0,
+    "k0_2": 49.99999999999999,
+    "k0_3": 20.000000000000004,
+    "k0_4": 79.99999999999999,
+    "G_OH": 1.23,
+    "G_O": 2.8,
+    "scaling_OOH_OH": 3.2,
+    "gamma": 1e-09
+  },
+  "truth_params": {
+    "k0_1": 100.0,
+    "k0_2": 50.0,
+    "k0_3": 20.0,
+    "k0_4": 80.0,
+    "G_OH": 1.23,
+    "G_O": 2.8,
+    "scaling_OOH_OH": 3.2,
+    "gamma": 1e-09
+  },
+  "classifications": {
+    "k0_1": "unresolved",
+    "k0_2": "unresolved",
+    "k0_3": "coupled",
+    "k0_4": "unresolved",
+    "k0_pre": "unresolved",
+    "gamma": "coupled",
+    "G_OH": "coupled",
+    "G_O": "coupled",
+    "scaling_OOH_OH": "coupled",
+    "E0_pre": "coupled",
+    "Cdl": "unresolved",
+    "Ru": "coupled",
+    "A": "unresolved"
+  },
+  "importance_forward_runs": 26,
+  "duration_seconds": 8.894
+}
