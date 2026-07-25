@@ -214,7 +214,12 @@ def main():
               "h2_h1", "h3_h1", "h4_h1", "fit_harmonics", "CdlA", "Tafel", "preox",
               "success", "error"]
     with open(csv_path, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
+        w = csv.DictWriter(
+            f,
+            fieldnames=fields,
+            extrasaction="ignore",
+            lineterminator="\n",
+        )
         w.writeheader()
         for r in results:
             # Pad missing CV fields
