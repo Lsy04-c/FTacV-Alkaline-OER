@@ -12,6 +12,7 @@ from typing import Optional, List, Dict, Any
 
 from oer_aem import OERPhysics, OERSignal, initialize_oer_parameters
 from oer_aem.calibration import calibrate as calibrate_ftacv
+from oer_aem.data_contract import normalize_trace
 from oer_aem.inversion import (
     DEFAULT_PARAM_SPECS,
     InversionConfig,
@@ -97,10 +98,10 @@ def _analyze_ftacv_data(rows: np.ndarray) -> Dict[str, Any]:
     数据格式：[E (V), i (A), t (s)]，单次正向扫描。
     识别：v（线性斜坡）、dE（去趋势振幅）、f（FFT 主频）。
     """
-    E_raw, i_raw, t_raw = rows[:, 0], rows[:, 1], rows[:, 2]
-    t = t_raw - t_raw[0]
-    order = np.argsort(t)
-    t, E_raw, i_raw = t[order], E_raw[order], i_raw[order]
+    trace = normalize_trace(rows)
+    E_raw = trace.potential
+    i_raw = trace.current
+    t = trace.time
 
     duration = float(t[-1])
     dt = float(np.mean(np.diff(t)))
