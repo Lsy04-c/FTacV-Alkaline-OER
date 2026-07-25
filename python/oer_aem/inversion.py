@@ -443,8 +443,6 @@ def make_synthetic_target(
         noisy = noisy + rng.normal(0.0, sigma, size=noisy.shape)
 
     features = extract_features(noisy, cfg)
-    if features["tafel"] is None:
-        raise RuntimeError("Synthetic target Tafel extraction failed")
 
     features.update(
         {
@@ -496,11 +494,19 @@ class InversionObjective:
                 np.sum(((features["harm"][idx] - self.target["harm"][idx]) / self.config.sigma_harm) ** 2)
             )
 
-        if features["tafel"] is None:
-            self.n_tafel_fail += 1
-            total += self.config.tafel_fail_resid**2
-        else:
-            total += float(((features["tafel"] - self.target["tafel"]) / self.config.sigma_tafel) ** 2)
+        target_tafel = self.target.get("tafel")
+        if target_tafel is not None:
+            if features["tafel"] is None:
+                self.n_tafel_fail += 1
+                total += self.config.tafel_fail_resid**2
+            else:
+                total += float(
+                    (
+                        (features["tafel"] - float(target_tafel))
+                        / self.config.sigma_tafel
+                    )
+                    ** 2
+                )
         return total / float(2 + len(self.fit_harmonics))
 
     def __call__(self, x: Sequence[float]) -> float:

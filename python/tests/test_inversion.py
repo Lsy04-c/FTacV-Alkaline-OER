@@ -147,6 +147,35 @@ def test_synthetic_target_objective_is_zero_at_truth():
     assert objective.n_forward == 1
 
 
+def test_synthetic_target_skips_unavailable_tafel_channel():
+    config = InversionConfig(
+        n_points=256,
+        points_per_cycle=32,
+        feature_grid_size=32,
+    )
+    truth = {
+        'k0_1': 100.0,
+        'k0_2': 50.0,
+        'k0_3': 20.0,
+        'k0_4': 80.0,
+        'G_OH': 1.23,
+        'G_O': 2.80,
+        'scaling_OOH_OH': 3.2,
+        'gamma': 1e-9,
+    }
+
+    target = make_synthetic_target(
+        truth,
+        config=config,
+        noise_fraction=0.0,
+    )
+    objective = InversionObjective(target, config=config)
+
+    assert target['tafel'] is None
+    assert objective(encode_params(truth)) < 1e-12
+    assert objective.n_tafel_fail == 0
+
+
 def test_tpe_inverter_runs_small_budget():
     pytest.importorskip("optuna")
 
