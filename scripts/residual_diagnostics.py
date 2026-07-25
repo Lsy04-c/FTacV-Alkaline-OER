@@ -310,27 +310,45 @@ def _write_contract_csv(path: Path, diagnostics: list[Dict[str, Any]]) -> None:
     """Write the machine-readable full/trimmed residual contract."""
     rows = [row for diagnostic in diagnostics for row in diagnostic["grid_rows"]]
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(
-            handle,
-            fieldnames=[
-                "dataset",
-                "grid",
-                "n_points",
-                "bias_lo",
-                "bias_mid",
-                "bias_hi",
-                "sign_convention",
-                "experimental_duration_s",
-                "simulated_duration_s",
-                "experimental_scan_rate_v_s",
-                "simulated_scan_rate_v_s",
-                "scan_rate_relative_error",
-            ],
-            lineterminator="\n",
-        )
-        writer.writeheader()
-        writer.writerows(rows)
+    temporary = path.with_suffix(f"{path.suffix}.tmp")
+    try:
+        with temporary.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(
+                handle,
+                fieldnames=[
+                    "dataset",
+                    "grid",
+                    "n_points",
+                    "bias_lo",
+                    "bias_mid",
+                    "bias_hi",
+                    "sign_convention",
+                    "simulation_n_points",
+                    "points_per_cycle",
+                    "fit_harmonics",
+                    "fixed_params",
+                    "experimental_duration_s",
+                    "simulated_duration_s",
+                    "experimental_scan_rate_v_s",
+                    "simulated_scan_rate_v_s",
+                    "scan_rate_relative_error",
+                ],
+                lineterminator="\n",
+            )
+            writer.writeheader()
+            writer.writerows(rows)
+        temporary.replace(path)
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+def _checkpoint_contract(
+    path: Path,
+    diagnostics: list[Dict[str, Any]],
+) -> None:
+    """Atomically persist every completed dataset collected so far."""
+    _write_contract_csv(path, diagnostics)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -350,6 +368,9 @@ def main():
     with quality_csv.open(encoding="utf-8") as handle:
         quality_data = list(csv.DictReader(handle))
     ftacv_files = [r for r in quality_data if r['type'] == 'FTacV' and r['success'] == 'True']
+    output = None
+    if args.output is not None:
+        output = args.output if args.output.is_absolute() else PROJECT / args.output
 
     diagnostics = []
     for r in ftacv_files:
@@ -359,13 +380,14 @@ def main():
             d = diagnose_dataset(name, n_trials=args.trials)
             d['classification'] = _classify_residual(d)
             diagnostics.append(d)
+            if output is not None:
+                _checkpoint_contract(output, diagnostics)
             print(f"best={d['best_value']:.2f} bias_lo={d['dc_bias_lo']:+.2f} bias_hi={d['dc_bias_hi']:+.2f} onset={d['onset_offset']:+.3f}V")
         except Exception as e:
             print(f"FAIL: {e}")
 
-    if args.output is not None:
-        output = args.output if args.output.is_absolute() else PROJECT / args.output
-        _write_contract_csv(output, diagnostics)
+    if output is not None:
+        _checkpoint_contract(output, diagnostics)
         print(f"\nResidual contract → {output}")
         print("Done.")
         return

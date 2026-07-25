@@ -154,8 +154,8 @@ def main() -> None:
         "test_runs": [
             {
                 "command": "python scripts/run_tests.py python/tests -q",
-                "result": "67 passed",
-                "runtime_seconds": 44.96,
+                "result": "70 passed",
+                "runtime_seconds": 44.43,
                 "host": "Mac",
             },
             {
@@ -165,7 +165,7 @@ def main() -> None:
                     "web/backend/test_inversion_api.py -q"
                 ),
                 "result": "3 passed, 1 third-party warning",
-                "runtime_seconds": 6.45,
+                "runtime_seconds": 6.67,
                 "host": "Mac",
             }
         ],
