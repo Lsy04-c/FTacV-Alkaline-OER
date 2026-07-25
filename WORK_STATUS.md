@@ -594,7 +594,7 @@ python scripts/run_tests.py python/tests/test_data_contract.py -q
 results/architecture_validation/residual_contract.csv
 ```
 
-四组数据在两种网格中均明确记录`experiment - simulation`。当前30次TPE诊断仍显示四组数据的高电位归一化偏差为正；这证明了残差方向和口径，不构成对缺失物理机制的因果证明。
+四组数据在两种网格中均明确记录`experiment - simulation`。实验与模拟采用相同的逐通道最大绝对值归一化，模拟周期数由实验时长和频率推导。最大扫描速率相对误差为`1.53e-5`。裁剪网格高电位偏差为FT2 `-0.0020`、FT3 `+0.0251`、FT4 `+0.0362`、FT8 `+0.0149`。此前约`0.6–0.7`的大偏差来自尺度与扫描速率不匹配，相关模型缺项结论已撤回。
 
 ---
 
@@ -605,7 +605,7 @@ results/architecture_validation/residual_contract.csv
 - `legacy`：保持原有DC和逐通道归一化谐波包络损失；
 - `complex_snr`：保留跨谐波幅值比例，加入有界SNR权重和环绕相位残差。
 
-目标函数现在报告`dc`、`harmonic_amplitude`、`phase`和`physical`命名损失分量。TPE优化器及参数边界未更换。
+目标函数现在分别报告`dc`、`common_harmonics`、`dataset_specific_harmonics`、`phase`和`physical`损失分量，使共同H1–H3与数据特有H4/H5的权衡可追踪。TPE优化器及参数边界未更换。
 
 新鲜验证：
 
@@ -641,7 +641,7 @@ results/architecture_validation/feature_objective_comparison.csv
 - 两者使用相同数据、特征模式、种子、trial预算、基础参数边界和实验固定参数；
 - 不自动运行M2。
 
-验收门同时检查至少3/4数据的高电位偏差改善、H1-H3不恶化、`beta_recon`边界命中、热力学参数跨数据CV和BIC复杂度惩罚。
+验收门使用同随机种子配对，检查至少3/4数据在多数种子中的高电位RMSE和去均值形状RMSE改善、H1-H3不恶化、`beta_recon`边界命中、热力学参数跨数据CV和BIC复杂度惩罚。
 
 新鲜验证：
 
@@ -662,3 +662,109 @@ results/architecture_validation/reconstruction_model_comparison.csv
 ```
 
 当前3-trial烟雾运行中，固定门槛为`datasets_passed=0`，因此M1被拒绝。该结果证明拒绝路径和复杂度门可执行，但预算不足以作为最终模型判断；Task 9将用50 trials重新生成结论。无论完整结果如何，通过只表示候选项值得进一步实验验证，不表示已证明表面重构。
+
+---
+
+## 15. 架构验证最终结论（2026-07-25）
+
+> **状态：已作废，等待32点/周期重算。** 本节记录旧12点/周期运行，
+> 仅用于追溯，不能作为当前科学结论或最终报告证据。当前有效进度见第16节。
+
+正式计算在拯救者WSL2上执行，基于`c5e8f57`及本节记录的修正工作树。本机负责测试、结果校验、作图、文档和Git。
+
+完整验证结果：
+
+```text
+python scripts/run_tests.py python/tests -q
+59 passed
+
+python scripts/run_tests.py \
+  web/backend/test_analyze_e2e.py web/backend/test_inversion_api.py -q
+3 passed, 1 third-party warning
+
+.venv/bin/python scripts/compare_feature_objectives.py \
+  --trials 50 --workers 8
+30 rows; 50 trials per row
+
+.venv/bin/python scripts/compare_reconstruction_model.py \
+  --trials 50 --workers 8
+24 rows; 50 trials per row
+```
+
+决策：
+
+- 数据列、残差符号、复数谐波基础恢复、覆盖度守恒、M0等价和输出网格稳定性通过；
+- 修正后的敏感矩阵包含15个H1-H3特征行；单参数设计实验将`k0_1`从10恢复到98.81（真值100，相对误差1.19%）；
+- `complex_snr`合成恢复误差由`0.2513`降至`0.1612`，实验DC RMSE由`0.0583`降至`0.0389`，边界命中不增加，按书面多数规则通过；
+- `complex_snr`的共同H1-H3 RMSE由`0.2084`升至`0.2893`，因此下一版保留legacy H1-H3包络作为保护项，不做无条件替换；
+- M1仅`1/4`数据通过，热力学CV比值`3.145 > 1.15`，拒绝M1并停止M2；
+- 下一版保留M0，开发带共同H1-H3保护项的电位分辨复数谐波与带符号敏感性；补采重复FTacV数据以标定重复性权重。
+
+完整证据与允许的科学表述见：
+
+```text
+docs/architecture_validation_report.md
+results/architecture_validation/
+```
+
+---
+
+## 16. 环境恢复与残差检查点修复（2026-07-25）
+
+拯救者环境已恢复并完成只读验收：
+
+- WSL发行版为`Debian-Bookworm`，正式操作使用普通用户`lsy`；
+- 主仓库位于`main`，GitHub远端和SSH读取正常；
+- `ps`、`pgrep`、`rg`和`tmux`可用；
+- 正式计算沿用已验收环境：Python 3.11.2、NumPy 2.2.6、SciPy 1.16.3、Optuna 4.9.0；
+- 新代码工作树为`/home/lsy/OER-FTAcV-run-3e08bdd`；
+- 计算解释器为`/home/lsy/OER-FTAcV-run-8cf26be/.venv/bin/python`。
+
+不再为`3e08bdd`安装另一套NumPy。每份正式结果必须同时记录代码提交`3e08bdd`和上述实际计算环境，避免把代码路径与解释器路径混为一谈。
+
+第一次32点/周期残差正式运行完成了四组数据的反演，但在最终写CSV时失败。根因是结果行新增了`simulation_n_points`、`points_per_cycle`、`fit_harmonics`和`fixed_params`，而固定CSV表头没有同步。失败文件只含表头，不属于有效证据。
+
+修复提交：
+
+```text
+3e08bdd fix(validation): checkpoint residual evidence
+```
+
+修复内容：
+
+- CSV表头包含全部采样和固定参数字段；
+- 每完成一个数据集就原子写入累计结果；
+- 写入失败时保留上一份有效文件；
+- 新增schema、累计检查点和失败保留测试。
+
+新鲜验证：
+
+```text
+Mac:
+python scripts/run_tests.py python/tests -q
+70 passed in 44.43 s
+
+python scripts/run_tests.py \
+  web/backend/test_analyze_e2e.py web/backend/test_inversion_api.py -q
+3 passed in 6.67 s, 1 third-party warning
+
+Legion（已有正式计算环境运行3e08bdd代码）:
+PYTHONPATH=python:web/backend \
+  /home/lsy/OER-FTAcV-run-8cf26be/.venv/bin/python -m pytest \
+  python/tests -q
+70 passed in 52.46 s
+```
+
+当前状态：
+
+- Task 9仍未完成；
+- 第15节的50-trial结果来自旧12点/周期运行，暂时视为过期历史，不得作为当前结论；
+- 下一步先在`3e08bdd`上重新生成架构验证和8行残差契约；
+- 残差验收通过后再运行Feature与M0/M1的50-trial正式比较；
+- 结果变化时保留固定验收标准，不为维持旧结论调整门槛。
+
+其他Agent应先阅读：
+
+```text
+.claude/handoffs/2026-07-25-233405-architecture-validation-resume.md
+```
