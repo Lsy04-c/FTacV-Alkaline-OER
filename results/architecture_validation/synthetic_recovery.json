@@ -1,20 +1,13 @@
 {
-  "git_commit": "fbfe49fad7c25c1d9d1693be2d057cb4211b738a",
-  "command": "scripts/run_architecture_validation.py --smoke",
+  "git_commit": "c5e8f5709c1a2700714536a426380ede699c3542",
+  "command": "scripts/run_architecture_validation.py --trials 50",
   "seed": 42,
-  "smoke": true,
-  "n_trials": 2,
-  "n_forward": 2,
-  "best_value": 0.0,
+  "smoke": false,
+  "n_trials": 50,
+  "n_forward": 50,
+  "best_value": 0.00389359414750194,
   "best_params": {
-    "k0_1": 100.0,
-    "k0_2": 49.99999999999999,
-    "k0_3": 20.000000000000004,
-    "k0_4": 79.99999999999999,
-    "G_OH": 1.23,
-    "G_O": 2.8,
-    "scaling_OOH_OH": 3.2,
-    "gamma": 1e-09
+    "k0_1": 98.80980188921976
   },
   "truth_params": {
     "k0_1": 100.0,
@@ -26,21 +19,37 @@
     "scaling_OOH_OH": 3.2,
     "gamma": 1e-09
   },
+  "designed_identifiable_parameters": [
+    "k0_1"
+  ],
+  "initial_params": {
+    "k0_1": 10.0,
+    "k0_2": 50.0,
+    "k0_3": 20.0,
+    "k0_4": 80.0,
+    "G_OH": 1.23,
+    "G_O": 2.8,
+    "scaling_OOH_OH": 3.2,
+    "gamma": 1e-09
+  },
+  "relative_recovery_error": 0.011901981107802441,
+  "recovery_tolerance": 0.25,
+  "recovered": true,
   "classifications": {
-    "k0_1": "unresolved",
-    "k0_2": "unresolved",
+    "k0_1": "identifiable",
+    "k0_2": "identifiable",
     "k0_3": "coupled",
     "k0_4": "unresolved",
-    "k0_pre": "unresolved",
+    "k0_pre": "identifiable",
     "gamma": "coupled",
-    "G_OH": "coupled",
-    "G_O": "coupled",
+    "G_OH": "identifiable",
+    "G_O": "identifiable",
     "scaling_OOH_OH": "coupled",
-    "E0_pre": "coupled",
-    "Cdl": "unresolved",
-    "Ru": "coupled",
-    "A": "unresolved"
+    "E0_pre": "identifiable",
+    "Cdl": "identifiable",
+    "Ru": "identifiable",
+    "A": "coupled"
   },
   "importance_forward_runs": 26,
-  "duration_seconds": 8.894
+  "duration_seconds": 49.333
 }

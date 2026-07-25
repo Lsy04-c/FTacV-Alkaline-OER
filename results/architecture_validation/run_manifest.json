@@ -1,0 +1,97 @@
+{
+  "report_date": "2026-07-25",
+  "source_base_commit": "c5e8f5709c1a2700714536a426380ede699c3542",
+  "source_worktree": "reviewed changes recorded by the final Git commit",
+  "hosts": {
+    "calculation": "Lenovo Legion WSL2, Python 3.11",
+    "review_and_git": "macOS-15.4.1-arm64-arm-64bit-Mach-O"
+  },
+  "test_runs": [
+    {
+      "command": "python scripts/run_tests.py python/tests -q",
+      "result": "59 passed",
+      "runtime_seconds": 44.56,
+      "host": "Mac"
+    },
+    {
+      "command": "python scripts/run_tests.py web/backend/test_analyze_e2e.py web/backend/test_inversion_api.py -q",
+      "result": "3 passed, 1 third-party warning",
+      "runtime_seconds": 6.65,
+      "host": "Mac"
+    }
+  ],
+  "measured_checks": {
+    "complex_harmonic_amplitude_relative_error": [
+      1.0204187805840093e-07,
+      8.289039452602509e-07
+    ],
+    "complex_harmonic_phase_absolute_error_rad": [
+      6.964404292153503e-08,
+      6.630582541911068e-07
+    ],
+    "coverage_derivative_sum": 0.0,
+    "output_grid_refinement_nrmse": 0.0027381325104622483
+  },
+  "runs": {
+    "architecture_validation": {
+      "command": ".venv/bin/python scripts/run_architecture_validation.py --trials 50",
+      "seed": 42,
+      "trials": 50,
+      "recovered": true,
+      "relative_recovery_error": 0.011901981107802441
+    },
+    "residual_contract": {
+      "command": ".venv/bin/python scripts/residual_diagnostics.py --trials 30 --output results/architecture_validation/residual_contract.csv",
+      "rows": 8,
+      "max_scan_rate_relative_error": 1.5258789062573173e-05
+    },
+    "feature_objective_comparison": {
+      "command": ".venv/bin/python scripts/compare_feature_objectives.py --trials 50 --workers 8",
+      "rows": 30,
+      "seeds": [
+        7,
+        17,
+        27
+      ],
+      "trials": [
+        50
+      ],
+      "modes": [
+        "complex_snr",
+        "legacy"
+      ],
+      "max_scan_rate_relative_error": 1.5258789062573173e-05
+    },
+    "reconstruction_model_comparison": {
+      "command": ".venv/bin/python scripts/compare_reconstruction_model.py --trials 50 --workers 8",
+      "rows": 24,
+      "seeds": [
+        7,
+        17,
+        27
+      ],
+      "trials": [
+        50
+      ],
+      "models": [
+        "M0",
+        "M1"
+      ],
+      "accepted": false,
+      "max_scan_rate_relative_error": 1.5258789062573173e-05
+    }
+  },
+  "sha256": {
+    "baseline_manifest.json": "98bd8dbe6d3d344863ad77c9386539c3c653c8e33730e2b34b5aca51968da8c1",
+    "sensitivity_matrix.csv": "eeea66e2c0d56d34ae7668bdd091a2f705204233d6fb5b1668134d5bf1dbb96e",
+    "parameter_classification.csv": "0dd97a8fa940405b79c7f4a46734754b95146932d56fd5ac81bee5566c2992e1",
+    "synthetic_recovery.json": "454792a027e9fa167011239786bee3a90eacbe349d3cd4dab78532468c488956",
+    "residual_contract.csv": "8439e177b516d8a5f5835400f12d99c3182fe28fd91689fc4a003530cfc85fc5",
+    "feature_objective_comparison.csv": "a4d938ed0fe7db3a62f8118e5645bd4202e06aeb159ea82340eb003dc443cdca",
+    "reconstruction_model_comparison.csv": "7bd51875f905a79c430826acb09654a47a2adfb45e9811c005c30dcd7457500e",
+    "feature_objective_comparison.png": "7fd6eed498fae1fd4f99a7c81b6e969490a1ae93b6e6071dea88205fc3742e5d",
+    "feature_objective_comparison.svg": "f206884a5d9413b461004e60e34c868ca146a70e503641812c9e5fcd2005e1ba",
+    "reconstruction_model_comparison.png": "0f7ebd3fdf9d06f65b55147b9b76cdc4fd56f0520c84bc5ae0e7ead37ef11ea3",
+    "reconstruction_model_comparison.svg": "19222326735a252fdcb6579120033b3cec9a636862bf20e791e3941fb280d207"
+  }
+}
