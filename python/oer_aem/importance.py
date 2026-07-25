@@ -168,9 +168,26 @@ def _extract_onset(dc: np.ndarray, e_grid: np.ndarray, frac: float = 0.05) -> Op
 
 def _feature_distance(fa: Dict[str, Any], fb: Dict[str, Any], name: str) -> float:
     """计算两个特征 dict 在指定特征上的归一化距离。"""
-    if name not in fa or name not in fb:
-        return 0.0
-    a, b = fa[name], fb[name]
+    def resolve(features: Dict[str, Any]):
+        if name == "DC shape":
+            return features.get("dc")
+        if name == "DC amplitude":
+            return features.get("dc_amplitude")
+        if name == "DC shape_raw":
+            return features.get("dc_shape_raw")
+        if name == "DC amplitude_raw":
+            return features.get("dc_amplitude_raw")
+        if name.startswith("H"):
+            harmonic, descriptor = name.split(" ", 1)
+            index = int(harmonic[1:]) - 1
+            if descriptor == "shape":
+                harms = features.get("harm", [])
+                return harms[index] if index < len(harms) else None
+            key = f"{harmonic}_{descriptor.replace(' ', '_')}"
+            return features.get(key)
+        return features.get(name)
+
+    a, b = resolve(fa), resolve(fb)
     if a is None or b is None:
         return 0.0
 

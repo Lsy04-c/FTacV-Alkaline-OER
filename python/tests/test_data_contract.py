@@ -53,3 +53,14 @@ def test_trimmed_residual_preserves_full_grid_sign():
     residual = residual_on_grid(full_e, exp, full_e, sim, trimmed)
 
     assert np.all(residual > 0.0)
+
+
+def test_normalized_channels_are_scale_invariant():
+    from oer_aem.data_contract import normalize_by_max_abs
+
+    experiment = normalize_by_max_abs(np.array([1.0, 2.0, 4.0]))
+    simulation = normalize_by_max_abs(np.array([10.0, 20.0, 40.0]))
+
+    assert residual_exp_minus_sim(experiment, simulation) == pytest.approx(
+        np.zeros(3)
+    )

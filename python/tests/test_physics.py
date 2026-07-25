@@ -91,6 +91,25 @@ def test_ode_solver_runs():
     assert not np.any(np.isnan(i_total))
 
 
+def test_ode_coverage_trajectory_remains_physical_and_conserved():
+    params = initialize_oer_parameters()
+    params['n_points'] = 512
+    params['points_per_cycle'] = 32
+    params['total_time'] = (512 / 32) / params['f']
+    params['t_span'] = np.linspace(0, params['total_time'], 512)
+    params['use_steady_state'] = False
+
+    _, states, _, _ = OERPhysics.solve_ode_system(params)
+    coverage = states[:, :5]
+
+    assert np.min(coverage) >= -1e-6
+    assert np.max(coverage) <= 1.0 + 1e-6
+    assert np.sum(coverage, axis=1) == pytest.approx(
+        np.ones(coverage.shape[0]),
+        abs=1e-6,
+    )
+
+
 def test_effective_gamma_is_constant_when_reconstruction_disabled():
     potential = np.array([1.2, 1.5, 1.8])
     params = {

@@ -55,3 +55,38 @@ def test_reconstruction_gate_requires_complexity_support_when_reported():
         thermo_cv_ratio=1.0,
         required_datasets=3,
     )["accepted"] is False
+
+
+def test_script_gate_requires_paired_seed_majority():
+    from scripts.compare_reconstruction_model import (
+        MODELS,
+        SEEDS,
+        _apply_gate,
+    )
+    from scripts.compare_feature_objectives import DATASETS
+
+    rows = []
+    for dataset in DATASETS:
+        for model in MODELS:
+            for seed in SEEDS:
+                m1_wins = model == "M1" and seed == SEEDS[-1]
+                rows.append(
+                    {
+                        "dataset": dataset,
+                        "model": model,
+                        "seed": seed,
+                        "high_potential_rmse": 0.5 if m1_wins else 1.0,
+                        "high_potential_shape_rmse": 0.5 if m1_wins else 1.0,
+                        "h1_h3_loss": 0.5 if m1_wins else 1.0,
+                        "bic": 0.5 if m1_wins else 1.0,
+                        "beta_boundary_hit": False,
+                        "G_OH": 1.0,
+                        "G_O": 2.0,
+                        "scaling_OOH_OH": 3.0,
+                    }
+                )
+
+    gate = _apply_gate(rows)
+
+    assert gate["datasets_passed"] == 0
+    assert gate["accepted"] is False

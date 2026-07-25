@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from oer_aem.features import complex_harmonic_metrics
+from oer_aem.signal import extract_complex_harmonics
 
 
 def test_complex_harmonics_recover_amplitude_and_relative_phase():
@@ -61,3 +62,68 @@ def test_complex_harmonics_require_nyquist_headroom():
             f0=4.0,
             n_harmonics=3,
         )
+
+
+@pytest.mark.parametrize("points_per_cycle", [32, 64])
+@pytest.mark.parametrize("n_cycles", [16, 32])
+def test_h1_h7_recovery_is_stable_across_sampling_and_record_length(
+    points_per_cycle,
+    n_cycles,
+):
+    f0 = 5.0
+    fs = points_per_cycle * f0
+    time = np.arange(n_cycles * points_per_cycle) / fs
+    expected_amplitude = np.linspace(1.0, 0.25, 7)
+    expected_phase = np.linspace(-0.6, 0.6, 7)
+    signal = sum(
+        amplitude
+        * np.cos(2 * np.pi * harmonic * f0 * time + phase)
+        for harmonic, (amplitude, phase) in enumerate(
+            zip(expected_amplitude, expected_phase),
+            start=1,
+        )
+    )
+
+    metrics = complex_harmonic_metrics(
+        signal,
+        fs=fs,
+        f0=f0,
+        n_harmonics=7,
+    )
+
+    assert metrics["amplitude"] == pytest.approx(
+        expected_amplitude,
+        rel=0.01,
+    )
+    phase_error = np.angle(
+        np.exp(1j * (metrics["phase"] - expected_phase))
+    )
+    assert phase_error == pytest.approx(np.zeros(7), abs=0.01)
+
+
+def test_h1_h7_coefficients_are_stable_to_noise_window_width():
+    points_per_cycle, n_cycles, f0 = 32, 24, 5.0
+    fs = points_per_cycle * f0
+    time = np.arange(n_cycles * points_per_cycle) / fs
+    signal = sum(
+        np.cos(2 * np.pi * harmonic * f0 * time + 0.1 * harmonic)
+        / harmonic
+        for harmonic in range(1, 8)
+    )
+
+    narrow, _ = extract_complex_harmonics(
+        signal,
+        fs=fs,
+        f0=f0,
+        n_harmonics=7,
+        side_bins=2,
+    )
+    wide, _ = extract_complex_harmonics(
+        signal,
+        fs=fs,
+        f0=f0,
+        n_harmonics=7,
+        side_bins=8,
+    )
+
+    assert wide == pytest.approx(narrow, rel=1e-12, abs=1e-12)

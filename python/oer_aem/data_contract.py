@@ -16,6 +16,15 @@ class ExperimentalTrace:
     time: np.ndarray
 
 
+def normalize_by_max_abs(values: np.ndarray) -> np.ndarray:
+    """Normalize one channel by its finite maximum absolute magnitude."""
+    array = np.asarray(values, dtype=float)
+    scale = float(np.max(np.abs(array))) if array.size else 0.0
+    if not np.isfinite(scale) or scale <= 1e-30:
+        scale = 1e-30
+    return array / scale
+
+
 def normalize_trace(rows: np.ndarray) -> ExperimentalTrace:
     """Validate, sort by time, and shift the first time point to zero."""
     values = np.asarray(rows, dtype=float)

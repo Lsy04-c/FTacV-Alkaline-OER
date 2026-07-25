@@ -26,8 +26,13 @@ sys.path.insert(0, str(PROJECT / "python"))
 sys.path.insert(0, str(PROJECT / "web" / "backend"))
 
 from main import _analyze_ftacv_data
-from oer_aem.data_contract import residual_on_grid
-from oer_aem.inversion import InversionConfig, TPEInverter, DEFAULT_PARAM_SPECS
+from oer_aem.data_contract import normalize_by_max_abs, residual_on_grid
+from oer_aem.inversion import (
+    InversionConfig,
+    TPEInverter,
+    DEFAULT_PARAM_SPECS,
+    match_experimental_sampling,
+)
 from oer_aem.defaults import initialize_oer_parameters
 
 RAW_DIR = PROJECT / "data" / "raw"
@@ -69,8 +74,10 @@ def run_forward_with_params(params, analysis):
     t, y, E_act, i_tot = OERPhysics.solve_ode_system(p)
     df = OERSignal.safe_df(t)
     proc = OERSignal.process_current(i_tot, df, p)
-    sim_dc = np.asarray(proc[:, 0])
-    sim_harm = [np.asarray(proc[:, k+1]) for k in range(7)]
+    sim_dc = normalize_by_max_abs(np.asarray(proc[:, 0]))
+    sim_harm = [
+        normalize_by_max_abs(np.asarray(proc[:, k + 1])) for k in range(7)
+    ]
     sim_tdc = p['E_start'] + t * p['v']
 
     # 插值到实验电位网格
@@ -136,10 +143,15 @@ def diagnose_dataset(filename: str, n_trials=30) -> Dict[str, Any]:
     fixed = {'Cdl': float(base['Cdl']), 'Ru': float(base['Ru']),
              'A': float(base['A']), 'gamma': float(base['gamma'])}
 
+    n_points, points_per_cycle = match_experimental_sampling(
+        float(analysis["meta"]["duration"]),
+        float(analysis["meta"]["f"]),
+        points_per_cycle=32,
+    )
     cfg = InversionConfig(
         E_start=analysis['meta']['E_start'], E_end=analysis['meta']['E_end'],
         f=analysis['meta']['f'], dE=analysis['meta']['dE'],
-        n_points=2048, points_per_cycle=128, feature_grid_size=200,
+        n_points=n_points, points_per_cycle=points_per_cycle, feature_grid_size=200,
         fixed_params=tuple(fixed.items()), fit_harmonics=tuple(fit_h),
     )
 
@@ -205,6 +217,31 @@ def diagnose_dataset(filename: str, n_trials=30) -> Dict[str, Any]:
             sim_dc_native,
         ),
     ]
+    experimental_scan_rate = float(analysis["meta"]["v"])
+    scan_rate_relative_error = abs(cfg.scan_rate - experimental_scan_rate) / max(
+        abs(experimental_scan_rate), 1e-30
+    )
+    if scan_rate_relative_error > 5e-4:
+        raise RuntimeError(
+            f"{filename}: simulation scan rate mismatch "
+            f"({scan_rate_relative_error:.6g})"
+        )
+    for row in grid_rows:
+        row.update(
+            {
+                "simulation_n_points": cfg.n_points,
+                "points_per_cycle": cfg.points_per_cycle,
+                "fit_harmonics": ";".join(map(str, cfg.fit_harmonics)),
+                "fixed_params": ";".join(
+                    f"{name}={value:g}" for name, value in cfg.fixed_params
+                ),
+                "experimental_duration_s": float(analysis["meta"]["duration"]),
+                "simulated_duration_s": cfg.total_time,
+                "experimental_scan_rate_v_s": experimental_scan_rate,
+                "simulated_scan_rate_v_s": cfg.scan_rate,
+                "scan_rate_relative_error": scan_rate_relative_error,
+            }
+        )
 
     dc_resid = residual_on_grid(
         exp_unique,
@@ -284,6 +321,11 @@ def _write_contract_csv(path: Path, diagnostics: list[Dict[str, Any]]) -> None:
                 "bias_mid",
                 "bias_hi",
                 "sign_convention",
+                "experimental_duration_s",
+                "simulated_duration_s",
+                "experimental_scan_rate_v_s",
+                "simulated_scan_rate_v_s",
+                "scan_rate_relative_error",
             ],
             lineterminator="\n",
         )

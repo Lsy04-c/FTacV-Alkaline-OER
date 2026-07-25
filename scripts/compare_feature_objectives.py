@@ -9,6 +9,7 @@ import csv
 import io
 import sys
 import time
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -31,6 +32,7 @@ from oer_aem.inversion import (
     forward_current,
     make_synthetic_target,
     normalize_vector,
+    match_experimental_sampling,
 )
 
 OUT = ROOT / "results" / "architecture_validation" / "feature_objective_comparison.csv"
@@ -105,13 +107,20 @@ def _config(
     }
     fixed = _fixed_parameters()
     specs = _free_specs(fixed)
+    points_per_cycle = 32
+    if meta is not None:
+        n_points, points_per_cycle = match_experimental_sampling(
+            float(values["duration"]),
+            float(values["f"]),
+            points_per_cycle=32,
+        )
     return InversionConfig(
         E_start=float(values["E_start"]),
         E_end=float(values["E_end"]),
         f=float(values["f"]),
         dE=float(values["dE"]),
         n_points=n_points,
-        points_per_cycle=32,
+        points_per_cycle=points_per_cycle,
         feature_grid_size=64,
         fixed_params=tuple(sorted(fixed.items())),
         param_specs=specs,
@@ -144,6 +153,8 @@ def _experimental_target(
         ],
         "tafel": None,
         "e_grid": config.e_grid,
+        "_experimental_duration": float(analysis["meta"]["duration"]),
+        "_experimental_scan_rate": float(analysis["meta"]["v"]),
     }
     if config.feature_mode == "complex_snr":
         trace = normalize_trace(rows)
@@ -152,9 +163,40 @@ def _experimental_target(
             trace.current[len(trace.current) // 4 :],
             fs=fs,
             f0=float(analysis["meta"]["f"]),
-            n_harmonics=7,
+            n_harmonics=max(config.fit_harmonics),
         )
     return target
+
+
+def _sampling_evidence(
+    config: InversionConfig,
+    target: Mapping[str, Any],
+) -> dict[str, Any]:
+    experimental_duration = float(target.get("_experimental_duration", config.total_time))
+    experimental_scan_rate = float(
+        target.get("_experimental_scan_rate", config.scan_rate)
+    )
+    relative_error = abs(config.scan_rate - experimental_scan_rate) / max(
+        abs(experimental_scan_rate), 1e-30
+    )
+    if relative_error > 5e-4:
+        raise RuntimeError(
+            "simulation scan rate does not match experiment: "
+            f"relative_error={relative_error:.6g}"
+        )
+    return {
+        "n_points": config.n_points,
+        "points_per_cycle": config.points_per_cycle,
+        "fit_harmonics": ";".join(map(str, config.fit_harmonics)),
+        "fixed_params": ";".join(
+            f"{name}={value:g}" for name, value in config.fixed_params
+        ),
+        "experimental_duration_s": experimental_duration,
+        "simulated_duration_s": config.total_time,
+        "experimental_scan_rate_v_s": experimental_scan_rate,
+        "simulated_scan_rate_v_s": config.scan_rate,
+        "scan_rate_relative_error": relative_error,
+    }
 
 
 def _boundary_hits(best_x: np.ndarray, specs) -> list[str]:
@@ -239,8 +281,11 @@ def _result_row(
         ),
         "total_loss": result.best_value,
         "loss_dc": components.get("dc", float("nan")),
-        "loss_harmonic_amplitude": components.get(
-            "harmonic_amplitude", float("nan")
+        "loss_common_harmonics": components.get(
+            "common_harmonics", float("nan")
+        ),
+        "loss_dataset_specific_harmonics": components.get(
+            "dataset_specific_harmonics", float("nan")
         ),
         "loss_phase": components.get("phase", float("nan")),
         "loss_physical": components.get("physical", float("nan")),
@@ -258,13 +303,40 @@ def _result_row(
         "forward_count": result.n_forward,
         "evaluation_forward_count": evaluation_forward_count,
         "runtime_s": runtime_s,
+        **_sampling_evidence(config, target),
     }
 
 
-def run_comparison(trials: int, smoke: bool) -> list[dict[str, Any]]:
+def _run_job(job: Mapping[str, Any]) -> dict[str, Any]:
+    started = time.perf_counter()
+    result = TPEInverter(
+        config=job["config"],
+        specs=job["specs"],
+        seed=job["seed"],
+        initial_params=job["initial"],
+    ).run(job["target"], n_trials=job["trials"])
+    return _result_row(
+        dataset=job["dataset"],
+        target_type=job["target_type"],
+        mode=job["mode"],
+        seed=job["seed"],
+        trials=job["trials"],
+        result=result,
+        runtime_s=time.perf_counter() - started,
+        specs=job["specs"],
+        config=job["config"],
+        target=job["target"],
+    )
+
+
+def run_comparison(
+    trials: int,
+    smoke: bool,
+    workers: int = 1,
+) -> list[dict[str, Any]]:
     n_points = 256 if smoke else 1024
     initial = _base_parameters()
-    rows_out = []
+    jobs = []
 
     for mode in MODES:
         config = _config(mode, n_points)
@@ -276,22 +348,14 @@ def run_comparison(trials: int, smoke: bool) -> list[dict[str, Any]]:
             seed=101,
         )
         for seed in SEEDS:
-            started = time.perf_counter()
-            result = TPEInverter(
-                config=config,
-                specs=specs,
-                seed=seed,
-                initial_params=initial,
-            ).run(target, n_trials=trials)
-            rows_out.append(
-                _result_row(
+            jobs.append(
+                dict(
                     dataset="synthetic",
                     target_type="synthetic",
                     mode=mode,
                     seed=seed,
                     trials=trials,
-                    result=result,
-                    runtime_s=time.perf_counter() - started,
+                    initial=initial,
                     specs=specs,
                     config=config,
                     target=target,
@@ -314,28 +378,23 @@ def run_comparison(trials: int, smoke: bool) -> list[dict[str, Any]]:
             specs = config.param_specs
             target = _experimental_target(rows, analysis, config)
             for seed in SEEDS:
-                started = time.perf_counter()
-                result = TPEInverter(
-                    config=config,
-                    specs=specs,
-                    seed=seed,
-                    initial_params=initial,
-                ).run(target, n_trials=trials)
-                rows_out.append(
-                    _result_row(
+                jobs.append(
+                    dict(
                         dataset=filename,
                         target_type="experimental",
                         mode=mode,
                         seed=seed,
                         trials=trials,
-                        result=result,
-                        runtime_s=time.perf_counter() - started,
+                        initial=initial,
                         specs=specs,
                         config=config,
                         target=target,
                     )
                 )
-    return rows_out
+    if workers == 1:
+        return [_run_job(job) for job in jobs]
+    with ProcessPoolExecutor(max_workers=workers) as executor:
+        return list(executor.map(_run_job, jobs))
 
 
 def _write_csv(rows: list[dict[str, Any]], output: Path) -> None:
@@ -354,6 +413,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--trials", type=int, default=50)
+    parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--output", type=Path, default=OUT)
     return parser.parse_args()
 
@@ -362,7 +422,9 @@ def main() -> None:
     args = _parse_args()
     if args.trials < 1:
         raise ValueError("--trials must be positive")
-    rows = run_comparison(args.trials, args.smoke)
+    if args.workers < 1:
+        raise ValueError("--workers must be positive")
+    rows = run_comparison(args.trials, args.smoke, args.workers)
     expected = len(MODES) * len(SEEDS) * (1 + len(DATASETS))
     if len(rows) != expected:
         raise RuntimeError(f"expected {expected} rows, got {len(rows)}")

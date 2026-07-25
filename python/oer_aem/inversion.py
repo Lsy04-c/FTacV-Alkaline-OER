@@ -100,6 +100,19 @@ class InversionConfig:
         return np.linspace(float(tdc_trim[0]), float(tdc_trim[-1]), self.feature_grid_size)
 
 
+def match_experimental_sampling(
+    duration: float,
+    frequency: float,
+    *,
+    points_per_cycle: int = 32,
+) -> tuple[int, int]:
+    """Return an efficient simulation grid with the experiment's cycle count."""
+    if duration <= 0 or frequency <= 0 or points_per_cycle < 2:
+        raise ValueError("duration, frequency, and points_per_cycle must be positive")
+    cycles = max(1, round(float(duration) * float(frequency)))
+    return cycles * int(points_per_cycle), int(points_per_cycle)
+
+
 @dataclass
 class InversionResult:
     """Result returned by :class:`TPEInverter`."""
@@ -421,7 +434,9 @@ def extract_features(current: Sequence[float], config: InversionConfig) -> Dict[
         "dc": np.interp(e_grid, tdc_trim, _normalize_envelope(dc)),
         "harm": [],
     }
-    for idx in range(7):
+    n_required = max(config.fit_harmonics, default=0)
+    n_envelopes = n_required if config.feature_mode == "complex_snr" else 7
+    for idx in range(n_envelopes):
         h = harms[:, idx]
         features["harm"].append(np.interp(e_grid, tdc_trim, _normalize_envelope(h)))
 
@@ -433,7 +448,7 @@ def extract_features(current: Sequence[float], config: InversionConfig) -> Dict[
             current_arr[i0:],
             fs=config.sample_rate,
             f0=config.f,
-            n_harmonics=7,
+            n_harmonics=n_required,
         )
     return features
 
@@ -508,7 +523,8 @@ class InversionObjective:
             self.n_ode_fail += 1
             self.last_components = {
                 "dc": 0.0,
-                "harmonic_amplitude": 0.0,
+                "common_harmonics": 0.0,
+                "dataset_specific_harmonics": 0.0,
                 "phase": 0.0,
                 "physical": float(self.config.ode_penalty),
             }
@@ -524,12 +540,13 @@ class InversionObjective:
                 ** 2
             )
         )
-        amplitude_loss = 0.0
+        common_harmonic_loss = 0.0
+        dataset_specific_harmonic_loss = 0.0
         phase_loss = 0.0
         if self.config.feature_mode == "legacy":
             for harmonic in self.fit_harmonics:
                 idx = harmonic - 1
-                amplitude_loss += float(
+                channel_loss = float(
                     np.sum(
                         (
                             (
@@ -541,6 +558,10 @@ class InversionObjective:
                         ** 2
                     )
                 )
+                if harmonic <= 3:
+                    common_harmonic_loss += channel_loss
+                else:
+                    dataset_specific_harmonic_loss += channel_loss
         else:
             selected = np.asarray(self.fit_harmonics, dtype=int) - 1
             simulated = features["complex_harmonics"]
@@ -560,7 +581,12 @@ class InversionObjective:
                 / amplitude_scale
                 / self.config.sigma_harm
             )
-            amplitude_loss = float(np.sum(weights * amplitude_residual**2))
+            channel_losses = weights * amplitude_residual**2
+            common_mask = np.asarray(self.fit_harmonics) <= 3
+            common_harmonic_loss = float(np.sum(channel_losses[common_mask]))
+            dataset_specific_harmonic_loss = float(
+                np.sum(channel_losses[~common_mask])
+            )
             phase_residual = wrapped_phase_difference(
                 np.asarray(simulated["phase"])[selected],
                 np.asarray(experimental["phase"])[selected],
@@ -586,7 +612,8 @@ class InversionObjective:
                 )
         self.last_components = {
             "dc": dc_loss,
-            "harmonic_amplitude": amplitude_loss,
+            "common_harmonics": common_harmonic_loss,
+            "dataset_specific_harmonics": dataset_specific_harmonic_loss,
             "phase": phase_loss,
             "physical": physical_loss,
         }

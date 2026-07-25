@@ -136,6 +136,23 @@ def test_feature_distance_shape_vs_scalar():
     assert _feature_distance(fa, fa, "tafel") == 0.0
 
 
+def test_feature_distance_resolves_report_labels():
+    base = {
+        "dc": np.array([0.0, 1.0]),
+        "harm": [np.array([0.0, 1.0])],
+        "H1_peak_amplitude": 1.0,
+    }
+    changed = {
+        "dc": np.array([0.0, 0.8]),
+        "harm": [np.array([0.0, 0.7])],
+        "H1_peak_amplitude": 0.7,
+    }
+
+    assert _feature_distance(changed, base, "DC shape") > 0
+    assert _feature_distance(changed, base, "H1 shape") > 0
+    assert _feature_distance(changed, base, "H1 peak amplitude") > 0
+
+
 # ========== Test 9: 正负方向变化对称性 ==========
 def test_symmetric_perturbation_scores_are_similar():
     cfg = InversionConfig(n_points=256, points_per_cycle=32, feature_grid_size=32)

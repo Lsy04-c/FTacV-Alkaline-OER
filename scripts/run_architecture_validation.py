@@ -91,6 +91,12 @@ def main() -> None:
     importance = analyze_parameter_importance(
         params,
         config=config,
+        exp_harmonic_quality={
+            "fit_harmonics": [1, 2, 3],
+            "channels": [
+                {"harmonic": h, "relative_rms": 1.0} for h in range(1, 4)
+            ],
+        },
         fit_harmonics=[1, 2, 3],
     )
     if not importance.get("success"):
@@ -130,16 +136,44 @@ def main() -> None:
         "scaling_OOH_OH": 3.2,
         "gamma": 1e-9,
     }
-    target = make_synthetic_target(truth, config=config, noise_fraction=0.0)
-    trial_count = 2 if args.smoke else args.trials
-    recovery = TPEInverter(
-        config=config,
+    recovery_spec = (("k0_1", "log10", 1.0, 3.0),)
+    recovery_config = InversionConfig(
+        n_points=config.n_points,
+        points_per_cycle=config.points_per_cycle,
+        feature_grid_size=config.feature_grid_size,
+        fit_harmonics=(1, 2, 3),
+        fixed_params=tuple(
+            sorted((name, value) for name, value in truth.items() if name != "k0_1")
+        ),
+        param_specs=recovery_spec,
         seed=config.seed,
-        initial_params=truth,
+    )
+    target = make_synthetic_target(
+        truth, config=recovery_config, noise_fraction=0.0
+    )
+    trial_count = 2 if args.smoke else args.trials
+    initial = dict(truth)
+    initial["k0_1"] = truth["k0_1"] / 10.0
+    recovery = TPEInverter(
+        config=recovery_config,
+        specs=recovery_spec,
+        seed=config.seed,
+        initial_params=initial,
     ).run(target, n_trials=trial_count)
+    relative_recovery_error = abs(
+        recovery.best_params["k0_1"] - truth["k0_1"]
+    ) / truth["k0_1"]
     payload = {
         "git_commit": git_head(),
         "command": " ".join(sys.argv),
+        "configuration": {
+            "n_points": config.n_points,
+            "points_per_cycle": config.points_per_cycle,
+            "feature_grid_size": config.feature_grid_size,
+            "fit_harmonics": list(config.fit_harmonics),
+            "parameter_specs": [list(spec) for spec in recovery_spec],
+            "fixed_params": dict(recovery_config.fixed_params),
+        },
         "seed": config.seed,
         "smoke": args.smoke,
         "n_trials": trial_count,
@@ -147,6 +181,11 @@ def main() -> None:
         "best_value": recovery.best_value,
         "best_params": recovery.best_params,
         "truth_params": truth,
+        "designed_identifiable_parameters": ["k0_1"],
+        "initial_params": initial,
+        "relative_recovery_error": relative_recovery_error,
+        "recovery_tolerance": 0.25,
+        "recovered": relative_recovery_error <= 0.25,
         "classifications": labels,
         "importance_forward_runs": importance["metadata"]["n_forward_runs"],
         "duration_seconds": round(time.monotonic() - started, 3),

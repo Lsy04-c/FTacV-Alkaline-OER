@@ -19,6 +19,7 @@ from oer_aem.inversion import (
     denormalize_vector,
     encode_params,
     make_param_specs_from_physical_bounds,
+    match_experimental_sampling,
     make_synthetic_target,
     normalize_vector,
     params_from_vector,
@@ -238,9 +239,28 @@ def test_objective_reports_named_loss_components():
 
     assert set(objective.last_components) >= {
         "dc",
-        "harmonic_amplitude",
+        "common_harmonics",
+        "dataset_specific_harmonics",
         "physical",
     }
+
+
+def test_objective_separates_common_and_dataset_specific_harmonics():
+    config = InversionConfig(
+        n_points=256,
+        points_per_cycle=32,
+        feature_grid_size=32,
+        fit_harmonics=(1, 2, 3, 4),
+        feature_mode="legacy",
+    )
+    target = make_synthetic_target(TRUTH, config=config, noise_fraction=0.0)
+    target["harm"][3] = target["harm"][3] + 0.1
+    objective = InversionObjective(target, config=config)
+
+    objective(encode_params(TRUTH))
+
+    assert objective.last_components["common_harmonics"] == pytest.approx(0.0)
+    assert objective.last_components["dataset_specific_harmonics"] > 0.0
 
 
 def test_complex_feature_mode_wraps_phase_residual():
@@ -262,3 +282,69 @@ def test_objective_rejects_unknown_feature_mode():
 
     with pytest.raises(ValueError, match="feature_mode"):
         InversionObjective({}, config=config)
+
+
+def test_experimental_sampling_preserves_scan_duration():
+    duration = 51.19921875
+    frequency = 5.0000762951094835
+    n_points, points_per_cycle = match_experimental_sampling(
+        duration,
+        frequency,
+        points_per_cycle=12,
+    )
+    config = InversionConfig(
+        E_start=1.124,
+        E_end=1.623,
+        f=frequency,
+        n_points=n_points,
+        points_per_cycle=points_per_cycle,
+    )
+
+    assert config.total_time == pytest.approx(duration, rel=2e-4)
+    assert config.scan_rate == pytest.approx(
+        (1.623 - 1.124) / duration,
+        rel=2e-4,
+    )
+
+
+def test_default_experimental_sampling_resolves_h1_h7():
+    n_points, points_per_cycle = match_experimental_sampling(
+        duration=51.19922,
+        frequency=5.0,
+    )
+
+    assert n_points == 256 * points_per_cycle
+    assert points_per_cycle >= 4 * 7
+
+
+def test_sampling_evidence_records_reproducible_configuration():
+    from scripts.compare_feature_objectives import _sampling_evidence
+
+    config = InversionConfig(
+        n_points=320,
+        points_per_cycle=32,
+        fit_harmonics=(1, 2, 3, 5),
+        fixed_params=(("Ru", 25.0), ("Cdl", 1e-4)),
+    )
+    evidence = _sampling_evidence(config, {})
+
+    assert evidence["n_points"] == 320
+    assert evidence["points_per_cycle"] == 32
+    assert evidence["fit_harmonics"] == "1;2;3;5"
+    assert evidence["fixed_params"] == "Ru=25;Cdl=0.0001"
+
+
+def test_complex_mode_extracts_only_required_harmonics_below_nyquist():
+    config = InversionConfig(
+        n_points=192,
+        points_per_cycle=12,
+        feature_grid_size=24,
+        fit_harmonics=(1, 2, 3, 4, 5),
+        feature_mode="complex_snr",
+    )
+
+    target = make_synthetic_target(TRUTH, config=config, noise_fraction=0.0)
+    objective = InversionObjective(target, config=config)
+
+    assert len(target["complex_harmonics"]["amplitude"]) == 5
+    assert objective(encode_params(TRUTH)) < 1e-12

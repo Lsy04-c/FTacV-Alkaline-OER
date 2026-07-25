@@ -12,7 +12,7 @@ from typing import Optional, List, Dict, Any
 
 from oer_aem import OERPhysics, OERSignal, initialize_oer_parameters
 from oer_aem.calibration import calibrate as calibrate_ftacv
-from oer_aem.data_contract import normalize_trace
+from oer_aem.data_contract import normalize_by_max_abs, normalize_trace
 from oer_aem.inversion import (
     DEFAULT_PARAM_SPECS,
     InversionConfig,
@@ -136,7 +136,6 @@ def _analyze_ftacv_data(rows: np.ndarray) -> Dict[str, Any]:
         'preox': calib['preox'],
     }
 
-    norm = lambda a: (a / max(np.max(np.abs(a)), 1e-30))
     return {
         'success': True,
         'meta': {
@@ -147,8 +146,10 @@ def _analyze_ftacv_data(rows: np.ndarray) -> Dict[str, Any]:
         'tdc': _to_list(E_dc),
         'E_raw': _to_list(E_raw),
         'i_raw': _to_list(i_raw),
-        'dc': _to_list(norm(I_dc)),
-        'harmonics': [_to_list(norm(I_harm[:, kk])) for kk in range(7)],
+        'dc': _to_list(normalize_by_max_abs(I_dc)),
+        'harmonics': [
+            _to_list(normalize_by_max_abs(I_harm[:, kk])) for kk in range(7)
+        ],
         'harmonic_quality': _serialize(harmonic_quality),
         'suggested_fit_harmonics': harmonic_quality['fit_harmonics'],
         'calib': calib_brief,

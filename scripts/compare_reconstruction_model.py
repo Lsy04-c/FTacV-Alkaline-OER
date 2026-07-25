@@ -7,6 +7,7 @@ import argparse
 import csv
 import sys
 import time
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -63,7 +64,9 @@ def _model_setup(
         E_end=float(meta["E_end"]),
         f=float(meta["f"]),
         dE=float(meta["dE"]),
-        n_points=n_points,
+        n_points=feature_compare.match_experimental_sampling(
+            float(meta["duration"]), float(meta["f"]), points_per_cycle=32
+        )[0],
         points_per_cycle=32,
         feature_grid_size=64,
         fixed_params=tuple(sorted(fixed.items())),
@@ -79,14 +82,18 @@ def _diagnostic_metrics(
     target: Mapping[str, Any],
     config: InversionConfig,
     specs,
-) -> tuple[float, float]:
+) -> tuple[float, float, float, float]:
     current = forward_current(result.best_x, config, specs)
     if current is None:
-        return float("nan"), float("nan")
+        return (float("nan"),) * 4
     simulated = extract_features(current, config)
     high = config.e_grid >= np.percentile(config.e_grid, 80.0)
     residual = residual_exp_minus_sim(target["dc"], simulated["dc"])
     high_bias = float(np.mean(residual[high]))
+    high_rmse = float(np.sqrt(np.mean(residual[high] ** 2)))
+    high_shape_rmse = float(
+        np.sqrt(np.mean((residual[high] - np.mean(residual[high])) ** 2))
+    )
 
     selected = np.arange(3)
     if config.feature_mode == "legacy":
@@ -135,7 +142,7 @@ def _diagnostic_metrics(
             np.sum(weights * amplitude_residual**2)
             + config.phase_weight * np.sum(weights * phase_residual**2)
         )
-    return high_bias, harmonic_loss
+    return high_bias, high_rmse, high_shape_rmse, harmonic_loss
 
 
 def _beta_boundary_hit(result, model: str) -> bool:
@@ -174,7 +181,12 @@ def _run_row(
         n_observations=n_observations,
         n_parameters=len(specs),
     )
-    high_potential_bias, h1_h3_loss = _diagnostic_metrics(
+    (
+        high_potential_bias,
+        high_potential_rmse,
+        high_potential_shape_rmse,
+        h1_h3_loss,
+    ) = _diagnostic_metrics(
         result,
         target,
         config,
@@ -191,6 +203,8 @@ def _run_row(
         "aic": criteria["aic"],
         "bic": criteria["bic"],
         "high_potential_bias": high_potential_bias,
+        "high_potential_rmse": high_potential_rmse,
+        "high_potential_shape_rmse": high_potential_shape_rmse,
         "h1_h3_loss": h1_h3_loss,
         "G_OH": result.best_params["G_OH"],
         "G_O": result.best_params["G_O"],
@@ -199,6 +213,7 @@ def _run_row(
         "beta_boundary_hit": _beta_boundary_hit(result, model),
         "forward_count": result.n_forward,
         "runtime_s": runtime_s,
+        **feature_compare._sampling_evidence(config, target),
     }
 
 
@@ -207,37 +222,51 @@ def _coefficient_of_variation(values: Sequence[float]) -> float:
     return float(np.std(array) / max(abs(float(np.mean(array))), 1e-12))
 
 
-def _apply_gate(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    best = {}
-    for dataset in feature_compare.DATASETS:
-        for model in MODELS:
-            candidates = [
-                row
-                for row in rows
-                if row["dataset"] == dataset and row["model"] == model
-            ]
-            best[(dataset, model)] = min(
-                candidates,
-                key=lambda row: row["residual_loss"],
-            )
+def _run_row_job(job: Mapping[str, Any]) -> dict[str, Any]:
+    return _run_row(**job)
 
+
+def _apply_gate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     dataset_checks = []
     check_by_dataset = {}
     for dataset in feature_compare.DATASETS:
-        m0 = best[(dataset, "M0")]
-        m1 = best[(dataset, "M1")]
+        paired = []
+        for seed in SEEDS:
+            m0 = next(
+                row for row in rows
+                if row["dataset"] == dataset
+                and row["model"] == "M0"
+                and row["seed"] == seed
+            )
+            m1 = next(
+                row for row in rows
+                if row["dataset"] == dataset
+                and row["model"] == "M1"
+                and row["seed"] == seed
+            )
+            paired.append(
+                {
+                    "structured_improved": (
+                        float(m1["high_potential_rmse"])
+                        < float(m0["high_potential_rmse"])
+                        and float(m1["high_potential_shape_rmse"])
+                        < float(m0["high_potential_shape_rmse"])
+                    ),
+                    "harmonics_not_worse": (
+                        float(m1["h1_h3_loss"])
+                        <= 1.05 * max(float(m0["h1_h3_loss"]), 1e-12)
+                    ),
+                    "complexity_supported": float(m1["bic"]) < float(m0["bic"]),
+                    "boundary_hit": bool(m1["beta_boundary_hit"]),
+                }
+            )
+        required_pairs = len(SEEDS) // 2 + 1
         check = {
             "dataset": dataset,
-            "improved": (
-                abs(float(m1["high_potential_bias"]))
-                < abs(float(m0["high_potential_bias"]))
-            ),
-            "harmonics_not_worse": (
-                float(m1["h1_h3_loss"])
-                <= 1.05 * max(float(m0["h1_h3_loss"]), 1e-12)
-            ),
-            "boundary_hit": bool(m1["beta_boundary_hit"]),
-            "complexity_supported": float(m1["bic"]) < float(m0["bic"]),
+            "improved": sum(p["structured_improved"] for p in paired) >= required_pairs,
+            "harmonics_not_worse": sum(p["harmonics_not_worse"] for p in paired) >= required_pairs,
+            "boundary_hit": all(p["boundary_hit"] for p in paired),
+            "complexity_supported": sum(p["complexity_supported"] for p in paired) >= required_pairs,
         }
         dataset_checks.append(check)
         check_by_dataset[dataset] = check
@@ -245,10 +274,22 @@ def _apply_gate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     cv_ratios = []
     for parameter in THERMO_PARAMS:
         cv_m0 = _coefficient_of_variation(
-            [best[(dataset, "M0")][parameter] for dataset in feature_compare.DATASETS]
+            [
+                np.median([
+                    row[parameter] for row in rows
+                    if row["dataset"] == dataset and row["model"] == "M0"
+                ])
+                for dataset in feature_compare.DATASETS
+            ]
         )
         cv_m1 = _coefficient_of_variation(
-            [best[(dataset, "M1")][parameter] for dataset in feature_compare.DATASETS]
+            [
+                np.median([
+                    row[parameter] for row in rows
+                    if row["dataset"] == dataset and row["model"] == "M1"
+                ])
+                for dataset in feature_compare.DATASETS
+            ]
         )
         cv_ratios.append(cv_m1 / max(cv_m0, 1e-12))
     thermo_cv_ratio = max(cv_ratios)
@@ -258,7 +299,7 @@ def _apply_gate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         check = check_by_dataset[row["dataset"]]
         row.update(
             {
-                "high_bias_improved": check["improved"],
+                "high_structure_improved": check["improved"],
                 "harmonics_not_worse": check["harmonics_not_worse"],
                 "complexity_supported": check["complexity_supported"],
                 "thermo_cv_ratio": gate["thermo_cv_ratio"],
@@ -273,10 +314,11 @@ def run_comparison(
     trials: int,
     smoke: bool,
     feature_mode: str,
+    workers: int = 1,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     n_points = 256 if smoke else 1024
     initial = feature_compare._base_parameters()
-    rows_out = []
+    jobs = []
     for filename in feature_compare.DATASETS:
         raw_rows = feature_compare._load_rows(feature_compare.RAW / filename)
         analysis = _analyze_ftacv_data(raw_rows)
@@ -301,8 +343,8 @@ def run_comparison(
         for model in MODELS:
             config, specs = configs[model]
             for seed in SEEDS:
-                rows_out.append(
-                    _run_row(
+                jobs.append(
+                    dict(
                         filename=filename,
                         model=model,
                         seed=seed,
@@ -313,6 +355,11 @@ def run_comparison(
                         initial=initial,
                     )
                 )
+    if workers == 1:
+        rows_out = [_run_row_job(job) for job in jobs]
+    else:
+        with ProcessPoolExecutor(max_workers=workers) as executor:
+            rows_out = list(executor.map(_run_row_job, jobs))
     return rows_out, _apply_gate(rows_out)
 
 
@@ -332,6 +379,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--trials", type=int, default=50)
+    parser.add_argument("--workers", type=int, default=1)
     parser.add_argument(
         "--feature-mode",
         choices=("legacy", "complex_snr"),
@@ -345,10 +393,13 @@ def main() -> None:
     args = _parse_args()
     if args.trials < 1:
         raise ValueError("--trials must be positive")
+    if args.workers < 1:
+        raise ValueError("--workers must be positive")
     rows, gate = run_comparison(
         trials=args.trials,
         smoke=args.smoke,
         feature_mode=args.feature_mode,
+        workers=args.workers,
     )
     expected = len(feature_compare.DATASETS) * len(MODELS) * len(SEEDS)
     if len(rows) != expected:
