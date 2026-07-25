@@ -1,11 +1,38 @@
 {
-  "git_commit": "c5e8f5709c1a2700714536a426380ede699c3542",
-  "command": "scripts/run_architecture_validation.py --trials 50",
+  "git_commit": "b8b176c1a7ead0e7cf4d92fd818627aef7ef9559",
+  "command": "/Users/liushiyu/OER-FTAcV/scripts/run_architecture_validation.py --trials 50",
+  "configuration": {
+    "n_points": 2048,
+    "points_per_cycle": 128,
+    "feature_grid_size": 200,
+    "fit_harmonics": [
+      1,
+      2,
+      3
+    ],
+    "parameter_specs": [
+      [
+        "k0_1",
+        "log10",
+        1.0,
+        3.0
+      ]
+    ],
+    "fixed_params": {
+      "G_O": 2.8,
+      "G_OH": 1.23,
+      "gamma": 1e-09,
+      "k0_2": 50.0,
+      "k0_3": 20.0,
+      "k0_4": 80.0,
+      "scaling_OOH_OH": 3.2
+    }
+  },
   "seed": 42,
   "smoke": false,
   "n_trials": 50,
   "n_forward": 50,
-  "best_value": 0.00389359414750194,
+  "best_value": 0.0039193663592296795,
   "best_params": {
     "k0_1": 98.80980188921976
   },
@@ -51,5 +78,5 @@
     "A": "coupled"
   },
   "importance_forward_runs": 26,
-  "duration_seconds": 49.333
+  "duration_seconds": 41.337
 }

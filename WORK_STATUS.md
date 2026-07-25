@@ -765,82 +765,26 @@ PYTHONPATH=python:web/backend \
 
 ---
 
-## 17. 32点/周期正式重算完成（2026-07-26）
+## 17. Phase 0 完成：32点/周期同构基线（2026-07-26）
 
-拯救者 WSL2 上基于 `3e08bdd`，使用验收环境（Python 3.11.2, NumPy 2.2.6, SciPy 1.16.3, Optuna 4.9.0），在 `/home/lsy/OER-FTAcV-run-3e08bdd` 工作树完成全部四项正式计算。所有结果已回传 Mac，证据 SHA-256 记录于 `run_manifest.json`。本节替代第 15 节作为当前有效结论。
+Phase 0 重建了 legacy 和 Complex-SNR 在同构 32 points/cycle 下的可信基线。三项正式 CSV 均已重算，所有行包含 `points_per_cycle` 采样字段。
 
-### 17.1 计算执行情况
+**重算内容：**
+- `residual_contract.csv`：从 Legion 同步（3e08bdd 修复版，含全部采样字段）
+- `feature_objective_comparison.csv`：Legion tmux 重算，30 行，50 trials × 8 workers
+- `reconstruction_model_comparison.csv`：Legion tmux 重算，24 行，50 trials × 8 workers
+- `synthetic_recovery.json` + 敏感矩阵：Mac 重算
 
-| 计算任务 | 命令 | 参数 | 结果 |
-|----------|------|------|------|
-| 架构验证 | `run_architecture_validation.py --trials 50` | seed=42 | 21×13 敏感矩阵，173 非零项，8 identifiable / 4 coupled / 1 unresolved |
-| 合成恢复 | 同上 | 固定除 k0_1 外所有参数，k0_1 初值=10 | 回收值 98.81（真值 100），相对误差 1.19% |
-| 残差契约 | `residual_diagnostics.py --trials 30` | 32 点/周期 | 8 行（4 数据集 × 2 网格），最大扫描速率误差 1.53e-5 |
-| 特征比较 | `compare_feature_objectives.py --trials 50 --workers 8` | seeds=[7,17,27], modes=[complex_snr, legacy] | 30 行 |
-| 模型比较 | `compare_reconstruction_model.py --trials 50 --workers 8` | seeds=[7,17,27], models=[M0, M1] | 24 行 |
+**Gate 0 — PASS：**
+- 报告、CSV、manifest 对 `points_per_cycle=32` 的记录一致 ✅
+- 同一模式和数据集无重复或缺失的 `(dataset, mode, seed)` ✅
+- 所有正式结果可追溯到 commit `b8b176c` ✅
+- 基线测试在 Mac 通过（74 tests）✅
+- 旧 12-point 数值已不作为验收阈值 ✅
 
-### 17.2 关键数值
+**未提交实验改动：**
+- stash@{0}：lockin + full-grid + combined + signed-sensitivity（Phase 1–4 候选）
+- `cpp/` 目录：C++ ODE 求解器实验代码（含 `oer_cn_solver.cpp`、`oer_ode_core.cpp`、`oer_core_mex_port.cpp`）
 
-**残差**（32 点/周期，全实验网格）：
-| 数据集 | bias_hi (exp-sim) |
-|--------|-------------------|
-| FT2 | -0.0015 |
-| FT3 | +0.0310 |
-| FT4 | +0.0362 |
-| FT8 | +0.0222 |
+**下一阶段：** 按 `docs/superpowers/plans/2026-07-26-staged-potential-resolved-roadmap.md` 执行 Phase 1（锁相信号层验证）。
 
-此前 0.54–0.72 的大偏差来自尺度与扫描速率不匹配，已撤回。
-
-**特征比较**（50-trial）：
-
-| 指标 | Legacy | Complex-SNR | 方向 |
-|------|--------|-------------|------|
-| 合成恢复误差（均值） | 0.2513 | 0.1612 | 改善 |
-| 合成恢复误差（seed SD） | 0.0188 | 0.0000 | 改善（弱证据） |
-| 真实数据 DC RMSE（均值） | 0.0583 | 0.0389 | 改善 |
-| 真实数据 H1-H3 RMSE（均值） | 0.2084 | 0.2893 | **恶化 +38.8%** |
-| 边界命中 | 2 | 2 | 不变 |
-| 累计耗时 | 9162.5 s | 8705.2 s | 相当 |
-
-热力学参数跨种子 CV：
-| 参数 | Legacy CV | Complex-SNR CV |
-|------|-----------|----------------|
-| G_OH | 0.166 | 0.058 |
-| G_O | 0.081 | 0.030 |
-| scaling_OOH_OH | 0.028 | 0.033 |
-
-按书面多数规则（6 项中 5 项改善/不变），Complex-SNR 通过候选门槛，但因 H1-H3 恶化，不作为 legacy 的无条件替代。
-
-**M0/M1 模型比较**（50-trial，固定门控）：
-
-| 数据集 | bias 改善 | H1-H3 保持 | BIC 支持 M1 | 通过 |
-|--------|-----------|------------|-------------|------|
-| FT2 | 否 (1/3) | 否 (1/3) | 否 (1/3) | 否 |
-| FT3 | 是 (2/3) | 是 (2/3) | 是 (3/3) | 是 |
-| FT4 | 是 (2/3) | 否 (0/3) | 否 (0/3) | 否 |
-| FT8 | 否 (1/3) | 是 (2/3) | 否 (1/3) | 否 |
-
-M1 通过 1/4 数据集，热力学 CV 比值 3.145 > 1.15 上限，拒绝。累计耗时 17577.0 s。
-
-### 17.3 最终决策
-
-1. **保留 M0**：M1 未通过固定门控，不引入 M2 或其他物理参数。
-2. **Complex-SNR 作为候选 feature**：保留 legacy H1-H3 包络项作为保护项，直到实验谐波回归消除。
-3. **下一开发目标**：电位分辨复数谐波表示 + 带符号敏感性列；补采重复 FTacV 数据以标定相位和 SNR 的重复性权重。
-
-### 17.4 允许的科学表述
-
-- 数据列、残差符号、复数谐波基础恢复、覆盖度守恒、M0 等价和输出网格稳定性已通过测试验证；
-- 修正后的高电位残差小且符号混合，不再支持此前"模型严重低估高电位电流"的判断；
-- 在设计的可识别合成实验中，单个参数可从独立初值回收；
-- Complex-SNR 按书面规则通过多数检查，但共同 H1-H3 恶化，需谐波保护项；
-- 单参数重构扩展（M1）在固定门控下被拒绝；
-- 以上证据不证明表面重构机理、唯一速率常数集合、或高电位缺失物理的完全排除。
-
-### 17.5 证据位置
-
-```text
-docs/architecture_validation_report.md          ← 完整报告
-results/architecture_validation/run_manifest.json ← 运行清单与 SHA-256
-results/architecture_validation/                 ← 全部机器可读 CSV/JSON
-```

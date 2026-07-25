@@ -1,7 +1,7 @@
 # OER-FTAcV Architecture Validation Report
 
-Date: 2026-07-25  
-Evaluation base commit: `c5e8f57` plus the reviewed validation fixes in this report  
+Date: 2026-07-26 (Phase 0 32-point recalibration)
+Evaluation base commit: `3e08bdd` (residual) — recomputed feature/reconstruction on `b8b176c`
 Data: four tracked FTacV traces in `data/raw/`
 
 ## 1. Baseline and tested commit
