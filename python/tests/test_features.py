@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from oer_aem.features import complex_harmonic_metrics
-from oer_aem.signal import extract_complex_harmonics
+from oer_aem.signal import extract_complex_harmonics, lockin_harmonics
 
 
 def test_complex_harmonics_recover_amplitude_and_relative_phase():
@@ -127,3 +127,77 @@ def test_h1_h7_coefficients_are_stable_to_noise_window_width():
     )
 
     assert wide == pytest.approx(narrow, rel=1e-12, abs=1e-12)
+
+
+# --- lock-in amplifier tests ---
+
+def test_lockin_recovers_steady_state_amplitude_and_phase():
+    """Lock-in should recover constant A and φ for a pure multi-harmonic signal."""
+    f0, fs, duration = 5.0, 500.0, 4.0
+    t = np.arange(0.0, duration, 1.0 / fs)
+    # Two harmonics with known amplitude and phase, plus small DC offset
+    signal = (
+        1.0 * np.cos(2 * np.pi * 1 * f0 * t + 0.30)
+        + 0.4 * np.cos(2 * np.pi * 2 * f0 * t - 0.50)
+        + 0.1  # DC offset — should be rejected by the lock-in
+    )
+    result = lockin_harmonics(signal, t, f0, harmonics=[1, 2],
+                              potential_resolution=0.1, scan_rate=1.0)
+
+    # Trim filter transients: discard first/last 2/(fc) seconds
+    fc = result["fc_used"]
+    transient = int(2.0 / fc * fs)
+    mid = slice(transient, -transient)
+
+    amp1_mid = result["amplitude"][0][mid]
+    amp2_mid = result["amplitude"][1][mid]
+    phase1_mid = result["phase"][0][mid]
+    phase2_mid = result["phase"][1][mid]
+
+    # Amplitude should be near the true values in the steady mid-section
+    assert float(np.mean(amp1_mid)) == pytest.approx(1.0, rel=0.05)
+    assert float(np.mean(amp2_mid)) == pytest.approx(0.4, rel=0.05)
+
+    # Phase should be near the true values
+    mean_phase1 = float(np.mean(phase1_mid))
+    mean_phase2 = float(np.mean(phase2_mid))
+    assert np.angle(np.exp(1j * (mean_phase1 - 0.30))) == pytest.approx(0.0, abs=0.06)
+    assert np.angle(np.exp(1j * (mean_phase2 + 0.50))) == pytest.approx(0.0, abs=0.06)
+
+
+def test_lockin_amplitude_tracks_linear_ramp():
+    """Lock-in amplitude should track a linearly increasing harmonic envelope."""
+    f0, fs, duration = 5.0, 500.0, 4.0
+    t = np.arange(0.0, duration, 1.0 / fs)
+    ramp = np.linspace(0.5, 2.0, len(t))
+    signal = ramp * np.cos(2 * np.pi * f0 * t + 0.30)
+    result = lockin_harmonics(signal, t, f0, harmonics=[1],
+                              potential_resolution=0.1, scan_rate=1.0)
+
+    fc = result["fc_used"]
+    transient = int(2.0 / fc * fs)
+    mid = slice(transient, -transient)
+
+    amp_mid = result["amplitude"][0][mid]
+    ramp_mid = ramp[mid]
+
+    # Linear correlation between recovered amp and true ramp should be strong
+    corr = np.corrcoef(amp_mid, ramp_mid)[0, 1]
+    assert corr > 0.90
+
+
+def test_lockin_rejects_low_f0_request():
+    """Lock-in should raise for f0 <= 0."""
+    t = np.arange(0.0, 1.0, 0.01)
+    signal = np.cos(2 * np.pi * 5.0 * t)
+    with pytest.raises(ValueError, match="positive"):
+        lockin_harmonics(signal, t, f0=0.0)
+
+
+def test_lockin_nyquist_check():
+    """Lock-in should raise when requested harmonics exceed Nyquist."""
+    fs = 100.0
+    t = np.arange(0.0, 1.0, 1.0 / fs)
+    signal = np.cos(2 * np.pi * 10.0 * t)
+    with pytest.raises(ValueError, match="Nyquist"):
+        lockin_harmonics(signal, t, f0=10.0, harmonics=[6])  # 6*10=60 > 50 Nyquist
