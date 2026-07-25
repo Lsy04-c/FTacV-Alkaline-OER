@@ -627,3 +627,36 @@ results/architecture_validation/feature_objective_comparison.csv
 ```
 
 当前3-trial结果仅证明两条目标函数链路可在同预算下运行，不足以判断新特征是否提高参数恢复精度；科学比较结论必须等待Task 9的50-trial完整运行。
+
+---
+
+## 14. M0/M1最小重构模型门控（2026-07-25）
+
+已在测试提交基线`f88f5ff`上建立嵌套模型比较：
+
+- M0：`beta_recon=0`；
+- M1：只增加`beta_recon`自由度，固定`E_recon=1.55 V`和`w_recon=0.05 V`；
+- 两者使用相同数据、特征模式、种子、trial预算、基础参数边界和实验固定参数；
+- 不自动运行M2。
+
+验收门同时检查至少3/4数据的高电位偏差改善、H1-H3不恶化、`beta_recon`边界命中、热力学参数跨数据CV和BIC复杂度惩罚。
+
+新鲜验证：
+
+```text
+python scripts/run_tests.py \
+  python/tests/test_model_compare.py python/tests/test_physics.py -q
+13 passed
+
+.venv/bin/python scripts/compare_reconstruction_model.py \
+  --smoke --trials 3
+24 rows generated; decision=rejected
+```
+
+机器可读证据：
+
+```text
+results/architecture_validation/reconstruction_model_comparison.csv
+```
+
+当前3-trial烟雾运行中，固定门槛为`datasets_passed=0`，因此M1被拒绝。该结果证明拒绝路径和复杂度门可执行，但预算不足以作为最终模型判断；Task 9将用50 trials重新生成结论。无论完整结果如何，通过只表示候选项值得进一步实验验证，不表示已证明表面重构。
