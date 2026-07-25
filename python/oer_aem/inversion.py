@@ -55,7 +55,7 @@ class InversionConfig:
     dE: float = 0.16
     n_points: int = 8192
     points_per_cycle: int = 256
-    feature_grid_size: int = 200
+    feature_grid_size: Optional[int] = None  # None = use full post-discard grid
     discard_fraction: float = 0.25
     sigma_dc: float = 0.02
     sigma_harm: float = 0.05
@@ -95,9 +95,18 @@ class InversionConfig:
         return int(np.clip(round(self.n_points * self.discard_fraction), 0, self.n_points - 2))
 
     @property
+    def resolved_feature_grid_size(self) -> int:
+        """Actual number of grid points (auto-resolved from simulation grid)."""
+        if self.feature_grid_size is not None and self.feature_grid_size > 0:
+            return self.feature_grid_size
+        return self.n_points - self.discard_index
+
+    @property
     def e_grid(self) -> np.ndarray:
         tdc_trim = self.tdc[self.discard_index :]
-        return np.linspace(float(tdc_trim[0]), float(tdc_trim[-1]), self.feature_grid_size)
+        if self.feature_grid_size is not None and self.feature_grid_size > 0:
+            return np.linspace(float(tdc_trim[0]), float(tdc_trim[-1]), self.feature_grid_size)
+        return np.asarray(tdc_trim, dtype=float)
 
 
 def match_experimental_sampling(
@@ -547,7 +556,7 @@ class InversionObjective:
 
         features = extract_features(current, self.config)
         dc_loss = float(
-            np.sum(
+            np.mean(
                 (
                     (features["dc"] - self.target["dc"])
                     / self.config.sigma_dc
@@ -562,7 +571,7 @@ class InversionObjective:
             for harmonic in self.fit_harmonics:
                 idx = harmonic - 1
                 channel_loss = float(
-                    np.sum(
+                    np.mean(
                         (
                             (
                                 features["harm"][idx]
@@ -726,7 +735,7 @@ class TPEInverter:
             n_tafel_fail=int(objective.n_tafel_fail),
             fit_quality=assess_fit_quality(
                 float(study.best_value),
-                self.config.feature_grid_size,
+                self.config.resolved_feature_grid_size,
                 self.config.fit_harmonics,
             ),
             loss_components=dict(objective.best_components),
