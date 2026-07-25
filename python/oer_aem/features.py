@@ -29,3 +29,26 @@ def complex_harmonic_metrics(
         "noise": noise,
         "snr": snr,
     }
+
+
+def wrapped_phase_difference(simulated, experimental):
+    """Return simulated-minus-experimental phase on the principal branch."""
+    return np.angle(
+        np.exp(
+            1j
+            * (
+                np.asarray(simulated, dtype=float)
+                - np.asarray(experimental, dtype=float)
+            )
+        )
+    )
+
+
+def snr_weights(snr, floor: float = 3.0, cap: float = 30.0):
+    """Map SNR to bounded reliability weights in the interval ``[0, 1]``."""
+    snr = np.asarray(snr, dtype=float)
+    return np.clip(
+        (snr - float(floor)) / max(float(cap) - float(floor), 1e-12),
+        0.0,
+        1.0,
+    )

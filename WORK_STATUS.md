@@ -595,3 +595,35 @@ results/architecture_validation/residual_contract.csv
 ```
 
 四组数据在两种网格中均明确记录`experiment - simulation`。当前30次TPE诊断仍显示四组数据的高电位归一化偏差为正；这证明了残差方向和口径，不构成对缺失物理机制的因果证明。
+
+---
+
+## 13. 可选复数谐波与SNR加权目标（2026-07-25）
+
+已在测试提交基线`11199f0`上增加两种显式特征模式：
+
+- `legacy`：保持原有DC和逐通道归一化谐波包络损失；
+- `complex_snr`：保留跨谐波幅值比例，加入有界SNR权重和环绕相位残差。
+
+目标函数现在报告`dc`、`harmonic_amplitude`、`phase`和`physical`命名损失分量。TPE优化器及参数边界未更换。
+
+新鲜验证：
+
+```text
+python scripts/run_tests.py \
+  python/tests/test_features.py python/tests/test_inversion.py -q
+17 passed
+
+.venv/bin/python scripts/compare_feature_objectives.py --smoke --trials 3
+30 rows generated
+```
+
+烟雾比较覆盖合成目标与四组真实数据、两种模式、种子`7/17/27`，并强制使用相同trial计划、固定参数和边界。合成真值不再作为优化初值泄露给TPE。
+
+机器可读证据：
+
+```text
+results/architecture_validation/feature_objective_comparison.csv
+```
+
+当前3-trial结果仅证明两条目标函数链路可在同预算下运行，不足以判断新特征是否提高参数恢复精度；科学比较结论必须等待Task 9的50-trial完整运行。

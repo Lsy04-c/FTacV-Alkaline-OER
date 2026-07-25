@@ -20,6 +20,11 @@ import numpy as np
 
 from .calibration import measure_tafel
 from .defaults import initialize_oer_parameters
+from .features import (
+    complex_harmonic_metrics,
+    snr_weights,
+    wrapped_phase_difference,
+)
 from .physics import OERPhysics
 from .signal import OERSignal
 from .thermodynamics import apply_alkaline_aem
@@ -61,6 +66,9 @@ class InversionConfig:
     param_specs: Tuple[ParamSpec, ...] = DEFAULT_PARAM_SPECS
     fixed_params: Tuple[Tuple[str, float], ...] = ()
     fit_harmonics: Tuple[int, ...] = (1, 2, 3, 4, 5, 6, 7)
+    feature_mode: str = "legacy"
+    phase_weight: float = 1.0
+    snr_floor: float = 3.0
 
     @property
     def total_time(self) -> float:
@@ -107,6 +115,7 @@ class InversionResult:
     n_ode_fail: int = 0
     n_tafel_fail: int = 0
     fit_quality: Dict[str, Any] = field(default_factory=dict)
+    loss_components: Dict[str, float] = field(default_factory=dict)
 
 
 def assess_fit_quality(
@@ -419,6 +428,13 @@ def extract_features(current: Sequence[float], config: InversionConfig) -> Dict[
     tafel = measure_tafel(tdc_trim, dc)
     features["tafel"] = float(tafel["tafel_slope"]) if tafel.get("success") else None
     features["e_grid"] = e_grid
+    if config.feature_mode == "complex_snr":
+        features["complex_harmonics"] = complex_harmonic_metrics(
+            current_arr[i0:],
+            fs=config.sample_rate,
+            f0=config.f,
+            n_harmonics=7,
+        )
     return features
 
 
@@ -474,7 +490,13 @@ class InversionObjective:
         self.n_tafel_fail = 0
         self.best_value = np.inf
         self.best_x: Optional[np.ndarray] = None
+        self.last_components: Dict[str, float] = {}
+        self.best_components: Dict[str, float] = {}
         self.fit_harmonics = tuple(int(h) for h in self.config.fit_harmonics)
+        if self.config.feature_mode not in {"legacy", "complex_snr"}:
+            raise ValueError(
+                "feature_mode must be either 'legacy' or 'complex_snr'"
+            )
         invalid = [h for h in self.fit_harmonics if h < 1 or h > 7]
         if invalid:
             raise ValueError(f"fit_harmonics must be between 1 and 7, got {invalid}")
@@ -484,29 +506,91 @@ class InversionObjective:
         current = forward_current(x, self.config, self.specs)
         if current is None:
             self.n_ode_fail += 1
+            self.last_components = {
+                "dc": 0.0,
+                "harmonic_amplitude": 0.0,
+                "phase": 0.0,
+                "physical": float(self.config.ode_penalty),
+            }
             return float(self.config.ode_penalty)
 
         features = extract_features(current, self.config)
-        total = float(np.sum(((features["dc"] - self.target["dc"]) / self.config.sigma_dc) ** 2))
-        for harmonic in self.fit_harmonics:
-            idx = harmonic - 1
-            total += float(
-                np.sum(((features["harm"][idx] - self.target["harm"][idx]) / self.config.sigma_harm) ** 2)
+        dc_loss = float(
+            np.sum(
+                (
+                    (features["dc"] - self.target["dc"])
+                    / self.config.sigma_dc
+                )
+                ** 2
+            )
+        )
+        amplitude_loss = 0.0
+        phase_loss = 0.0
+        if self.config.feature_mode == "legacy":
+            for harmonic in self.fit_harmonics:
+                idx = harmonic - 1
+                amplitude_loss += float(
+                    np.sum(
+                        (
+                            (
+                                features["harm"][idx]
+                                - self.target["harm"][idx]
+                            )
+                            / self.config.sigma_harm
+                        )
+                        ** 2
+                    )
+                )
+        else:
+            selected = np.asarray(self.fit_harmonics, dtype=int) - 1
+            simulated = features["complex_harmonics"]
+            experimental = self.target["complex_harmonics"]
+            weights = snr_weights(
+                np.asarray(experimental["snr"])[selected],
+                floor=self.config.snr_floor,
+            )
+            target_amplitude = np.asarray(experimental["amplitude"])[selected]
+            simulated_amplitude = np.asarray(simulated["amplitude"])[selected]
+            amplitude_scale = max(
+                float(np.max(np.abs(target_amplitude))),
+                np.finfo(float).eps,
+            )
+            amplitude_residual = (
+                (simulated_amplitude - target_amplitude)
+                / amplitude_scale
+                / self.config.sigma_harm
+            )
+            amplitude_loss = float(np.sum(weights * amplitude_residual**2))
+            phase_residual = wrapped_phase_difference(
+                np.asarray(simulated["phase"])[selected],
+                np.asarray(experimental["phase"])[selected],
+            )
+            phase_loss = float(
+                self.config.phase_weight
+                * np.sum(weights * phase_residual**2)
             )
 
+        physical_loss = 0.0
         target_tafel = self.target.get("tafel")
         if target_tafel is not None:
             if features["tafel"] is None:
                 self.n_tafel_fail += 1
-                total += self.config.tafel_fail_resid**2
+                physical_loss += self.config.tafel_fail_resid**2
             else:
-                total += float(
+                physical_loss += float(
                     (
                         (features["tafel"] - float(target_tafel))
                         / self.config.sigma_tafel
                     )
                     ** 2
                 )
+        self.last_components = {
+            "dc": dc_loss,
+            "harmonic_amplitude": amplitude_loss,
+            "phase": phase_loss,
+            "physical": physical_loss,
+        }
+        total = sum(self.last_components.values())
         return total / float(2 + len(self.fit_harmonics))
 
     def __call__(self, x: Sequence[float]) -> float:
@@ -516,6 +600,7 @@ class InversionObjective:
         if value < self.best_value:
             self.best_value = float(value)
             self.best_x = arr.copy()
+            self.best_components = dict(self.last_components)
         return float(value)
 
 
@@ -602,4 +687,5 @@ class TPEInverter:
                 self.config.feature_grid_size,
                 self.config.fit_harmonics,
             ),
+            loss_components=dict(objective.best_components),
         )
