@@ -3,10 +3,10 @@
 参照 MATLAB OER_Signal.m，使用 scipy.signal 与 numpy.fft 实现。
 """
 
-from typing import Dict, Any, Tuple, List, Optional
+from typing import Dict, Any, Tuple, List, Optional, Sequence
 
 import numpy as np
-from scipy.signal import butter, filtfilt, hilbert
+from scipy.signal import butter, sosfiltfilt, hilbert
 from scipy.signal.windows import tukey
 
 
@@ -170,11 +170,11 @@ def extract_harmonics(signal: np.ndarray, df: float, params: Dict[str, Any]) -> 
             else:
                 bp_filters = params.get('bp_filters', None)
                 if bp_filters is not None and i < len(bp_filters) and bp_filters[i] is not None:
-                    YHarC = filtfilt(bp_filters[i], signal)
+                    YHarC = sosfiltfilt(bp_filters[i], signal)
                 else:
                     sos = _design_bandpass_sos(lower, upper, df, order=4)
                     if sos is not None:
-                        YHarC = filtfilt(sos, signal)
+                        YHarC = sosfiltfilt(sos, signal)
                     else:
                         YHarC = np.zeros(L)
             harmonics[:, i] = np.abs(hilbert(YHarC))
@@ -229,6 +229,96 @@ def extract_complex_harmonics(
     )
 
 
+def lockin_harmonics(
+    signal: np.ndarray,
+    t: np.ndarray,
+    f0: float,
+    harmonics: Sequence[int] = (1, 2, 3, 4, 5, 6, 7),
+    potential_resolution: float = 0.1,
+    scan_rate: float = 1.0,
+) -> Dict[str, Any]:
+    """Software lock-in amplifier for potential-resolved harmonic extraction.
+
+    Multiplies the signal by reference sine/cosine at each harmonic frequency,
+    lowpass-filters the products, and returns instantaneous amplitude and phase.
+
+    The lowpass cutoff fc = min(0.8 * f0, scan_rate / potential_resolution)
+    controls the trade-off between potential resolution and harmonic isolation.
+    For f0 >= 3 Hz, typical resolution is 100-250 mV.
+
+    Parameters
+    ----------
+    signal : (N,) array
+        Current or voltage signal.
+    t : (N,) array
+        Time axis in seconds, strictly increasing.
+    f0 : float
+        Fundamental frequency in Hz.
+    harmonics : sequence of int
+        Harmonic orders to extract (1-based).
+    potential_resolution : float
+        Target potential resolution in volts (soft constraint; capped by f0).
+    scan_rate : float
+        Potential scan rate in V/s.
+
+    Returns
+    -------
+    dict with keys:
+        amplitude : list of (N,) arrays — instantaneous amplitude for each harmonic.
+        phase : list of (N,) arrays — instantaneous wrapped phase in radians.
+        complex : list of (N,) arrays — I + jQ.
+        t : (N,) array — time axis (same as input).
+        fc_used : float — actual lowpass cutoff frequency in Hz.
+        effective_resolution : float — scan_rate / fc_used (V).
+    """
+    signal = _clean_current(np.asarray(signal, dtype=float))
+    t = np.asarray(t, dtype=float)
+    if t.size < 16:
+        raise ValueError("lockin_harmonics requires at least 16 points")
+    if f0 <= 0:
+        raise ValueError("f0 must be positive")
+    harmonics = [int(h) for h in harmonics]
+    max_h = max(harmonics)
+    if max_h * f0 >= (1.0 / np.mean(np.diff(t))) / 2.0:
+        raise ValueError("requested harmonics must remain below Nyquist")
+
+    fs = 1.0 / float(np.mean(np.diff(t)))
+    fc = min(0.8 * f0, scan_rate / max(potential_resolution, 1e-6))
+    fc = max(fc, f0 / 10.0)  # floor: at least 0.1*f0
+    sos = _design_lowpass_sos(fc, fs, order=4)
+
+    amp_list: List[np.ndarray] = []
+    phase_list: List[np.ndarray] = []
+    complex_list: List[np.ndarray] = []
+
+    omega = 2.0 * np.pi * f0
+    for h in harmonics:
+        ref_sin = np.sin(h * omega * t)
+        ref_cos = np.cos(h * omega * t)
+
+        i_raw = 2.0 * signal * ref_sin
+        q_raw = 2.0 * signal * ref_cos
+
+        i_filt = sosfiltfilt(sos, i_raw)
+        q_filt = sosfiltfilt(sos, q_raw)
+
+        amp = np.sqrt(i_filt**2 + q_filt**2)
+        phi = np.arctan2(-i_filt, q_filt)
+
+        amp_list.append(amp)
+        phase_list.append(phi)
+        complex_list.append(i_filt + 1j * q_filt)
+
+    return {
+        "amplitude": amp_list,
+        "phase": phase_list,
+        "complex": complex_list,
+        "t": t,
+        "fc_used": fc,
+        "effective_resolution": scan_rate / max(fc, 1e-6),
+    }
+
+
 def _auto_band(params: dict, H: int, f0: float, min_bw: float) -> float:
     """自适应带宽：取用户设置的 band[H] 和自动计算的最小值中较大者。"""
     band = params.get('band', None)
@@ -247,11 +337,11 @@ def process_current(current: np.ndarray, df: float, params: Dict[str, Any]) -> n
     else:
         sos = params.get('lp_filter_sos', None)
         if sos is not None:
-            ydc = filtfilt(sos, current)
+            ydc = sosfiltfilt(sos, current)
         else:
             fc = params['band'][0] / 2.0
             sos = _design_lowpass_sos(fc, df, order=6)
-            ydc = filtfilt(sos, current)
+            ydc = sosfiltfilt(sos, current)
         I_dc = np.abs(ydc)
 
     I_harm = extract_harmonics(current, df, params)
