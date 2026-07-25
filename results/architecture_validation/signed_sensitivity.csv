@@ -1,0 +1,274 @@
+feature,parameter,sensitivity,abs_sensitivity,direction
+DC shape,k0_1,0.0001,0.0001,positive
+DC shape,k0_2,0.0,0.0,zero
+DC shape,k0_3,0.0068,0.0068,positive
+DC shape,k0_4,0.0,0.0,zero
+DC shape,k0_pre,0.0004,0.0004,positive
+DC shape,gamma,0.0079,0.0079,positive
+DC shape,G_OH,0.0084,0.0084,positive
+DC shape,G_O,0.0075,0.0075,positive
+DC shape,scaling_OOH_OH,0.0116,0.0116,positive
+DC shape,E0_pre,0.0015,0.0015,positive
+DC shape,Cdl,0.0,0.0,zero
+DC shape,Ru,0.0027,0.0027,positive
+DC shape,A,0.0007,0.0007,positive
+DC shape_raw,k0_1,0.0001,0.0001,positive
+DC shape_raw,k0_2,0.0001,0.0001,positive
+DC shape_raw,k0_3,0.0305,0.0305,positive
+DC shape_raw,k0_4,0.0,0.0,zero
+DC shape_raw,k0_pre,0.0003,0.0003,positive
+DC shape_raw,gamma,0.0311,0.0311,positive
+DC shape_raw,G_OH,0.0277,0.0277,positive
+DC shape_raw,G_O,0.0274,0.0274,positive
+DC shape_raw,scaling_OOH_OH,0.0529,0.0529,positive
+DC shape_raw,E0_pre,0.0014,0.0014,positive
+DC shape_raw,Cdl,0.0,0.0,zero
+DC shape_raw,Ru,0.0618,0.0618,positive
+DC shape_raw,A,0.0026,0.0026,positive
+DC amplitude,k0_1,0.0,0.0,zero
+DC amplitude,k0_2,0.0,0.0,zero
+DC amplitude,k0_3,0.0009,0.0009,positive
+DC amplitude,k0_4,0.0,0.0,zero
+DC amplitude,k0_pre,0.0,0.0,zero
+DC amplitude,gamma,0.0007,0.0007,positive
+DC amplitude,G_OH,0.001,0.001,positive
+DC amplitude,G_O,0.0009,0.0009,positive
+DC amplitude,scaling_OOH_OH,0.0015,0.0015,positive
+DC amplitude,E0_pre,0.0001,0.0001,positive
+DC amplitude,Cdl,0.0,0.0,zero
+DC amplitude,Ru,0.0002,0.0002,positive
+DC amplitude,A,0.0001,0.0001,positive
+DC amplitude_raw,k0_1,0.0,0.0,zero
+DC amplitude_raw,k0_2,0.0002,0.0002,positive
+DC amplitude_raw,k0_3,0.0709,0.0709,positive
+DC amplitude_raw,k0_4,0.0,0.0,zero
+DC amplitude_raw,k0_pre,0.0,0.0,zero
+DC amplitude_raw,gamma,0.0713,0.0713,positive
+DC amplitude_raw,G_OH,0.0623,0.0623,positive
+DC amplitude_raw,G_O,0.0624,0.0624,positive
+DC amplitude_raw,scaling_OOH_OH,0.123,0.123,positive
+DC amplitude_raw,E0_pre,0.0003,0.0003,positive
+DC amplitude_raw,Cdl,0.0,0.0,zero
+DC amplitude_raw,Ru,0.1608,0.1608,positive
+DC amplitude_raw,A,0.006,0.006,positive
+H1 shape,k0_1,0.0003,0.0003,positive
+H1 shape,k0_2,0.0,0.0,zero
+H1 shape,k0_3,0.014,0.014,positive
+H1 shape,k0_4,0.0,0.0,zero
+H1 shape,k0_pre,0.0021,0.0021,positive
+H1 shape,gamma,0.0346,0.0346,positive
+H1 shape,G_OH,0.024,0.024,positive
+H1 shape,G_O,0.0183,0.0183,positive
+H1 shape,scaling_OOH_OH,0.0239,0.0239,positive
+H1 shape,E0_pre,0.0077,0.0077,positive
+H1 shape,Cdl,0.0001,0.0001,positive
+H1 shape,Ru,0.0108,0.0108,positive
+H1 shape,A,0.0028,0.0028,positive
+H1 peak amplitude,k0_1,0.0,0.0,zero
+H1 peak amplitude,k0_2,0.0,0.0,zero
+H1 peak amplitude,k0_3,0.0005,0.0005,positive
+H1 peak amplitude,k0_4,0.0,0.0,zero
+H1 peak amplitude,k0_pre,0.0001,0.0001,positive
+H1 peak amplitude,gamma,0.0008,0.0008,positive
+H1 peak amplitude,G_OH,0.0014,0.0014,positive
+H1 peak amplitude,G_O,0.0009,0.0009,positive
+H1 peak amplitude,scaling_OOH_OH,0.0008,0.0008,positive
+H1 peak amplitude,E0_pre,0.0003,0.0003,positive
+H1 peak amplitude,Cdl,0.0,0.0,zero
+H1 peak amplitude,Ru,0.0002,0.0002,positive
+H1 peak amplitude,A,0.0001,0.0001,positive
+H1 peak potential,k0_1,0.0,0.0,zero
+H1 peak potential,k0_2,0.0,0.0,zero
+H1 peak potential,k0_3,0.0,0.0,zero
+H1 peak potential,k0_4,0.0,0.0,zero
+H1 peak potential,k0_pre,0.0,0.0,zero
+H1 peak potential,gamma,0.0,0.0,zero
+H1 peak potential,G_OH,0.0,0.0,zero
+H1 peak potential,G_O,0.0,0.0,zero
+H1 peak potential,scaling_OOH_OH,0.0,0.0,zero
+H1 peak potential,E0_pre,0.0,0.0,zero
+H1 peak potential,Cdl,0.0,0.0,zero
+H1 peak potential,Ru,0.0,0.0,zero
+H1 peak potential,A,0.0,0.0,zero
+H1 shape_raw,k0_1,0.0002,0.0002,positive
+H1 shape_raw,k0_2,0.0001,0.0001,positive
+H1 shape_raw,k0_3,0.0268,0.0268,positive
+H1 shape_raw,k0_4,0.0,0.0,zero
+H1 shape_raw,k0_pre,0.0015,0.0015,positive
+H1 shape_raw,gamma,0.0442,0.0442,positive
+H1 shape_raw,G_OH,0.0405,0.0405,positive
+H1 shape_raw,G_O,0.0376,0.0376,positive
+H1 shape_raw,scaling_OOH_OH,0.0464,0.0464,positive
+H1 shape_raw,E0_pre,0.007,0.007,positive
+H1 shape_raw,Cdl,0.0001,0.0001,positive
+H1 shape_raw,Ru,0.0769,0.0769,positive
+H1 shape_raw,A,0.0036,0.0036,positive
+H1 peak amplitude_raw,k0_1,0.0001,0.0001,positive
+H1 peak amplitude_raw,k0_2,0.0002,0.0002,positive
+H1 peak amplitude_raw,k0_3,0.0399,0.0399,positive
+H1 peak amplitude_raw,k0_4,0.0,0.0,zero
+H1 peak amplitude_raw,k0_pre,0.0003,0.0003,positive
+H1 peak amplitude_raw,gamma,0.0363,0.0363,positive
+H1 peak amplitude_raw,G_OH,0.0832,0.0832,positive
+H1 peak amplitude_raw,G_O,0.082,0.082,positive
+H1 peak amplitude_raw,scaling_OOH_OH,0.0691,0.0691,positive
+H1 peak amplitude_raw,E0_pre,0.0012,0.0012,positive
+H1 peak amplitude_raw,Cdl,0.0,0.0,zero
+H1 peak amplitude_raw,Ru,0.1721,0.1721,positive
+H1 peak amplitude_raw,A,0.003,0.003,positive
+H2 shape,k0_1,0.0018,0.0018,positive
+H2 shape,k0_2,0.0001,0.0001,positive
+H2 shape,k0_3,0.0353,0.0353,positive
+H2 shape,k0_4,0.0,0.0,zero
+H2 shape,k0_pre,0.0217,0.0217,positive
+H2 shape,gamma,0.1297,0.1297,positive
+H2 shape,G_OH,0.1606,0.1606,positive
+H2 shape,G_O,0.0778,0.0778,positive
+H2 shape,scaling_OOH_OH,0.0614,0.0614,positive
+H2 shape,E0_pre,0.0581,0.0581,positive
+H2 shape,Cdl,0.0001,0.0001,positive
+H2 shape,Ru,0.0431,0.0431,positive
+H2 shape,A,0.0116,0.0116,positive
+H2 peak amplitude,k0_1,0.0,0.0,zero
+H2 peak amplitude,k0_2,0.0,0.0,zero
+H2 peak amplitude,k0_3,0.0036,0.0036,positive
+H2 peak amplitude,k0_4,0.0,0.0,zero
+H2 peak amplitude,k0_pre,0.0006,0.0006,positive
+H2 peak amplitude,gamma,0.003,0.003,positive
+H2 peak amplitude,G_OH,0.0026,0.0026,positive
+H2 peak amplitude,G_O,0.0031,0.0031,positive
+H2 peak amplitude,scaling_OOH_OH,0.0059,0.0059,positive
+H2 peak amplitude,E0_pre,0.001,0.001,positive
+H2 peak amplitude,Cdl,0.0,0.0,zero
+H2 peak amplitude,Ru,0.0028,0.0028,positive
+H2 peak amplitude,A,0.0006,0.0006,positive
+H2 peak potential,k0_1,0.0,0.0,zero
+H2 peak potential,k0_2,0.0,0.0,zero
+H2 peak potential,k0_3,0.0,0.0,zero
+H2 peak potential,k0_4,0.0,0.0,zero
+H2 peak potential,k0_pre,0.0,0.0,zero
+H2 peak potential,gamma,0.0076,0.0076,positive
+H2 peak potential,G_OH,0.1458,0.1458,positive
+H2 peak potential,G_O,0.0155,0.0155,positive
+H2 peak potential,scaling_OOH_OH,0.0076,0.0076,positive
+H2 peak potential,E0_pre,0.0,0.0,zero
+H2 peak potential,Cdl,0.0,0.0,zero
+H2 peak potential,Ru,0.0,0.0,zero
+H2 peak potential,A,0.0,0.0,zero
+H2 shape_raw,k0_1,0.0016,0.0016,positive
+H2 shape_raw,k0_2,0.0001,0.0001,positive
+H2 shape_raw,k0_3,0.0322,0.0322,positive
+H2 shape_raw,k0_4,0.0,0.0,zero
+H2 shape_raw,k0_pre,0.0182,0.0182,positive
+H2 shape_raw,gamma,0.1327,0.1327,positive
+H2 shape_raw,G_OH,0.1275,0.1275,positive
+H2 shape_raw,G_O,0.0765,0.0765,positive
+H2 shape_raw,scaling_OOH_OH,0.0559,0.0559,positive
+H2 shape_raw,E0_pre,0.056,0.056,positive
+H2 shape_raw,Cdl,0.0001,0.0001,positive
+H2 shape_raw,Ru,0.0738,0.0738,positive
+H2 shape_raw,A,0.0121,0.0121,positive
+H2 peak amplitude_raw,k0_1,0.0002,0.0002,positive
+H2 peak amplitude_raw,k0_2,0.0002,0.0002,positive
+H2 peak amplitude_raw,k0_3,0.045,0.045,positive
+H2 peak amplitude_raw,k0_4,0.0,0.0,zero
+H2 peak amplitude_raw,k0_pre,0.0124,0.0124,positive
+H2 peak amplitude_raw,gamma,0.1085,0.1085,positive
+H2 peak amplitude_raw,G_OH,0.0908,0.0908,positive
+H2 peak amplitude_raw,G_O,0.1515,0.1515,positive
+H2 peak amplitude_raw,scaling_OOH_OH,0.0814,0.0814,positive
+H2 peak amplitude_raw,E0_pre,0.0116,0.0116,positive
+H2 peak amplitude_raw,Cdl,0.0001,0.0001,positive
+H2 peak amplitude_raw,Ru,0.1466,0.1466,positive
+H2 peak amplitude_raw,A,0.0095,0.0095,positive
+H3 shape,k0_1,0.0035,0.0035,positive
+H3 shape,k0_2,0.0,0.0,zero
+H3 shape,k0_3,0.0124,0.0124,positive
+H3 shape,k0_4,0.0,0.0,zero
+H3 shape,k0_pre,0.0136,0.0136,positive
+H3 shape,gamma,0.0796,0.0796,positive
+H3 shape,G_OH,0.1612,0.1612,positive
+H3 shape,G_O,0.0427,0.0427,positive
+H3 shape,scaling_OOH_OH,0.022,0.022,positive
+H3 shape,E0_pre,0.0854,0.0854,positive
+H3 shape,Cdl,0.0001,0.0001,positive
+H3 shape,Ru,0.029,0.029,positive
+H3 shape,A,0.0065,0.0065,positive
+H3 peak amplitude,k0_1,0.0004,0.0004,positive
+H3 peak amplitude,k0_2,0.0,0.0,zero
+H3 peak amplitude,k0_3,0.0005,0.0005,positive
+H3 peak amplitude,k0_4,0.0,0.0,zero
+H3 peak amplitude,k0_pre,0.0014,0.0014,positive
+H3 peak amplitude,gamma,0.0078,0.0078,positive
+H3 peak amplitude,G_OH,0.0057,0.0057,positive
+H3 peak amplitude,G_O,0.0068,0.0068,positive
+H3 peak amplitude,scaling_OOH_OH,0.0013,0.0013,positive
+H3 peak amplitude,E0_pre,0.0091,0.0091,positive
+H3 peak amplitude,Cdl,0.0,0.0,zero
+H3 peak amplitude,Ru,0.001,0.001,positive
+H3 peak amplitude,A,0.0001,0.0001,positive
+H3 peak potential,k0_1,0.0,0.0,zero
+H3 peak potential,k0_2,0.0,0.0,zero
+H3 peak potential,k0_3,0.0,0.0,zero
+H3 peak potential,k0_4,0.0,0.0,zero
+H3 peak potential,k0_pre,0.0,0.0,zero
+H3 peak potential,gamma,0.0665,0.0665,positive
+H3 peak potential,G_OH,0.0747,0.0747,positive
+H3 peak potential,G_O,0.0,0.0,zero
+H3 peak potential,scaling_OOH_OH,0.0,0.0,zero
+H3 peak potential,E0_pre,0.0,0.0,zero
+H3 peak potential,Cdl,0.0,0.0,zero
+H3 peak potential,Ru,0.0,0.0,zero
+H3 peak potential,A,0.0,0.0,zero
+H3 shape_raw,k0_1,0.0041,0.0041,positive
+H3 shape_raw,k0_2,0.0001,0.0001,positive
+H3 shape_raw,k0_3,0.0147,0.0147,positive
+H3 shape_raw,k0_4,0.0,0.0,zero
+H3 shape_raw,k0_pre,0.0253,0.0253,positive
+H3 shape_raw,gamma,0.2006,0.2006,positive
+H3 shape_raw,G_OH,0.2262,0.2262,positive
+H3 shape_raw,G_O,0.0483,0.0483,positive
+H3 shape_raw,scaling_OOH_OH,0.0254,0.0254,positive
+H3 shape_raw,E0_pre,0.1264,0.1264,positive
+H3 shape_raw,Cdl,0.0001,0.0001,positive
+H3 shape_raw,Ru,0.0403,0.0403,positive
+H3 shape_raw,A,0.0156,0.0156,positive
+H3 peak amplitude_raw,k0_1,0.0037,0.0037,positive
+H3 peak amplitude_raw,k0_2,0.0001,0.0001,positive
+H3 peak amplitude_raw,k0_3,0.013,0.013,positive
+H3 peak amplitude_raw,k0_4,0.0,0.0,zero
+H3 peak amplitude_raw,k0_pre,0.0333,0.0333,positive
+H3 peak amplitude_raw,gamma,0.4046,0.4046,positive
+H3 peak amplitude_raw,G_OH,0.3515,0.3515,positive
+H3 peak amplitude_raw,G_O,0.0722,0.0722,positive
+H3 peak amplitude_raw,scaling_OOH_OH,0.0195,0.0195,positive
+H3 peak amplitude_raw,E0_pre,0.1219,0.1219,positive
+H3 peak amplitude_raw,Cdl,0.0002,0.0002,positive
+H3 peak amplitude_raw,Ru,0.0728,0.0728,positive
+H3 peak amplitude_raw,A,0.0285,0.0285,positive
+Tafel,k0_1,0.0,0.0,zero
+Tafel,k0_2,0.0,0.0,zero
+Tafel,k0_3,0.0,0.0,zero
+Tafel,k0_4,0.0,0.0,zero
+Tafel,k0_pre,0.0,0.0,zero
+Tafel,gamma,0.0,0.0,zero
+Tafel,G_OH,0.0,0.0,zero
+Tafel,G_O,0.0,0.0,zero
+Tafel,scaling_OOH_OH,0.0,0.0,zero
+Tafel,E0_pre,0.0,0.0,zero
+Tafel,Cdl,0.0,0.0,zero
+Tafel,Ru,0.0,0.0,zero
+Tafel,A,0.0,0.0,zero
+onset,k0_1,0.0,0.0,zero
+onset,k0_2,0.0,0.0,zero
+onset,k0_3,0.0091,0.0091,positive
+onset,k0_4,0.0,0.0,zero
+onset,k0_pre,0.0,0.0,zero
+onset,gamma,0.0585,0.0585,positive
+onset,G_OH,0.0493,0.0493,positive
+onset,G_O,0.0585,0.0585,positive
+onset,scaling_OOH_OH,0.0091,0.0091,positive
+onset,E0_pre,0.0091,0.0091,positive
+onset,Cdl,0.0,0.0,zero
+onset,Ru,0.0091,0.0091,positive
+onset,A,0.0,0.0,zero

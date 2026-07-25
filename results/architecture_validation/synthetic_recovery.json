@@ -1,10 +1,10 @@
 {
-  "git_commit": "b8b176c1a7ead0e7cf4d92fd818627aef7ef9559",
-  "command": "/Users/liushiyu/OER-FTAcV/scripts/run_architecture_validation.py --trials 50",
+  "git_commit": "7a82dc160f64b402a4e30348f6d88fe140d20839",
+  "command": "/Users/liushiyu/OER-FTAcV/scripts/run_architecture_validation.py --smoke",
   "configuration": {
-    "n_points": 2048,
-    "points_per_cycle": 128,
-    "feature_grid_size": 200,
+    "n_points": 256,
+    "points_per_cycle": 32,
+    "feature_grid_size": 32,
     "fit_harmonics": [
       1,
       2,
@@ -29,12 +29,12 @@
     }
   },
   "seed": 42,
-  "smoke": false,
-  "n_trials": 50,
-  "n_forward": 50,
-  "best_value": 0.0039193663592296795,
+  "smoke": true,
+  "n_trials": 2,
+  "n_forward": 2,
+  "best_value": 5.730947059549008e-12,
   "best_params": {
-    "k0_1": 98.80980188921976
+    "k0_1": 10.0
   },
   "truth_params": {
     "k0_1": 100.0,
@@ -59,11 +59,11 @@
     "scaling_OOH_OH": 3.2,
     "gamma": 1e-09
   },
-  "relative_recovery_error": 0.011901981107802441,
+  "relative_recovery_error": 0.9,
   "recovery_tolerance": 0.25,
-  "recovered": true,
+  "recovered": false,
   "classifications": {
-    "k0_1": "identifiable",
+    "k0_1": "coupled",
     "k0_2": "identifiable",
     "k0_3": "coupled",
     "k0_4": "unresolved",
@@ -72,11 +72,11 @@
     "G_OH": "identifiable",
     "G_O": "identifiable",
     "scaling_OOH_OH": "coupled",
-    "E0_pre": "identifiable",
+    "E0_pre": "coupled",
     "Cdl": "identifiable",
     "Ru": "identifiable",
     "A": "coupled"
   },
   "importance_forward_runs": 26,
-  "duration_seconds": 41.337
+  "duration_seconds": 7.431
 }

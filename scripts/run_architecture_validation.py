@@ -107,6 +107,23 @@ def main() -> None:
 
     OUT.mkdir(parents=True, exist_ok=True)
     write_matrix(features, parameters, matrix)
+
+    # Signed sensitivity table (Phase 3)
+    from oer_aem.identifiability import signed_sensitivity_table, coupling_direction
+    signed_rows = signed_sensitivity_table(features, parameters, matrix)
+    with (OUT / "signed_sensitivity.csv").open("w", newline="") as handle:
+        w = csv.DictWriter(handle, fieldnames=list(signed_rows[0]), lineterminator="\n")
+        w.writeheader(); w.writerows(signed_rows)
+
+    # Coupling direction table
+    coupling = coupling_direction(parameters, correlation)
+    with (OUT / "coupling_direction.csv").open("w", newline="") as handle:
+        w = csv.writer(handle, lineterminator="\n")
+        w.writerow(["parameter", "peer", "correlation", "direction"])
+        for param, peers in coupling.items():
+            for p in peers:
+                w.writerow([param, p["peer"], p["correlation"], p["direction"]])
+
     with (OUT / "parameter_classification.csv").open(
         "w", newline=""
     ) as handle:

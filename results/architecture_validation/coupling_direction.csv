@@ -1,0 +1,7 @@
+parameter,peer,correlation,direction
+k0_1,E0_pre,0.9918737042834797,compensating
+k0_3,scaling_OOH_OH,0.9984836684374886,compensating
+gamma,A,0.9807408323485808,compensating
+scaling_OOH_OH,k0_3,0.9984836684374886,compensating
+E0_pre,k0_1,0.9918737042834797,compensating
+A,gamma,0.9807408323485808,compensating
