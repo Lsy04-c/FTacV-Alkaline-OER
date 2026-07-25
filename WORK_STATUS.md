@@ -762,9 +762,3 @@ PYTHONPATH=python:web/backend \
 - 下一步先在`3e08bdd`上重新生成架构验证和8行残差契约；
 - 残差验收通过后再运行Feature与M0/M1的50-trial正式比较；
 - 结果变化时保留固定验收标准，不为维持旧结论调整门槛。
-
-其他Agent应先阅读：
-
-```text
-.claude/handoffs/2026-07-25-233405-architecture-validation-resume.md
-```
