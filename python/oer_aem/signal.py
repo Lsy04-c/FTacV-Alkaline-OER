@@ -182,6 +182,53 @@ def extract_harmonics(signal: np.ndarray, df: float, params: Dict[str, Any]) -> 
     return harmonics
 
 
+def extract_complex_harmonics(
+    signal: np.ndarray,
+    fs: float,
+    f0: float,
+    n_harmonics: int = 7,
+    side_bins: int = 4,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Return complex harmonic coefficients and local FFT noise amplitudes."""
+    values = _clean_current(signal)
+    if values.size < 16:
+        raise ValueError("complex harmonic extraction requires at least 16 points")
+    if fs <= 0 or f0 <= 0:
+        raise ValueError("fs and f0 must be positive")
+    if n_harmonics * f0 >= fs / 2.0:
+        raise ValueError("requested harmonics must remain below Nyquist")
+
+    window = np.hanning(values.size)
+    coherent_gain = float(np.mean(window))
+    spectrum = np.fft.rfft((values - np.mean(values)) * window)
+    frequencies = np.fft.rfftfreq(values.size, d=1.0 / fs)
+    scale = 2.0 / (values.size * coherent_gain)
+
+    coefficients = []
+    noise_amplitudes = []
+    for harmonic in range(1, n_harmonics + 1):
+        center = int(np.argmin(np.abs(frequencies - harmonic * f0)))
+        coefficients.append(scale * spectrum[center])
+
+        left = np.arange(max(1, center - side_bins), max(1, center - 1))
+        right = np.arange(
+            min(spectrum.size, center + 2),
+            min(spectrum.size, center + side_bins + 1),
+        )
+        neighborhood = np.concatenate((left, right))
+        if neighborhood.size:
+            noise_amplitudes.append(
+                float(np.median(np.abs(spectrum[neighborhood])) * scale)
+            )
+        else:
+            noise_amplitudes.append(0.0)
+
+    return (
+        np.asarray(coefficients, dtype=complex),
+        np.asarray(noise_amplitudes, dtype=float),
+    )
+
+
 def _auto_band(params: dict, H: int, f0: float, min_bw: float) -> float:
     """自适应带宽：取用户设置的 band[H] 和自动计算的最小值中较大者。"""
     band = params.get('band', None)
