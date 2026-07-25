@@ -51,6 +51,12 @@ def initialize_oer_parameters() -> dict:
     params['Cdl'] = 20e-6            # 双电层电容 (F/cm²)
     params['gamma'] = 5e-8           # 活性位点总浓度 (mol/cm²)
 
+    # ---- 候选M1：高电位活性位增长（默认关闭）----
+    # gamma_eff = gamma * [1 + beta_recon * sigmoid((E - E_recon) / w_recon)]
+    params['beta_recon'] = 0.0        # 0严格恢复固定gamma的M0模型
+    params['E_recon'] = 1.55          # 重构启动电位 (V vs RHE)
+    params['w_recon'] = 0.05          # 重构过渡宽度 (V)
+
     # ==================== FTacV 扫描参数 ====================
     params['Eref'] = 0.0             # 参比偏置 (V)
     params['E_start'] = 0.9          # 起始电位 (V vs RHE)
@@ -95,6 +101,9 @@ def initialize_oer_parameters() -> dict:
     params['log_k0_4_range'] = [-2, 5]
     params['E0_pre_range'] = [1.2, 1.8]
     params['log_gamma_range'] = [-12, -7]
+    params['beta_recon_range'] = [0.0, 5.0]
+    params['E_recon_range'] = [1.40, 1.70]
+    params['w_recon_range'] = [0.02, 0.15]
     params['Ru_range'] = [0, 200]
 
     # ==================== 衍生参数计算 ====================

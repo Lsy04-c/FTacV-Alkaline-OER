@@ -102,6 +102,20 @@ def _safe_exp(x):
     return np.exp(np.clip(x, -708, 708))
 
 
+def effective_gamma(E, params):
+    """Return fixed M0 site density or the opt-in M1 reconstruction profile."""
+    gamma = float(params.get('gamma', 3e-9))
+    beta = float(params.get('beta_recon', 0.0))
+    potential = np.asarray(E, dtype=float)
+    if beta == 0.0:
+        return np.zeros_like(potential) + gamma
+
+    center = float(params.get('E_recon', 1.55))
+    width = max(float(params.get('w_recon', 0.05)), 1e-6)
+    scaled = np.clip((potential - center) / width, -60.0, 60.0)
+    return gamma * (1.0 + beta / (1.0 + np.exp(-scaled)))
+
+
 def _oer_model_rhs(t: float, y: np.ndarray, params: Dict[str, Any]) -> np.ndarray:
     """ODE 右端函数（内部实现）。"""
     y = np.asarray(y, dtype=float)
@@ -176,10 +190,12 @@ def _oer_model_rhs(t: float, y: np.ndarray, params: Dict[str, Any]) -> np.ndarra
     dtheta_OOH = r_3 - r_4
 
     # 表面电位演化
-    # 电荷守恒：(E_app - phi_s)/Ru = Cdl*A*dphi_s/dt + F*A*gamma*Σr
-    # 法拉第项为负号：净氧化电流对双电层放电，使 phi_s 低于 E_app（即 IR 降）
+    # M0 uses the canonical fixed gamma. M1 is enabled only by beta_recon > 0.
+    gamma_eff = float(effective_gamma(E_app, params))
+    gammaF_Cdl_eff = gamma_eff * params['F'] / params['Cdl']
+
     r_elec_sum = r_pre + r_1 + r_2 + r_3 + r_4
-    dphi_s = (E_app - phi_s) * params['invRC'] - params['gammaF_Cdl'] * r_elec_sum
+    dphi_s = (E_app - phi_s) * params['invRC'] - gammaF_Cdl_eff * r_elec_sum
 
     dydt = np.array([dtheta_star, dtheta_ox, dtheta_OH, dtheta_O, dtheta_OOH, dphi_s])
 

@@ -13,6 +13,7 @@ from oer_aem import (
     OERObjective,
     initialize_oer_parameters,
 )
+from oer_aem.physics import effective_gamma
 
 
 def test_aem_thermodynamics():
@@ -88,6 +89,75 @@ def test_ode_solver_runs():
     assert len(t) > 0
     assert not np.any(np.isnan(y))
     assert not np.any(np.isnan(i_total))
+
+
+def test_effective_gamma_is_constant_when_reconstruction_disabled():
+    potential = np.array([1.2, 1.5, 1.8])
+    params = {
+        'gamma': 3e-9,
+        'gamma0': 9e-9,
+        'beta_recon': 0.0,
+    }
+
+    result = effective_gamma(potential, params)
+
+    assert result == pytest.approx(np.full(3, 3e-9))
+
+
+def test_effective_gamma_increases_above_reconstruction_potential():
+    params = {
+        'gamma': 3e-9,
+        'beta_recon': 2.0,
+        'E_recon': 1.55,
+        'w_recon': 0.05,
+    }
+
+    result = effective_gamma(np.array([1.3, 1.8]), params)
+
+    assert result[1] > result[0]
+
+
+def test_default_optimizer_does_not_free_reconstruction_parameters():
+    params = initialize_oer_parameters()
+
+    assert params['beta_recon'] == 0.0
+    assert 'beta_recon' not in params['optimize_params']
+    assert 'E_recon' not in params['optimize_params']
+    assert 'w_recon' not in params['optimize_params']
+
+
+def test_forward_current_is_stable_to_output_grid_refinement():
+    def simulate(n_points, points_per_cycle):
+        params = initialize_oer_parameters()
+        params['n_points'] = n_points
+        params['points_per_cycle'] = points_per_cycle
+        params['total_time'] = (
+            n_points / points_per_cycle
+        ) / params['f']
+        params['v'] = (
+            params['E_end'] - params['E_start']
+        ) / params['total_time']
+        params['t_span'] = np.linspace(
+            0.0,
+            params['total_time'],
+            n_points,
+        )
+        params['use_steady_state'] = False
+        time, _, _, current = OERPhysics.solve_ode_system(params)
+        potential = params['E_start'] + params['v'] * time
+        return potential, current
+
+    coarse_e, coarse_i = simulate(512, 32)
+    fine_e, fine_i = simulate(1024, 64)
+    common = np.linspace(coarse_e[0], coarse_e[-1], 200)
+    coarse = np.interp(common, coarse_e, coarse_i)
+    fine = np.interp(common, fine_e, fine_i)
+    scale = max(float(np.max(np.abs(fine))), 1e-30)
+    normalized_rmse = float(
+        np.sqrt(np.mean((coarse - fine) ** 2)) / scale
+    )
+
+    assert normalized_rmse < 0.05
 
 
 if __name__ == '__main__':
