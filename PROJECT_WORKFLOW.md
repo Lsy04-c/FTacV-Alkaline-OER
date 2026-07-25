@@ -18,8 +18,8 @@ branch main
 ```bash
 git status --short
 git diff
-pytest python/tests
-python -m pytest web/backend/test_analyze_e2e.py
+python scripts/run_tests.py python/tests -q
+python scripts/run_tests.py web/backend/test_analyze_e2e.py -q
 git add <本次实际修改文件>
 git commit -m "<type(scope): summary>"
 git push origin main
@@ -35,6 +35,16 @@ git push origin main
 ```
 
 不要把无关文件、临时图、用户未确认的实验输出混入提交。
+
+### Python 测试环境
+
+项目依赖安装在仓库根目录的 `.venv`。不要依赖终端是否已经激活虚拟环境，也不要直接调用全局 `pytest`。统一使用：
+
+```bash
+python scripts/run_tests.py python/tests -q
+```
+
+`scripts/run_tests.py` 会优先选择 `.venv/bin/python`，从而保证 Codex、VS Code 和普通终端使用同一套依赖。
 
 ## 2. 建议压力测试规则
 
