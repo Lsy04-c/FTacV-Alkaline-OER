@@ -11,7 +11,7 @@
   （任务书标题写"9 个自由参数"，但参数表只列出 4+3+1=8 个；本脚本以参数表为准。）
 - 目标函数：DC + 7 次谐波归一化包络残差（公共电位网格 200 点）+ Tafel 斜率残差，
   各通道除以各自 σ 后平方求和，再按通道数（9）取均值。
-- 磁盘缓存：以编码参数向量 round 6 位为 key，缓存在 bench_artifacts/cache/ 下，
+- 磁盘缓存：以编码参数向量 round 6 位为 key，缓存在 results/benchmarks/bench_artifacts/cache/ 下，
   命中不重复计 nfev（正演次数）。
 - 6 个 job（3 场景 × 2 算法）用 ProcessPoolExecutor 并行；每 job 有内部时间预算，
   超时优雅退出并保留进度，不会拖垮整个基准。
@@ -39,10 +39,10 @@ from oer_aem.calibration import measure_tafel
 # ============================ 全局配置 ============================
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ARTIFACT_DIR = os.path.join(REPO_ROOT, 'bench_artifacts')
+ARTIFACT_DIR = os.path.join(REPO_ROOT, 'results', 'benchmarks', 'bench_artifacts')
 CACHE_DIR = os.path.join(ARTIFACT_DIR, 'cache')
 PROGRESS_DIR = os.path.join(ARTIFACT_DIR, 'progress')
-RESULTS_JSON = os.path.join(REPO_ROOT, 'bench_inversion_results.json')
+RESULTS_JSON = os.path.join(REPO_ROOT, 'results', 'benchmarks', 'bench_inversion_results.json')
 
 PIPELINE_VERSION = 'v1-32cyc-8192pts-200grid'   # 管线变更时 bump，防止误用旧缓存
 
