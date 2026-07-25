@@ -1,8 +1,8 @@
 # DeepSeek 下一步工作指令
 
-项目路径：`/Users/liushiyu/OER-FTAcV`  
-负责人：刘拾玉  
-研究对象：Co3O4 / CoOx(OH)y 碱性 OER 的 FTacV 机理解释与参数反演  
+项目路径：`/Users/liushiyu/OER-FTAcV`
+负责人：刘拾玉
+研究对象：Co3O4 / CoOx(OH)y 碱性 OER 的 FTacV 机理解释与参数反演
 当前核心问题：多组实验数据已经存在，下一步应先判断数据质量、谐波可用性和参数耦合，再优化反演算法。
 
 ## 1. 项目目标
