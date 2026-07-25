@@ -38,7 +38,7 @@ from oer_aem.inversion import (
 OUT = ROOT / "results" / "architecture_validation" / "feature_objective_comparison.csv"
 RAW = ROOT / "data" / "raw"
 SEEDS = (7, 17, 27)
-MODES = ("legacy", "complex_snr")
+MODES = ("legacy", "complex_snr", "lockin_only")
 DATASETS = (
     "ftacv2-ref-5hz.txt",
     "ftacv3-ref-5Hz.txt",
@@ -156,7 +156,7 @@ def _experimental_target(
         "_experimental_duration": float(analysis["meta"]["duration"]),
         "_experimental_scan_rate": float(analysis["meta"]["v"]),
     }
-    if config.feature_mode == "complex_snr":
+    if config.feature_mode in ("complex_snr", "lockin_only", "combined"):
         trace = normalize_trace(rows)
         fs = 1.0 / float(np.mean(np.diff(trace.time)))
         target["complex_harmonics"] = complex_harmonic_metrics(
@@ -165,6 +165,32 @@ def _experimental_target(
             f0=float(analysis["meta"]["f"]),
             n_harmonics=max(config.fit_harmonics),
         )
+    if config.feature_mode in ("lockin_only", "combined"):
+        from oer_aem.signal import lockin_harmonics
+        trace = normalize_trace(rows)
+        i0 = len(trace.current) // 4
+        t_trim = trace.time[i0:]
+        i_trim = trace.current[i0:]
+        lockin = lockin_harmonics(
+            i_trim, t_trim,
+            f0=float(analysis["meta"]["f"]),
+            harmonics=tuple(range(1, max(config.fit_harmonics) + 1)),
+            potential_resolution=0.05,
+            scan_rate=float(analysis["meta"]["v"]),
+        )
+        # Interpolate to e_grid
+        e_grid = config.e_grid
+        n_h = max(config.fit_harmonics)
+        lockin_amp, lockin_phase = [], []
+        for idx in range(n_h):
+            lockin_amp.append(np.interp(e_grid, t_trim, lockin["amplitude"][idx]))
+            lockin_phase.append(np.interp(e_grid, t_trim, lockin["phase"][idx]))
+        target["lockin"] = {
+            "amplitude": lockin_amp,
+            "phase": lockin_phase,
+            "fc_used": lockin["fc_used"],
+            "effective_resolution_v": lockin["effective_resolution_v"],
+        }
     return target
 
 

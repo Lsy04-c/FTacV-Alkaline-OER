@@ -467,13 +467,40 @@ def extract_features(current: Sequence[float], config: InversionConfig) -> Dict[
     tafel = measure_tafel(tdc_trim, dc)
     features["tafel"] = float(tafel["tafel_slope"]) if tafel.get("success") else None
     features["e_grid"] = e_grid
-    if config.feature_mode == "complex_snr":
+    if config.feature_mode in ("complex_snr", "lockin_only", "combined"):
         features["complex_harmonics"] = complex_harmonic_metrics(
             current_arr[i0:],
             fs=config.sample_rate,
             f0=config.f,
             n_harmonics=n_required,
         )
+    if config.feature_mode in ("lockin_only", "combined"):
+        from .signal import lockin_harmonics
+        t_trim = config.t_span[i0:]
+        lockin = lockin_harmonics(
+            current_arr[i0:], t_trim,
+            f0=config.f, harmonics=tuple(range(1, n_required + 1)),
+            potential_resolution=0.05,
+            scan_rate=config.scan_rate,
+        )
+        # Map lock-in time→potential and interpolate to e_grid
+        n_h = n_required
+        lockin_amp = []
+        lockin_phase = []
+        for idx in range(n_h):
+            amp_t = lockin["amplitude"][idx]
+            phase_t = lockin["phase"][idx]
+            amp_e = np.interp(e_grid, tdc_trim, amp_t)
+            phase_e = np.interp(e_grid, tdc_trim, phase_t)
+            lockin_amp.append(amp_e)
+            lockin_phase.append(phase_e)
+        features["lockin"] = {
+            "amplitude": lockin_amp,
+            "phase": lockin_phase,
+            "fc_used": lockin["fc_used"],
+            "effective_resolution_v": lockin["effective_resolution_v"],
+            "valid_mask": lockin["valid_mask"],
+        }
     return features
 
 
@@ -532,9 +559,9 @@ class InversionObjective:
         self.last_components: Dict[str, float] = {}
         self.best_components: Dict[str, float] = {}
         self.fit_harmonics = tuple(int(h) for h in self.config.fit_harmonics)
-        if self.config.feature_mode not in {"legacy", "complex_snr"}:
+        if self.config.feature_mode not in {"legacy", "complex_snr", "lockin_only", "combined"}:
             raise ValueError(
-                "feature_mode must be either 'legacy' or 'complex_snr'"
+                "feature_mode must be 'legacy', 'complex_snr', 'lockin_only', or 'combined'"
             )
         invalid = [h for h in self.fit_harmonics if h < 1 or h > 7]
         if invalid:
@@ -586,7 +613,7 @@ class InversionObjective:
                     common_harmonic_loss += channel_loss
                 else:
                     dataset_specific_harmonic_loss += channel_loss
-        else:
+        elif self.config.feature_mode in ("complex_snr", "lockin_only", "combined"):
             selected = np.asarray(self.fit_harmonics, dtype=int) - 1
             simulated = features["complex_harmonics"]
             experimental = self.target["complex_harmonics"]
@@ -620,6 +647,26 @@ class InversionObjective:
                 * np.sum(weights * phase_residual**2)
             )
 
+        # --- lockin potential-resolved loss (lockin_only / combined) ---
+        lockin_amp_loss = 0.0
+        lockin_phase_loss = 0.0
+        if self.config.feature_mode in ("lockin_only", "combined"):
+            if "lockin" in features and "lockin" in self.target:
+                sim_li = features["lockin"]
+                exp_li = self.target["lockin"]
+                n_h = min(len(sim_li["amplitude"]), len(exp_li["amplitude"]))
+                for idx in range(n_h):
+                    sim_amp = np.asarray(sim_li["amplitude"][idx])
+                    exp_amp = np.asarray(exp_li["amplitude"][idx])
+                    sim_ph = np.asarray(sim_li["phase"][idx])
+                    exp_ph = np.asarray(exp_li["phase"][idx])
+                    amp_scale = max(float(np.max(np.abs(exp_amp))), np.finfo(float).eps)
+                    lockin_amp_loss += float(np.mean(
+                        ((sim_amp - exp_amp) / amp_scale / self.config.sigma_harm) ** 2
+                    ))
+                    ph_diff = wrapped_phase_difference(sim_ph, exp_ph)
+                    lockin_phase_loss += float(np.mean(ph_diff ** 2))
+
         physical_loss = 0.0
         target_tafel = self.target.get("tafel")
         if target_tafel is not None:
@@ -639,6 +686,8 @@ class InversionObjective:
             "common_harmonics": common_harmonic_loss,
             "dataset_specific_harmonics": dataset_specific_harmonic_loss,
             "phase": phase_loss,
+            "lockin_amplitude": lockin_amp_loss,
+            "lockin_phase": lockin_phase_loss,
             "physical": physical_loss,
         }
         total = sum(self.last_components.values())
