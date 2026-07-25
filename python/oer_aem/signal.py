@@ -309,13 +309,28 @@ def lockin_harmonics(
         phase_list.append(phi)
         complex_list.append(i_filt + 1j * q_filt)
 
+    # Edge trim: zero-phase filtfilt settling distance ≈ 4/fc samples
+    edge_trim_samples = int(4.0 * fs / max(fc, 1e-6))
+    edge_trim_samples = min(edge_trim_samples, len(t) // 4)
+    valid_mask = np.ones(len(t), dtype=bool)
+    if edge_trim_samples > 0:
+        valid_mask[:edge_trim_samples] = False
+        valid_mask[-edge_trim_samples:] = False
+
+    # Effective independent measurements: 2 * fc * total_time (Nyquist-limited)
+    total_time = t[-1] - t[0]
+    n_effective = max(1, int(2.0 * fc * total_time))
+
     return {
         "amplitude": amp_list,
         "phase": phase_list,
         "complex": complex_list,
         "t": t,
         "fc_used": fc,
-        "effective_resolution": scan_rate / max(fc, 1e-6),
+        "effective_resolution_v": scan_rate / max(fc, 1e-6),
+        "edge_trim_samples": edge_trim_samples,
+        "valid_mask": valid_mask,
+        "n_effective": n_effective,
     }
 
 

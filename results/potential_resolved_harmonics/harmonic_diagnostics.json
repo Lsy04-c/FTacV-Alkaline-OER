@@ -1,0 +1,386 @@
+{
+  "FT2": {
+    "meta": {
+      "fs": 1279.999968749524,
+      "duration": 51.19922,
+      "scan_rate": 0.009742461597578413,
+      "f0": 4.999999877927828,
+      "n_points": 65536,
+      "E_range": [
+        0.96497,
+        1.78204
+      ]
+    },
+    "fc_used": 0.4999999877927828,
+    "effective_resolution_v": 0.019484923670870215,
+    "edge_trim_samples": 10240,
+    "n_effective": 51,
+    "harmonics": {
+      "1": {
+        "harmonic": 1,
+        "mean_amplitude": 0.000611040633338306,
+        "peak_amplitude": 0.0011507619541721921,
+        "peak_potential_v": 1.54145,
+        "mean_phase_rad": 0.0,
+        "amplitude_relative_std": 0.4669200091687258,
+        "n_valid_points": 45056,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.3125
+      },
+      "2": {
+        "harmonic": 2,
+        "mean_amplitude": 0.00016752341728387755,
+        "peak_amplitude": 0.0004298247363057646,
+        "peak_potential_v": 1.54145,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 0.5479035899136279,
+        "n_valid_points": 45056,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.3125
+      },
+      "3": {
+        "harmonic": 3,
+        "mean_amplitude": 8.28890600020647e-05,
+        "peak_amplitude": 0.00028257829254323667,
+        "peak_potential_v": 1.54145,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 0.5985033300086204,
+        "n_valid_points": 45056,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.3125
+      },
+      "4": {
+        "harmonic": 4,
+        "mean_amplitude": 4.49567139480453e-05,
+        "peak_amplitude": 0.00012625203341662383,
+        "peak_potential_v": 1.67743,
+        "mean_phase_rad": 0.0,
+        "amplitude_relative_std": 0.7696928908912326,
+        "n_valid_points": 45056,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.3125
+      },
+      "5": {
+        "harmonic": 5,
+        "mean_amplitude": 1.8126191361158045e-05,
+        "peak_amplitude": 4.378651342666064e-05,
+        "peak_potential_v": 1.28769,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 0.6935231876309083,
+        "n_valid_points": 45056,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.3125
+      },
+      "6": {
+        "harmonic": 6,
+        "mean_amplitude": 1.0842373889888202e-05,
+        "peak_amplitude": 2.8826195375064287e-05,
+        "peak_potential_v": 1.25635,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 0.7108490042912463,
+        "n_valid_points": 45056,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.3125
+      },
+      "7": {
+        "harmonic": 7,
+        "mean_amplitude": 7.861313271417294e-06,
+        "peak_amplitude": 1.7569486350513516e-05,
+        "peak_potential_v": 1.53614,
+        "mean_phase_rad": 0.0,
+        "amplitude_relative_std": 0.6952170643730025,
+        "n_valid_points": 45056,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.3125
+      }
+    }
+  },
+  "FT3": {
+    "meta": {
+      "fs": 1279.999968749524,
+      "duration": 51.19922,
+      "scan_rate": 0.019508235654341954,
+      "f0": 4.999999877927828,
+      "n_points": 65536,
+      "E_range": [
+        0.76643,
+        2.08059
+      ]
+    },
+    "fc_used": 0.7803294261736782,
+    "effective_resolution_v": 0.025,
+    "edge_trim_samples": 6561,
+    "n_effective": 79,
+    "harmonics": {
+      "1": {
+        "harmonic": 1,
+        "mean_amplitude": 0.000787487809797354,
+        "peak_amplitude": 0.0036213566211652846,
+        "peak_potential_v": 1.94194,
+        "mean_phase_rad": 0.0,
+        "amplitude_relative_std": 1.2920485567841928,
+        "n_valid_points": 52414,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.200225830078125
+      },
+      "2": {
+        "harmonic": 2,
+        "mean_amplitude": 0.00023424380038324273,
+        "peak_amplitude": 0.0008007606945483652,
+        "peak_potential_v": 1.84069,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 1.2489221923268787,
+        "n_valid_points": 52414,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.200225830078125
+      },
+      "3": {
+        "harmonic": 3,
+        "mean_amplitude": 3.992745964051955e-05,
+        "peak_amplitude": 0.00014642276167325192,
+        "peak_potential_v": 1.7913,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 1.1859317701083394,
+        "n_valid_points": 52414,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.200225830078125
+      },
+      "4": {
+        "harmonic": 4,
+        "mean_amplitude": 9.687616815377023e-06,
+        "peak_amplitude": 3.5248526460860175e-05,
+        "peak_potential_v": 1.71684,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 1.0293594559958832,
+        "n_valid_points": 52414,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.200225830078125
+      },
+      "5": {
+        "harmonic": 5,
+        "mean_amplitude": 3.50883222310994e-06,
+        "peak_amplitude": 1.2220128101823753e-05,
+        "peak_potential_v": 1.78586,
+        "mean_phase_rad": 0.0,
+        "amplitude_relative_std": 1.0310337030669245,
+        "n_valid_points": 52414,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.200225830078125
+      },
+      "6": {
+        "harmonic": 6,
+        "mean_amplitude": 1.8889403126672762e-06,
+        "peak_amplitude": 6.6325808512593165e-06,
+        "peak_potential_v": 1.65915,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 0.799155844186943,
+        "n_valid_points": 52414,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.200225830078125
+      },
+      "7": {
+        "harmonic": 7,
+        "mean_amplitude": 1.162746786203916e-06,
+        "peak_amplitude": 3.250575114226836e-06,
+        "peak_potential_v": 1.72383,
+        "mean_phase_rad": 0.0,
+        "amplitude_relative_std": 0.6161799940459687,
+        "n_valid_points": 52414,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.200225830078125
+      }
+    }
+  },
+  "FT4": {
+    "meta": {
+      "fs": 256.00000375005726,
+      "duration": 255.99609,
+      "scan_rate": 0.0039016471309137597,
+      "f0": 1.0000000146486612,
+      "n_points": 65536,
+      "E_range": [
+        0.76643,
+        2.08059
+      ]
+    },
+    "fc_used": 0.15606588523655038,
+    "effective_resolution_v": 0.025,
+    "edge_trim_samples": 6561,
+    "n_effective": 79,
+    "harmonics": {
+      "1": {
+        "harmonic": 1,
+        "mean_amplitude": 0.0009069764777839736,
+        "peak_amplitude": 0.003988775198822157,
+        "peak_potential_v": 1.73841,
+        "mean_phase_rad": 0.0,
+        "amplitude_relative_std": 1.4213340727756705,
+        "n_valid_points": 52414,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.200225830078125
+      },
+      "2": {
+        "harmonic": 2,
+        "mean_amplitude": 0.00028703034154270815,
+        "peak_amplitude": 0.0009780967556055748,
+        "peak_potential_v": 1.72625,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 1.2562106316813415,
+        "n_valid_points": 52414,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.200225830078125
+      },
+      "3": {
+        "harmonic": 3,
+        "mean_amplitude": 5.141285535158897e-05,
+        "peak_amplitude": 0.0002033346378954711,
+        "peak_potential_v": 1.58953,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 1.2229148595513035,
+        "n_valid_points": 52414,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.200225830078125
+      },
+      "4": {
+        "harmonic": 4,
+        "mean_amplitude": 1.8210390163151604e-05,
+        "peak_amplitude": 6.151005182492529e-05,
+        "peak_potential_v": 1.46213,
+        "mean_phase_rad": 0.0,
+        "amplitude_relative_std": 0.9548678332415175,
+        "n_valid_points": 52414,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.200225830078125
+      },
+      "5": {
+        "harmonic": 5,
+        "mean_amplitude": 8.504286926927412e-06,
+        "peak_amplitude": 2.7917494326410016e-05,
+        "peak_potential_v": 1.45791,
+        "mean_phase_rad": 0.0,
+        "amplitude_relative_std": 0.7969617510766513,
+        "n_valid_points": 52414,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.200225830078125
+      },
+      "6": {
+        "harmonic": 6,
+        "mean_amplitude": 4.705652797289819e-06,
+        "peak_amplitude": 1.2278678340766813e-05,
+        "peak_potential_v": 1.41734,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 0.6940631555201565,
+        "n_valid_points": 52414,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.200225830078125
+      },
+      "7": {
+        "harmonic": 7,
+        "mean_amplitude": 3.678235721357086e-06,
+        "peak_amplitude": 9.586072348301469e-06,
+        "peak_potential_v": 1.6463,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 0.5986382126524984,
+        "n_valid_points": 52414,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.200225830078125
+      }
+    }
+  },
+  "FT8": {
+    "meta": {
+      "fs": 1279.999968749524,
+      "duration": 51.19922,
+      "scan_rate": 0.01755508079784741,
+      "f0": 4.999999877927828,
+      "n_points": 65536,
+      "E_range": [
+        0.76614,
+        1.98088
+      ]
+    },
+    "fc_used": 0.7022032319138963,
+    "effective_resolution_v": 0.025,
+    "edge_trim_samples": 7291,
+    "n_effective": 71,
+    "harmonics": {
+      "1": {
+        "harmonic": 1,
+        "mean_amplitude": 0.0012707951294595385,
+        "peak_amplitude": 0.004623848102801723,
+        "peak_potential_v": 1.70769,
+        "mean_phase_rad": 0.0,
+        "amplitude_relative_std": 0.9787373074912507,
+        "n_valid_points": 50954,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.222503662109375
+      },
+      "2": {
+        "harmonic": 2,
+        "mean_amplitude": 0.0003645133348416825,
+        "peak_amplitude": 0.0012026695637676577,
+        "peak_potential_v": 1.81107,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 1.078218976915527,
+        "n_valid_points": 50954,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.222503662109375
+      },
+      "3": {
+        "harmonic": 3,
+        "mean_amplitude": 0.00010182203197919996,
+        "peak_amplitude": 0.0003515342314855206,
+        "peak_potential_v": 1.60801,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 0.9961571191262127,
+        "n_valid_points": 50954,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.222503662109375
+      },
+      "4": {
+        "harmonic": 4,
+        "mean_amplitude": 4.346550347979499e-05,
+        "peak_amplitude": 0.00012300985645971637,
+        "peak_potential_v": 1.60024,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 0.9870770273742658,
+        "n_valid_points": 50954,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.222503662109375
+      },
+      "5": {
+        "harmonic": 5,
+        "mean_amplitude": 2.1859540224923716e-05,
+        "peak_amplitude": 6.685578539316757e-05,
+        "peak_potential_v": 1.62176,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 0.9116327725486537,
+        "n_valid_points": 50954,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.222503662109375
+      },
+      "6": {
+        "harmonic": 6,
+        "mean_amplitude": 1.3190165764973273e-05,
+        "peak_amplitude": 3.8233382521058955e-05,
+        "peak_potential_v": 1.44469,
+        "mean_phase_rad": 0.0,
+        "amplitude_relative_std": 0.9158396216275182,
+        "n_valid_points": 50954,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.222503662109375
+      },
+      "7": {
+        "harmonic": 7,
+        "mean_amplitude": 8.235388218265692e-06,
+        "peak_amplitude": 2.3327507560447426e-05,
+        "peak_potential_v": 1.41022,
+        "mean_phase_rad": 3.141592653589793,
+        "amplitude_relative_std": 0.8869197760682489,
+        "n_valid_points": 50954,
+        "n_total_points": 65536,
+        "fraction_trimmed": 0.222503662109375
+      }
+    }
+  }
+}
