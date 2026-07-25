@@ -397,9 +397,24 @@ def forward_current(
     config: InversionConfig,
     specs: Sequence[ParamSpec] = DEFAULT_PARAM_SPECS,
 ) -> Optional[np.ndarray]:
-    """Run the mechanistic forward model and return total current."""
+    """Run the mechanistic forward model and return total current.
 
+    Tries the compiled C++ Crank-Nicolson solver first; falls back to
+    scipy LSODA if the library is unavailable or the C++ solver fails.
+    """
     params = params_from_vector(x, config, specs)
+
+    # --- C++ fast path ---
+    try:
+        from .cpp_bridge import is_available, solve_cn
+        if is_available():
+            current = solve_cn(params)
+            if current is not None and current.size == config.n_points:
+                return np.asarray(current, dtype=float).reshape(-1)
+    except Exception:
+        pass  # fall through to scipy
+
+    # --- scipy fallback ---
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         _, _, _, current = OERPhysics.solve_ode_system(params)
