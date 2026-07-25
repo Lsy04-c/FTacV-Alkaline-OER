@@ -27,3 +27,6 @@ venv/
 .env
 bench_artifacts/
 __pycache__/
+
+# Isolated Codex worktrees
+.worktrees/
