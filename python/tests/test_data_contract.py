@@ -40,3 +40,16 @@ def test_residual_sign_is_experiment_minus_simulation():
     )
 
     assert residual.tolist() == [1.0, -2.0]
+
+
+def test_trimmed_residual_preserves_full_grid_sign():
+    from oer_aem.data_contract import residual_on_grid
+
+    full_e = np.array([1.0, 1.1, 1.2, 1.3])
+    exp = np.array([1.0, 2.0, 4.0, 8.0])
+    sim = np.array([0.5, 1.5, 3.0, 7.0])
+    trimmed = np.array([1.1, 1.2])
+
+    residual = residual_on_grid(full_e, exp, full_e, sim, trimmed)
+
+    assert np.all(residual > 0.0)

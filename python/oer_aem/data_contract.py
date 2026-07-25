@@ -52,3 +52,25 @@ def residual_exp_minus_sim(
             "experiment and simulation must have identical shapes"
         )
     return experiment - simulation
+
+
+def residual_on_grid(
+    exp_e: np.ndarray,
+    exp_i: np.ndarray,
+    sim_e: np.ndarray,
+    sim_i: np.ndarray,
+    common_e: np.ndarray,
+) -> np.ndarray:
+    """Interpolate experiment and simulation before applying the residual sign."""
+    common_e = np.asarray(common_e, dtype=float)
+    exp_interp = np.interp(
+        common_e,
+        np.asarray(exp_e, dtype=float),
+        np.asarray(exp_i, dtype=float),
+    )
+    sim_interp = np.interp(
+        common_e,
+        np.asarray(sim_e, dtype=float),
+        np.asarray(sim_i, dtype=float),
+    )
+    return residual_exp_minus_sim(exp_interp, sim_interp)

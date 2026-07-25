@@ -4,13 +4,17 @@
 用法：
     cd /Users/liushiyu/OER-FTAcV
     .venv/bin/python scripts/residual_diagnostics.py
+    .venv/bin/python scripts/residual_diagnostics.py \
+        --output results/architecture_validation/residual_contract.csv
 
 输出：
     results/model_gap/model_gap_summary.md
-    results/model_gap/<dataset>_residual_diagnostics.png
+    results/architecture_validation/residual_contract.csv
 """
 
-import sys, os, csv, json
+import argparse
+import csv
+import sys
 from pathlib import Path
 from typing import Dict, Any
 
@@ -22,6 +26,7 @@ sys.path.insert(0, str(PROJECT / "python"))
 sys.path.insert(0, str(PROJECT / "web" / "backend"))
 
 from main import _analyze_ftacv_data
+from oer_aem.data_contract import residual_on_grid
 from oer_aem.inversion import InversionConfig, TPEInverter, DEFAULT_PARAM_SPECS
 from oer_aem.defaults import initialize_oer_parameters
 
@@ -51,7 +56,7 @@ def _load_numeric(filename: str, min_cols=3):
 
 
 def run_forward_with_params(params, analysis):
-    """用给定参数跑正演，返回模拟的 DC 和谐波（插值到实验电位网格）。"""
+    """用给定参数跑正演，保留原始模拟网格并对齐谐波诊断。"""
     from oer_aem.physics import OERPhysics
     from oer_aem.signal import OERSignal
     from oer_aem.thermodynamics import apply_alkaline_aem
@@ -78,7 +83,45 @@ def run_forward_with_params(params, analysis):
     sim_dc_interp = np.interp(exp_tdc, x, sim_dc[order][keep])
     harms_interp = [np.interp(exp_tdc, x, h[order][keep]) for h in sim_harm]
 
-    return exp_tdc, exp_dc, exp_harm, sim_dc_interp, harms_interp
+    return (
+        exp_tdc,
+        exp_dc,
+        exp_harm,
+        x,
+        sim_dc[order][keep],
+        sim_dc_interp,
+        harms_interp,
+    )
+
+
+def _grid_residual_row(
+    filename: str,
+    grid_name: str,
+    common_e: np.ndarray,
+    exp_e: np.ndarray,
+    exp_i: np.ndarray,
+    sim_e: np.ndarray,
+    sim_i: np.ndarray,
+) -> Dict[str, Any]:
+    """Summarize normalized experiment-minus-simulation residuals on one grid."""
+    residual = residual_on_grid(exp_e, exp_i, sim_e, sim_i, common_e)
+    exp_on_grid = np.interp(common_e, exp_e, exp_i)
+    normalized = residual / max(float(np.max(np.abs(exp_on_grid))), 1e-30)
+    low_edge, high_edge = np.percentile(common_e, [20.0, 80.0])
+    masks = (
+        common_e < low_edge,
+        (common_e >= low_edge) & (common_e < high_edge),
+        common_e >= high_edge,
+    )
+    return {
+        "dataset": filename,
+        "grid": grid_name,
+        "n_points": int(common_e.size),
+        "bias_lo": float(np.mean(normalized[masks[0]])),
+        "bias_mid": float(np.mean(normalized[masks[1]])),
+        "bias_hi": float(np.mean(normalized[masks[2]])),
+        "sign_convention": "experiment - simulation",
+    }
 
 
 def diagnose_dataset(filename: str, n_trials=30) -> Dict[str, Any]:
@@ -128,10 +171,48 @@ def diagnose_dataset(filename: str, n_trials=30) -> Dict[str, Any]:
     best_p['omega'] = 2 * np.pi * cfg.f
     best_p['t_span'] = np.linspace(0, cfg.total_time, cfg.n_points)
 
-    exp_tdc, exp_dc, exp_harm, sim_dc, sim_harm = run_forward_with_params(best_p, analysis)
+    (
+        exp_tdc,
+        exp_dc,
+        exp_harm,
+        sim_e,
+        sim_dc_native,
+        sim_dc,
+        sim_harm,
+    ) = run_forward_with_params(best_p, analysis)
 
-    # 残差
-    dc_resid = (exp_dc - sim_dc) / max(np.max(np.abs(exp_dc)), 1e-30)
+    # 完整实验网格和裁剪反演网格共享同一插值及残差符号契约。
+    exp_order = np.argsort(exp_tdc)
+    exp_unique, exp_keep = np.unique(exp_tdc[exp_order], return_index=True)
+    exp_dc_unique = exp_dc[exp_order][exp_keep]
+    grid_rows = [
+        _grid_residual_row(
+            filename,
+            "full",
+            exp_unique,
+            exp_unique,
+            exp_dc_unique,
+            sim_e,
+            sim_dc_native,
+        ),
+        _grid_residual_row(
+            filename,
+            "trimmed",
+            cfg.e_grid,
+            exp_unique,
+            exp_dc_unique,
+            sim_e,
+            sim_dc_native,
+        ),
+    ]
+
+    dc_resid = residual_on_grid(
+        exp_unique,
+        exp_dc_unique,
+        sim_e,
+        sim_dc_native,
+        exp_tdc,
+    ) / max(np.max(np.abs(exp_dc)), 1e-30)
     h1_resid = (exp_harm[0] - sim_harm[0]) / max(np.max(np.abs(exp_harm[0])), 1e-30)
 
     # 分段统计
@@ -148,6 +229,7 @@ def diagnose_dataset(filename: str, n_trials=30) -> Dict[str, Any]:
         'dc_bias_lo': float(np.mean(dc_resid[lo])),
         'dc_bias_mid': float(np.mean(dc_resid[mid])),
         'dc_bias_hi': float(np.mean(dc_resid[hi])),
+        'grid_rows': grid_rows,
         'onset_offset': _onset_diff(exp_tdc, exp_dc, sim_dc),
         'h1_peak_shift': _peak_shift(exp_tdc, exp_harm[0], sim_harm[0]),
         'h2_peak_shift': _peak_shift(exp_tdc, exp_harm[1], sim_harm[1]),
@@ -187,9 +269,44 @@ def _classify_residual(diag: Dict) -> str:
     return '; '.join(reasons) if reasons else '偏差较小，需进一步检查谐波残差形态'
 
 
+def _write_contract_csv(path: Path, diagnostics: list[Dict[str, Any]]) -> None:
+    """Write the machine-readable full/trimmed residual contract."""
+    rows = [row for diagnostic in diagnostics for row in diagnostic["grid_rows"]]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=[
+                "dataset",
+                "grid",
+                "n_points",
+                "bias_lo",
+                "bias_mid",
+                "bias_hi",
+                "sign_convention",
+            ],
+            lineterminator="\n",
+        )
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="write the residual contract CSV instead of the historical Markdown report",
+    )
+    parser.add_argument("--trials", type=int, default=30)
+    return parser.parse_args()
+
+
 def main():
+    args = _parse_args()
     quality_csv = PROJECT / "results" / "data_quality" / "data_quality_summary.csv"
-    quality_data = list(csv.DictReader(open(quality_csv)))
+    with quality_csv.open(encoding="utf-8") as handle:
+        quality_data = list(csv.DictReader(handle))
     ftacv_files = [r for r in quality_data if r['type'] == 'FTacV' and r['success'] == 'True']
 
     diagnostics = []
@@ -197,14 +314,21 @@ def main():
         name = r['filename']
         print(f"Diagnosing {name} ...", end=" ", flush=True)
         try:
-            d = diagnose_dataset(name, n_trials=30)
+            d = diagnose_dataset(name, n_trials=args.trials)
             d['classification'] = _classify_residual(d)
             diagnostics.append(d)
             print(f"best={d['best_value']:.2f} bias_lo={d['dc_bias_lo']:+.2f} bias_hi={d['dc_bias_hi']:+.2f} onset={d['onset_offset']:+.3f}V")
         except Exception as e:
             print(f"FAIL: {e}")
 
-    # Markdown report
+    if args.output is not None:
+        output = args.output if args.output.is_absolute() else PROJECT / args.output
+        _write_contract_csv(output, diagnostics)
+        print(f"\nResidual contract → {output}")
+        print("Done.")
+        return
+
+    # Historical Markdown report
     lines = [
         "# Model Gap Summary",
         "",

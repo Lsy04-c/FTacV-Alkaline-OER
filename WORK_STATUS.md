@@ -564,3 +564,34 @@ docs/workspace_environment_audit.md
 ```
 
 `gamma_eff(E)`及旧模型缺项脚本仍属于未验证实验资产，不计入当前通过测试的基线模型。
+
+---
+
+## 12. 完整网格与裁剪网格残差契约（2026-07-25）
+
+已在测试提交基线`dd4ce91`上统一残差计算：
+
+```text
+residual = experiment - simulation
+```
+
+`python/oer_aem/data_contract.py`现在通过同一个插值入口计算完整实验网格和裁剪反演网格残差；`scripts/residual_diagnostics.py`不再为两种网格各自维护残差逻辑。
+
+新鲜验证：
+
+```text
+python scripts/run_tests.py python/tests/test_data_contract.py -q
+4 passed
+
+.venv/bin/python scripts/residual_diagnostics.py \
+  --output results/architecture_validation/residual_contract.csv
+4 datasets × 2 grids generated
+```
+
+机器可读证据：
+
+```text
+results/architecture_validation/residual_contract.csv
+```
+
+四组数据在两种网格中均明确记录`experiment - simulation`。当前30次TPE诊断仍显示四组数据的高电位归一化偏差为正；这证明了残差方向和口径，不构成对缺失物理机制的因果证明。
