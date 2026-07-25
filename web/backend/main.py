@@ -62,7 +62,7 @@ class InversionTargetIn(BaseModel):
     tdc: List[float]
     dc: List[float]
     harmonics: List[List[float]]
-    tafel: float
+    tafel: Optional[float] = None
 
 
 class InversionConfigIn(BaseModel):
@@ -181,7 +181,11 @@ def _build_inversion_target(payload: InversionTargetIn, cfg: InversionConfig) ->
     return {
         "dc": np.interp(cfg.e_grid, x, dc[order][keep]),
         "harm": [np.interp(cfg.e_grid, x, h[order][keep]) for h in harmonics],
-        "tafel": float(payload.tafel),
+        "tafel": (
+            float(payload.tafel)
+            if payload.tafel is not None
+            else None
+        ),
         "e_grid": cfg.e_grid,
     }
 
