@@ -1,0 +1,8 @@
+filename,type,n_points,duration,E_range,f,dE,v,fs,h1_rms,h2_rms,h3_rms,h4_rms,h5_rms,h6_rms,h7_rms,h2_h1,h3_h1,h4_h1,fit_harmonics,CdlA,Tafel,preox,success,error
+cv-ftacv2.txt,CV,1400,,0.000 – 0.700,,,,,,,,,,,,,,,,,,,True,
+cv2-ftacv8.txt,CV,1400,,0.000 – 0.700,,,,,,,,,,,,,,,,,,,True,
+cv4-ftacv3.txt,CV,1800,,0.000 – 0.900,,,,,,,,,,,,,,,,,,,True,
+ftacv2-ref-5hz.txt,FTacV,65536,51.2s,1.124 – 1.623,5.00 Hz,0.160 V,9.74 mV/s,1280.0 Hz,8.23e-04,3.31e-04,1.56e-04,5.61e-05,2.31e-05,1.43e-05,1.00e-05,0.403,0.189,0.068,"[1, 2, 3, 4, 5]",34.5 µF,FAIL,not detected,True,
+ftacv3-ref-5Hz.txt,FTacV,65536,51.2s,0.924 – 1.923,5.00 Hz,0.160 V,19.51 mV/s,1280.0 Hz,1.54e-03,3.87e-04,5.56e-05,1.26e-05,4.61e-06,2.30e-06,1.42e-06,0.251,0.036,0.008,"[1, 2, 3]",16.9 µF,FAIL,not detected,True,
+ftacv4-ref-1hz.txt,FTacV,65536,256.0s,0.924 – 1.923,1.00 Hz,0.160 V,3.90 mV/s,256.0 Hz,1.70e-03,4.28e-04,7.29e-05,2.30e-05,1.03e-05,5.65e-06,4.37e-06,0.251,0.043,0.014,"[1, 2, 3]",28.9 µF,0 mV/dec,not detected,True,
+ftacv8-ref-5Hz.txt,FTacV,65536,51.2s,0.924 – 1.823,5.00 Hz,0.160 V,17.56 mV/s,1280.0 Hz,2.13e-03,5.22e-04,1.33e-04,5.52e-05,2.69e-05,1.61e-05,1.00e-05,0.245,0.063,0.026,"[1, 2, 3, 4]",30.8 µF,0 mV/dec,not detected,True,
