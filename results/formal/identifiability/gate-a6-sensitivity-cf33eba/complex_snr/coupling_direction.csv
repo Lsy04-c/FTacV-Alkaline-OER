@@ -1,0 +1,9 @@
+parameter,peer,correlation,direction
+k0_1,k0_pre,0.9880665153982588,same_response
+k0_3,scaling_OOH_OH,-0.9999991445698412,opposite_response
+k0_pre,k0_1,0.9880665153982588,same_response
+gamma,A,0.995121430377021,same_response
+G_OH,G_O,-0.9847921924878216,opposite_response
+G_O,G_OH,-0.9847921924878216,opposite_response
+scaling_OOH_OH,k0_3,-0.9999991445698412,opposite_response
+A,gamma,0.995121430377021,same_response

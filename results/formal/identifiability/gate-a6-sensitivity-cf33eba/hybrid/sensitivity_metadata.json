@@ -1,0 +1,43 @@
+{
+  "feature_mode": "hybrid",
+  "included_features": [
+    "DC shape",
+    "DC shape_raw",
+    "DC amplitude",
+    "DC amplitude_raw",
+    "Complex H1 real",
+    "Complex H1 imag",
+    "Complex H2 real",
+    "Complex H2 imag",
+    "Complex H3 real",
+    "Complex H3 imag",
+    "Lockin H1 real",
+    "Lockin H1 imag",
+    "Lockin H2 real",
+    "Lockin H2 imag",
+    "Lockin H3 real",
+    "Lockin H3 imag",
+    "onset"
+  ],
+  "excluded_features": [
+    "Tafel"
+  ],
+  "expanded_feature_rows": 9097,
+  "parameters": [
+    "k0_1",
+    "k0_2",
+    "k0_3",
+    "k0_4",
+    "k0_pre",
+    "gamma",
+    "G_OH",
+    "G_O",
+    "scaling_OOH_OH",
+    "E0_pre",
+    "Cdl",
+    "Ru",
+    "A"
+  ],
+  "n_forward_runs": 26,
+  "n_ode_failures": 0
+}

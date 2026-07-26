@@ -1,0 +1,12 @@
+{
+  "phase": "pilot",
+  "passed": true,
+  "job_count": 36,
+  "completed_jobs": 36,
+  "workers": 8,
+  "duration_seconds": 3039.2123042079993,
+  "n_ode_fail": 171,
+  "n_tafel_fail": 629,
+  "source_commit": "1b094bcafc7549f9713d5dc42b29330f4100644e",
+  "dirty": false
+}

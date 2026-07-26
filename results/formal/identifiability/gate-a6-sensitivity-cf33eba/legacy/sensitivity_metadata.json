@@ -1,0 +1,46 @@
+{
+  "feature_mode": "legacy",
+  "included_features": [
+    "DC shape",
+    "DC shape_raw",
+    "DC amplitude",
+    "DC amplitude_raw",
+    "H1 shape",
+    "H1 peak amplitude",
+    "H1 peak potential",
+    "H1 shape_raw",
+    "H1 peak amplitude_raw",
+    "H2 shape",
+    "H2 peak amplitude",
+    "H2 peak potential",
+    "H2 shape_raw",
+    "H2 peak amplitude_raw",
+    "H3 shape",
+    "H3 peak amplitude",
+    "H3 peak potential",
+    "H3 shape_raw",
+    "H3 peak amplitude_raw",
+    "onset"
+  ],
+  "excluded_features": [
+    "Tafel"
+  ],
+  "expanded_feature_rows": 33292,
+  "parameters": [
+    "k0_1",
+    "k0_2",
+    "k0_3",
+    "k0_4",
+    "k0_pre",
+    "gamma",
+    "G_OH",
+    "G_O",
+    "scaling_OOH_OH",
+    "E0_pre",
+    "Cdl",
+    "Ru",
+    "A"
+  ],
+  "n_forward_runs": 26,
+  "n_ode_failures": 0
+}

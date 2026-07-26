@@ -1,0 +1,5 @@
+parameter,peer,correlation,direction
+k0_3,scaling_OOH_OH,-0.9999503209854258,opposite_response
+gamma,A,0.9895322943668068,same_response
+scaling_OOH_OH,k0_3,-0.9999503209854258,opposite_response
+A,gamma,0.9895322943668068,same_response
