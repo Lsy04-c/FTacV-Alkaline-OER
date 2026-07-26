@@ -177,17 +177,27 @@
   - 32 points/cycle：高次谐波失败；
   - 64 points/cycle：6 样本仍有失败；
   - 128 points/cycle：6 样本通过。
+- Legion 正式门已按预注册配置完成：
+  - commit `1becc125311e`；
+  - 24 samples、seed 17、256 cycles、128 points/cycle；
+  - 正式证据：`results/formal/solver_equivalence/formal-1becc12/`；
+  - Gate A3 结果：**FAIL**。
 
 ### 文件总结
 
-旧 C++ 内部稳态 Newton 会给出错误初值，造成约 18.5% 总电流 NRMSE。统一初值后，主要误差转为可控制的时间离散误差。正式候选采样为 128 points/cycle。
+旧 C++ 内部稳态 Newton 会给出错误初值，造成约 18.5% 总电流
+NRMSE。统一初值后，本机 6 样本测试曾通过，但 24 样本正式门未通过：
+LSODA 在 sample 12、21 失败；有效样本中有 15 项锁相相位超阈值，
+sample 20 的 DC NRMSE 为 2.61%，超过 1% 门。正式 CSV 因两个参考
+求解失败只有 156 行，而不是预期 168 行。因此 128 points/cycle 的 CN
+不能进入正式搜索。
 
 ### 未达成与路径规划
 
-1. 在拯救者完成 24 样本、256 周期、128 points/cycle 正式等价性门。
-2. 验收总电流、DC、H1–H7 幅相、锁相特征、峰位、失败数和运行时间。
-3. 正式结果记录 commit、解释器、依赖、动态库来源和配置。
-4. Gate A3：正式门 PASS 后，CN 才能用于搜索；入选参数始终由 LSODA 复算。
+1. 将 Gate A3 保持为 FAIL，正式 TPE 继续使用 LSODA。
+2. 单独诊断 sample 12、21 的 LSODA 失败原因，不把参考求解失败解释为 CN 优势。
+3. 按预注册失败路径测试 256 points/cycle，但不得修改现有阈值或覆盖本次证据。
+4. 只有新的独立正式门 PASS 后，CN 才能用于搜索；入选参数仍由 LSODA 复算。
 
 ### 纠错与失败路径
 

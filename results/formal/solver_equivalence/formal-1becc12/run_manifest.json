@@ -1,0 +1,17 @@
+{
+  "source_commit": "1becc125311e008cd00831875c7be195891f6554",
+  "samples": 24,
+  "seed": 17,
+  "cycles": 256,
+  "points_per_cycle": 128,
+  "resolvability_fraction": 0.02,
+  "python_version": "3.11.2",
+  "numpy_version": "2.4.6",
+  "scipy_version": "1.17.1",
+  "optuna_version": "4.9.0",
+  "library_sha256": "b40172f8a2f8f4a202a04e82d92f6da8e633b159de2c0d0b54831284cd644bef",
+  "script_sha256": "5c8622e0d23e0c10b830bc999350ff6881d0ee54599ab3742f46a8acc16a34b1",
+  "started_at_cst": "2026-07-26T19:24:39+0800",
+  "execution_mode": "foreground_ssh_wsl",
+  "command": ".venv/bin/python scripts/validate_solver_equivalence.py --samples 24 --seed 17 --cycles 256 --points-per-cycle 128 --output-dir results/solver_equivalence/formal-1becc12"
+}

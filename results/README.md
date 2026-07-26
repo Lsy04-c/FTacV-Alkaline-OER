@@ -14,6 +14,10 @@
 
 `formal/architecture_validation/` 保存 32 points/cycle 同构架构验证基线及 manifest。正式文件不得被 smoke 运行覆盖。
 
+`formal/solver_equivalence/formal-1becc12/` 保存 24 样本 CN–LSODA
+正式等价性失败证据。该目录属于正式预算结果，但 Gate A3 为 FAIL，
+不能作为 CN 可进入正式搜索的依据。
+
 ## Smoke
 
 `smoke/architecture_validation/feature_objective_comparison_3trial.csv` 是 3-trial 流程检查。它不替代正式 feature comparison。

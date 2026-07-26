@@ -1,6 +1,7 @@
 {
   "formal": {
-    "results/formal/architecture_validation": "Manifest-backed 32-point architecture-validation baseline"
+    "results/formal/architecture_validation": "Manifest-backed 32-point architecture-validation baseline",
+    "results/formal/solver_equivalence/formal-1becc12": "Formal-budget Gate A3 evidence; scientific gate failed"
   },
   "smoke": {
     "results/smoke/architecture_validation/feature_objective_comparison_3trial.csv": "Three-trial workflow smoke; not formal evidence"

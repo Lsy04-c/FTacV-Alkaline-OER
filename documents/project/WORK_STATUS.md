@@ -11,7 +11,17 @@
 - 迁移验证：最终 Python 101 项通过（含目录布局 4 项、Markdown 审计 3 项）；Web 后端 3 项通过（另有 1 条 Starlette 弃用警告）；macOS C++ 动态库构建和 bridge 测试通过。
 - Web 前端：当前为静态 `index.html`，没有构建脚本，不把 `npm run build` 作为验收门。
 - 关联提交：`f6acdec`、`d9504fd`、`f4adb58`，均已推送至远端当前分支。
-- 保留范围：实验性 C++、`_rhs_jit.py`、潜在分辨谐波计划和旧工作流总结仍是本机未提交文件，本次分类不得纳入。
+- 后续分类提交：`e13b42c` 已纳入实验性 C++、Numba RHS、谐波计划和工作流总结。
+
+## 0.1 Gate A3 正式求解器等价性（2026-07-26）
+
+- 状态：**FAIL**，停止 CN 正式搜索，不启动后续正式 TPE。
+- 配置：commit `1becc125311e`，24 samples，seed 17，256 cycles，128 points/cycle。
+- 环境：Legion Python 3.11.2、NumPy 2.4.6、SciPy 1.17.1、Optuna 4.9.0。
+- 证据：`results/formal/solver_equivalence/formal-1becc12/`。
+- 完整性：CSV 列结构和 provenance 有效，但只有 156 行；sample 12、21 的 LSODA 失败，各以一行 harmonic 0 记录。
+- 数值失败：15 项 `lockin_phase_rmse_rad` 超阈值；sample 20 的 `dc_nrmse=0.0261167` 超过 0.01，并伴随 H7 相位失败。
+- 决策：不调整阈值、不删除失败样本、不将 6 样本 smoke 外推为正式通过。下一步先诊断 LSODA 失败，再按原失败路径评估 256 points/cycle。
 
 项目：碱性 OER AEM 微观动力学建模与 FTacV 参数反演平台
 负责人：刘拾玉
