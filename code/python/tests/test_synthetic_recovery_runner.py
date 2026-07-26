@@ -2,6 +2,7 @@
 
 import pytest
 
+from scripts import run_synthetic_recovery as recovery_runner
 from scripts.run_synthetic_recovery import (
     build_config,
     build_jobs,
@@ -10,6 +11,8 @@ from scripts.run_synthetic_recovery import (
     main,
     validate_noise_evidence,
 )
+
+REDUCED_FREE_PARAMETERS = ("k0_1", "k0_2", "k0_3", "G_OH", "G_O")
 
 
 def test_formal_runner_matches_frozen_a5_grid(tmp_path):
@@ -67,6 +70,70 @@ def test_pilot_builds_36_budget_jobs(tmp_path):
 
     assert len(jobs) == 36
     assert {job["trials"] for job in jobs} == {20, 50, 100}
+
+
+def test_reduced_runner_fixes_complement_to_each_synthetic_truth(tmp_path):
+    args = parse_args(
+        [
+            "--phase",
+            "pilot",
+            "--noise-fraction",
+            "0.0015",
+            "--free-parameters",
+            ",".join(REDUCED_FREE_PARAMETERS),
+            "--output",
+            str(tmp_path / "pilot"),
+        ]
+    )
+    job = build_jobs(args)[0]
+
+    config, free_specs = recovery_runner.build_recovery_problem(job, smoke=True)
+
+    assert tuple(name for name, *_ in free_specs) == REDUCED_FREE_PARAMETERS
+    assert dict(config.fixed_params) == {
+        name: value
+        for name, value in job["truth_params"].items()
+        if name not in REDUCED_FREE_PARAMETERS
+    }
+    assert job["free_parameters"] == list(REDUCED_FREE_PARAMETERS)
+
+
+def test_reduced_runner_rejects_unknown_or_duplicate_parameters(tmp_path):
+    common = [
+        "--phase",
+        "pilot",
+        "--noise-fraction",
+        "0.0015",
+        "--output",
+        str(tmp_path / "pilot"),
+    ]
+
+    with pytest.raises(ValueError, match="unknown free parameter"):
+        build_jobs(parse_args([*common, "--free-parameters", "k0_1,unknown"]))
+
+    with pytest.raises(ValueError, match="duplicate free parameter"):
+        build_jobs(parse_args([*common, "--free-parameters", "k0_1,k0_1"]))
+
+
+def test_reduced_runner_does_not_initialize_optimizer_from_truth(tmp_path):
+    args = parse_args(
+        [
+            "--phase",
+            "pilot",
+            "--noise-fraction",
+            "0.0015",
+            "--free-parameters",
+            ",".join(REDUCED_FREE_PARAMETERS),
+            "--output",
+            str(tmp_path / "pilot"),
+        ]
+    )
+    job = build_jobs(args)[0]
+    config, free_specs = recovery_runner.build_recovery_problem(job, smoke=True)
+
+    inverter = recovery_runner.build_inverter(job, config, free_specs)
+
+    assert inverter.initial_params is None
 
 
 def test_formal_builds_72_jobs_at_selected_budget(tmp_path):

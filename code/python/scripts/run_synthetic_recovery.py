@@ -11,6 +11,7 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from dataclasses import replace
 from pathlib import Path
 
 
@@ -46,10 +47,29 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--trials", type=int)
+    parser.add_argument(
+        "--free-parameters",
+        default=",".join(name for name, *_ in DEFAULT_PARAM_SPECS),
+        help="Comma-separated subset of inversion parameters to optimize",
+    )
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--max-jobs", type=int)
     return parser.parse_args(argv)
+
+
+def select_free_specs(value: str):
+    names = [name.strip() for name in value.split(",") if name.strip()]
+    if len(names) != len(set(names)):
+        raise ValueError("duplicate free parameter")
+    known = {name for name, *_ in DEFAULT_PARAM_SPECS}
+    unknown = sorted(set(names) - known)
+    if unknown:
+        raise ValueError(f"unknown free parameter: {', '.join(unknown)}")
+    if not names:
+        raise ValueError("at least one free parameter is required")
+    selected = set(names)
+    return tuple(spec for spec in DEFAULT_PARAM_SPECS if spec[0] in selected)
 
 
 def build_config(
@@ -74,27 +94,40 @@ def build_config(
 
 
 def build_jobs(args: argparse.Namespace) -> list[dict]:
+    free_specs = select_free_specs(args.free_parameters)
+    free_parameters = [name for name, *_ in free_specs]
     truths = truth_library(DEFAULT_PARAM_SPECS)
     if args.phase == "pilot":
-        return build_budget_pilot_jobs(
+        jobs = build_budget_pilot_jobs(
             modes=FEATURE_MODES,
             truths=truths,
             noise_fraction=args.noise_fraction,
             seeds=OPTIMIZER_SEEDS,
             budgets=PILOT_BUDGETS,
         )
-    if args.trials is None or args.trials < 1:
-        raise ValueError("formal phase requires positive --trials")
-    return build_recovery_jobs(
-        modes=FEATURE_MODES,
-        truths=truths,
-        noise_fractions=(0.0, args.noise_fraction),
-        seeds=OPTIMIZER_SEEDS,
-        trials=args.trials,
+    else:
+        if args.trials is None or args.trials < 1:
+            raise ValueError("formal phase requires positive --trials")
+        jobs = build_recovery_jobs(
+            modes=FEATURE_MODES,
+            truths=truths,
+            noise_fractions=(0.0, args.noise_fraction),
+            seeds=OPTIMIZER_SEEDS,
+            trials=args.trials,
+        )
+    for job in jobs:
+        job["free_parameters"] = free_parameters
+    return jobs
+
+
+def build_recovery_problem(job: dict, *, smoke: bool):
+    free_specs = select_free_specs(",".join(job["free_parameters"]))
+    free_names = {name for name, *_ in free_specs}
+    fixed_params = tuple(
+        (name, float(value))
+        for name, value in job["truth_params"].items()
+        if name not in free_names
     )
-
-
-def run_job(job: dict, *, smoke: bool = False) -> dict:
     args = argparse.Namespace(
         smoke=smoke,
         noise_fraction=job["noise_fraction"],
@@ -105,6 +138,19 @@ def run_job(job: dict, *, smoke: bool = False) -> dict:
         feature_mode=job["feature_mode"],
         seed=job["seed"],
     )
+    return replace(config, fixed_params=fixed_params), free_specs
+
+
+def build_inverter(job: dict, config: InversionConfig, free_specs):
+    return TPEInverter(
+        config=config,
+        specs=free_specs,
+        seed=job["seed"],
+    )
+
+
+def run_job(job: dict, *, smoke: bool = False) -> dict:
+    config, free_specs = build_recovery_problem(job, smoke=smoke)
     started = time.perf_counter()
     target = make_synthetic_target(
         job["truth_params"],
@@ -112,15 +158,13 @@ def run_job(job: dict, *, smoke: bool = False) -> dict:
         noise_fraction=job["noise_fraction"],
         seed=job["target_seed"],
     )
-    result = TPEInverter(
-        config=config,
-        specs=DEFAULT_PARAM_SPECS,
-        seed=job["seed"],
-    ).run(target, n_trials=job["trials"])
+    result = build_inverter(job, config, free_specs).run(
+        target, n_trials=job["trials"]
+    )
     metrics = recovery_metrics(
         truth=job["truth_params"],
         estimate=result.best_params,
-        specs=DEFAULT_PARAM_SPECS,
+        specs=free_specs,
     )
     return {
         **job,
@@ -212,6 +256,7 @@ def main(argv: list[str] | None = None) -> None:
         "phase": args.phase,
         "noise_fraction": args.noise_fraction,
         "workers": args.workers,
+        "free_parameters": jobs[0]["free_parameters"] if jobs else [],
         "smoke": args.smoke,
         "job_count": len(jobs),
         "jobs": jobs,
@@ -258,9 +303,7 @@ def main(argv: list[str] | None = None) -> None:
         "dirty": dirty,
         "recovery_summary": summarize_recovery(
             rows,
-            parameter_names=tuple(
-                name for name, *_ in DEFAULT_PARAM_SPECS
-            ),
+            parameter_names=tuple(jobs[0]["free_parameters"]) if jobs else (),
         ),
     }
     if args.phase == "pilot":
