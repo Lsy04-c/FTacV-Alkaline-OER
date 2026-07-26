@@ -1,5 +1,7 @@
 """Tests for the Gate A4 real-data harmonic stability helpers."""
 
+from types import SimpleNamespace
+
 import numpy as np
 import pytest
 
@@ -95,3 +97,28 @@ def test_gate_requires_low_order_stability_but_skips_unresolved_high_order():
     assert failed["passed"] is False
     assert "phase_rmse_rad" in failed["failures"][0]
     assert skipped["passed"] is True
+
+
+def test_collect_provenance_records_commit_time_and_thread_limits(monkeypatch):
+    from scripts import validate_real_harmonic_stability as validation
+
+    monkeypatch.setattr(
+        validation.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(stdout="abc123\n"),
+    )
+    monkeypatch.setenv("OMP_NUM_THREADS", "1")
+    monkeypatch.setenv("OPENBLAS_NUM_THREADS", "1")
+    monkeypatch.setenv("MKL_NUM_THREADS", "1")
+    monkeypatch.setenv("NUMEXPR_NUM_THREADS", "1")
+
+    provenance = validation.collect_provenance(validation.ROOT)
+
+    assert provenance["source_commit"] == "abc123"
+    assert provenance["started_at_cst"].endswith("+0800")
+    assert provenance["thread_limits"] == {
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+    }

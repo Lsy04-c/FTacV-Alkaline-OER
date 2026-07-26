@@ -9,8 +9,11 @@ import hashlib
 import json
 import os
 import platform
+import shlex
+import subprocess
 import sys
 from concurrent.futures import ProcessPoolExecutor
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Sequence
 
@@ -331,6 +334,30 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def collect_provenance(root: Path) -> dict[str, object]:
+    """Return the source and runtime identity required by a formal Gate A4 run."""
+    commit = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    thread_names = (
+        "OMP_NUM_THREADS",
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "NUMEXPR_NUM_THREADS",
+    )
+    return {
+        "source_commit": commit,
+        "started_at_cst": datetime.now(
+            timezone(timedelta(hours=8))
+        ).strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "thread_limits": {name: os.environ.get(name, "unset") for name in thread_names},
+        "command": shlex.join([sys.executable, *sys.argv]),
+    }
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workers", type=int, default=8)
@@ -347,6 +374,7 @@ def main() -> int:
     args = _parse_args()
     if args.workers < 1:
         raise ValueError("workers must be positive")
+    provenance = collect_provenance(ROOT)
     selected = tuple(args.datasets)
     tasks = [
         (label, str(DATA_DIR / DATASETS[label]), variant)
@@ -393,6 +421,7 @@ def main() -> int:
                 "numpy": np.__version__,
                 "scipy": __import__("scipy").__version__,
             },
+            "provenance": provenance,
             "csv": str(csv_path),
         }
     )
