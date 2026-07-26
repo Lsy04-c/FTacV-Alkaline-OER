@@ -34,4 +34,13 @@ __pycache__/
 # Regenerable or failed-download artifacts
 results/benchmarks/bench_artifacts/
 results/unused/
-docs/papers/**/failed_downloads/
+documents/research/papers/**/failed_downloads/
+
+# Local C++ build products
+code/cpp/build/*
+!code/cpp/build/.gitkeep
+
+# Local agent handoffs and private environment details
+documents/handoffs/*
+!documents/handoffs/.gitkeep
+documents/environment/private/

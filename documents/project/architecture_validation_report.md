@@ -7,7 +7,7 @@ Data: four tracked FTacV traces in `data/raw/`
 ## 1. Baseline and tested commit
 
 This report evaluates the validation plan in
-`docs/superpowers/plans/2026-07-25-architecture-validation-feature-inversion.md`.
+`documents/plans/2026-07-25-architecture-validation-feature-inversion.md`.
 The corrected worktree passed:
 
 ```text

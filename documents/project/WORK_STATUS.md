@@ -149,7 +149,7 @@
 
 **HER vs OER 对比诊断文档：**
 
-- 完成 `docs/her_oer_comparison_critique.md`：系统对比谐波提取、目标函数、参数可识别性
+- 完成 `documents/research/her_oer_comparison_critique.md`：系统对比谐波提取、目标函数、参数可识别性
 - 核心结论：代码移植正确，欠拟合根因不是算法错误，而是 gamma 未独立标定 + 基底背景未扣除 + 谐波权重不合理
 - 高次谐波（h4-h7）弱是 AEM+α=0.5 框架的物理极限，非代码错误
 
@@ -560,7 +560,7 @@ python scripts/run_tests.py web/backend/test_analyze_e2e.py web/backend/test_inv
 详细审计见：
 
 ```text
-docs/workspace_environment_audit.md
+documents/environment/workspace_environment_audit.md
 ```
 
 `gamma_eff(E)`及旧模型缺项脚本仍属于未验证实验资产，不计入当前通过测试的基线模型。
@@ -703,7 +703,7 @@ python scripts/run_tests.py \
 完整证据与允许的科学表述见：
 
 ```text
-docs/architecture_validation_report.md
+documents/project/architecture_validation_report.md
 results/architecture_validation/
 ```
 
@@ -786,7 +786,7 @@ Phase 0 重建了 legacy 和 Complex-SNR 在同构 32 points/cycle 下的可信�
 - stash@{0}：lockin + full-grid + combined + signed-sensitivity（Phase 1–4 候选）
 - `cpp/` 目录：C++ ODE 求解器实验代码（含 `oer_cn_solver.cpp`、`oer_ode_core.cpp`、`oer_core_mex_port.cpp`）
 
-**下一阶段：** 按 `docs/superpowers/plans/2026-07-26-staged-potential-resolved-roadmap.md` 执行 Phase 1（锁相信号层验证）。
+**下一阶段：** 按 `documents/plans/2026-07-26-staged-potential-resolved-roadmap.md` 执行 Phase 1（锁相信号层验证）。
 
 ---
 

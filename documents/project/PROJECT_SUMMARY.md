@@ -5,7 +5,7 @@
 当前代码基线：`1becc12`
 
 > 本文是项目目标、完成定义和后续路线的唯一总入口。
-> 历史执行记录见 `WORK_STATUS.md`，阶段纠错见 `docs/项目纠错.md`，具体实施步骤见 `docs/superpowers/plans/`。
+> 历史执行记录见 `WORK_STATUS.md`，阶段纠错见 `documents/corrections/项目纠错.md`，具体实施步骤见 `documents/plans/`。
 
 ---
 
@@ -613,8 +613,8 @@ Web 可以保留基础开发，但不得先于核心 schema 成为科研主线�
 
 1. `PROJECT_SUMMARY.md`：项目目标、完成定义和总路线。
 2. `WORK_STATUS.md`：按时间记录实际完成、测试、结果和提交。
-3. `docs/项目纠错.md`：记录当前项目错误、风险和修复。
-4. `docs/superpowers/plans/`：保存具体阶段实施计划。
+3. `documents/corrections/项目纠错.md`：记录当前项目错误、风险和修复。
+4. `documents/plans/`：保存具体阶段实施计划。
 5. `results/`：只保存可追溯结果；smoke 与 formal 分目录。
 6. 每个验证版本运行相关测试与全量测试，更新文档后单独提交并推送。
 7. 未验证建议标为“待验证”；失败结果可以提交，但必须明确标记 FAIL。
