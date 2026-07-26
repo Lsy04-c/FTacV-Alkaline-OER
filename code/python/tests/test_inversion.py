@@ -286,6 +286,85 @@ def test_objective_rejects_unknown_feature_mode():
         InversionObjective({}, config=config)
 
 
+def test_feature_modes_build_only_their_declared_observation_blocks():
+    common = {
+        "n_points": 256,
+        "points_per_cycle": 32,
+        "feature_grid_size": 32,
+        "fit_harmonics": (1, 2, 3),
+        "solver_backend": "lsoda",
+    }
+
+    complex_target = make_synthetic_target(
+        TRUTH,
+        config=InversionConfig(feature_mode="complex_snr", **common),
+    )
+    lockin_target = make_synthetic_target(
+        TRUTH,
+        config=InversionConfig(feature_mode="lockin_only", **common),
+    )
+    hybrid_target = make_synthetic_target(
+        TRUTH,
+        config=InversionConfig(feature_mode="hybrid", **common),
+    )
+
+    assert "complex_harmonics" in complex_target
+    assert "lockin" not in complex_target
+    assert "complex_harmonics" not in lockin_target
+    assert "lockin" in lockin_target
+    assert "complex_harmonics" in hybrid_target
+    assert "lockin" in hybrid_target
+
+
+def test_lockin_only_reports_only_lockin_loss_for_lockin_amplitude_change():
+    config = InversionConfig(
+        n_points=256,
+        points_per_cycle=32,
+        feature_grid_size=32,
+        fit_harmonics=(1, 2, 3),
+        feature_mode="lockin_only",
+        solver_backend="lsoda",
+    )
+    target = make_synthetic_target(TRUTH, config=config)
+    target["lockin"]["amplitude"][0] = (
+        np.asarray(target["lockin"]["amplitude"][0]) + 0.05
+    )
+    objective = InversionObjective(target, config=config)
+
+    objective(encode_params(TRUTH))
+
+    assert objective.last_components["common_harmonics"] == 0.0
+    assert objective.last_components["dataset_specific_harmonics"] == 0.0
+    assert objective.last_components["phase"] == 0.0
+    assert objective.last_components["lockin_common_amplitude"] > 0.0
+    assert objective.last_components["lockin_dataset_specific_amplitude"] == 0.0
+    assert objective.last_components["lockin_common_phase"] == 0.0
+    assert objective.last_components["lockin_dataset_specific_phase"] == 0.0
+
+
+def test_lockin_loss_separates_common_and_dataset_specific_harmonics():
+    config = InversionConfig(
+        n_points=256,
+        points_per_cycle=32,
+        feature_grid_size=32,
+        fit_harmonics=(1, 2, 3, 4),
+        feature_mode="lockin_only",
+        solver_backend="lsoda",
+    )
+    target = make_synthetic_target(TRUTH, config=config)
+    target["lockin"]["amplitude"][3] = (
+        np.asarray(target["lockin"]["amplitude"][3]) + 0.05
+    )
+    objective = InversionObjective(target, config=config)
+
+    objective(encode_params(TRUTH))
+
+    assert objective.last_components["lockin_common_amplitude"] == 0.0
+    assert objective.last_components["lockin_dataset_specific_amplitude"] > 0.0
+    assert objective.last_components["lockin_common_phase"] == 0.0
+    assert objective.last_components["lockin_dataset_specific_phase"] == 0.0
+
+
 def test_experimental_sampling_preserves_scan_duration():
     duration = 51.19921875
     frequency = 5.0000762951094835

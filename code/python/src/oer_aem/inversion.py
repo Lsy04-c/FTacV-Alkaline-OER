@@ -516,7 +516,7 @@ def extract_features(current: Sequence[float], config: InversionConfig) -> Dict[
         "harm": [],
     }
     n_required = max(config.fit_harmonics, default=0)
-    n_envelopes = n_required if config.feature_mode == "complex_snr" else 7
+    n_envelopes = 7 if config.feature_mode == "legacy" else max(3, n_required)
     for idx in range(n_envelopes):
         h = harms[:, idx]
         features["harm"].append(np.interp(e_grid, tdc_trim, _normalize_envelope(h)))
@@ -524,14 +524,14 @@ def extract_features(current: Sequence[float], config: InversionConfig) -> Dict[
     tafel = measure_tafel(tdc_trim, dc)
     features["tafel"] = float(tafel["tafel_slope"]) if tafel.get("success") else None
     features["e_grid"] = e_grid
-    if config.feature_mode in ("complex_snr", "lockin_only", "combined"):
+    if config.feature_mode in ("complex_snr", "hybrid", "combined"):
         features["complex_harmonics"] = complex_harmonic_metrics(
             current_arr[i0:],
             fs=config.sample_rate,
             f0=config.f,
             n_harmonics=n_required,
         )
-    if config.feature_mode in ("lockin_only", "combined"):
+    if config.feature_mode in ("lockin_only", "hybrid", "combined"):
         from .signal import lockin_harmonics
         t_trim = config.t_span[i0:]
         lockin = lockin_harmonics(
@@ -604,9 +604,16 @@ class InversionObjective:
         self.last_components: Dict[str, float] = {}
         self.best_components: Dict[str, float] = {}
         self.fit_harmonics = tuple(int(h) for h in self.config.fit_harmonics)
-        if self.config.feature_mode not in {"legacy", "complex_snr", "lockin_only", "combined"}:
+        if self.config.feature_mode not in {
+            "legacy",
+            "complex_snr",
+            "lockin_only",
+            "hybrid",
+            "combined",
+        }:
             raise ValueError(
-                "feature_mode must be 'legacy', 'complex_snr', 'lockin_only', or 'combined'"
+                "feature_mode must be 'legacy', 'complex_snr', 'lockin_only', "
+                "'hybrid', or the legacy alias 'combined'"
             )
         invalid = [h for h in self.fit_harmonics if h < 1 or h > 7]
         if invalid:
@@ -622,6 +629,10 @@ class InversionObjective:
                 "common_harmonics": 0.0,
                 "dataset_specific_harmonics": 0.0,
                 "phase": 0.0,
+                "lockin_common_amplitude": 0.0,
+                "lockin_dataset_specific_amplitude": 0.0,
+                "lockin_common_phase": 0.0,
+                "lockin_dataset_specific_phase": 0.0,
                 "physical": float(self.config.ode_penalty),
             }
             return float(self.config.ode_penalty)
@@ -658,7 +669,7 @@ class InversionObjective:
                     common_harmonic_loss += channel_loss
                 else:
                     dataset_specific_harmonic_loss += channel_loss
-        elif self.config.feature_mode in ("complex_snr", "lockin_only", "combined"):
+        elif self.config.feature_mode in ("complex_snr", "hybrid", "combined"):
             selected = np.asarray(self.fit_harmonics, dtype=int) - 1
             simulated = features["complex_harmonics"]
             experimental = self.target["complex_harmonics"]
@@ -692,15 +703,20 @@ class InversionObjective:
                 * np.sum(weights * phase_residual**2)
             )
 
-        # --- lockin potential-resolved loss (lockin_only / combined) ---
-        lockin_amp_loss = 0.0
-        lockin_phase_loss = 0.0
-        if self.config.feature_mode in ("lockin_only", "combined"):
+        # --- lockin potential-resolved loss (lockin_only / hybrid) ---
+        lockin_common_amplitude_loss = 0.0
+        lockin_dataset_specific_amplitude_loss = 0.0
+        lockin_common_phase_loss = 0.0
+        lockin_dataset_specific_phase_loss = 0.0
+        if self.config.feature_mode in ("lockin_only", "hybrid", "combined"):
             if "lockin" in features and "lockin" in self.target:
                 sim_li = features["lockin"]
                 exp_li = self.target["lockin"]
                 n_h = min(len(sim_li["amplitude"]), len(exp_li["amplitude"]))
-                for idx in range(n_h):
+                for harmonic in self.fit_harmonics:
+                    idx = harmonic - 1
+                    if idx >= n_h:
+                        continue
                     sim_amp = np.asarray(sim_li["amplitude"][idx])
                     exp_amp = np.asarray(exp_li["amplitude"][idx])
                     sim_ph = np.asarray(sim_li["phase"][idx])
@@ -720,11 +736,17 @@ class InversionObjective:
                     sim_ph = sim_ph[common_valid]
                     exp_ph = exp_ph[common_valid]
                     amp_scale = max(float(np.max(np.abs(exp_amp))), np.finfo(float).eps)
-                    lockin_amp_loss += float(np.mean(
+                    amplitude_loss = float(np.mean(
                         ((sim_amp - exp_amp) / amp_scale / self.config.sigma_harm) ** 2
                     ))
                     ph_diff = wrapped_phase_difference(sim_ph, exp_ph)
-                    lockin_phase_loss += float(np.mean(ph_diff ** 2))
+                    phase_channel_loss = float(np.mean(ph_diff ** 2))
+                    if harmonic <= 3:
+                        lockin_common_amplitude_loss += amplitude_loss
+                        lockin_common_phase_loss += phase_channel_loss
+                    else:
+                        lockin_dataset_specific_amplitude_loss += amplitude_loss
+                        lockin_dataset_specific_phase_loss += phase_channel_loss
 
         physical_loss = 0.0
         target_tafel = self.target.get("tafel")
@@ -745,8 +767,10 @@ class InversionObjective:
             "common_harmonics": common_harmonic_loss,
             "dataset_specific_harmonics": dataset_specific_harmonic_loss,
             "phase": phase_loss,
-            "lockin_amplitude": lockin_amp_loss,
-            "lockin_phase": lockin_phase_loss,
+            "lockin_common_amplitude": lockin_common_amplitude_loss,
+            "lockin_dataset_specific_amplitude": lockin_dataset_specific_amplitude_loss,
+            "lockin_common_phase": lockin_common_phase_loss,
+            "lockin_dataset_specific_phase": lockin_dataset_specific_phase_loss,
             "physical": physical_loss,
         }
         total = sum(self.last_components.values())

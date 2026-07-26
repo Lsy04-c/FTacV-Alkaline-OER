@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare legacy and complex-SNR objectives under identical TPE budgets."""
+"""Compare legacy, complex-SNR, lock-in, and hybrid objectives."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ from oer_aem.inversion import (
 OUT = ROOT / "results" / "architecture_validation" / "feature_objective_comparison.csv"
 RAW = ROOT / "data" / "raw"
 SEEDS = (7, 17, 27)
-MODES = ("legacy", "complex_snr", "lockin_only")
+MODES = ("legacy", "complex_snr", "lockin_only", "hybrid")
 DATASETS = (
     "ftacv2-ref-5hz.txt",
     "ftacv3-ref-5Hz.txt",
@@ -158,7 +158,7 @@ def _experimental_target(
         "_experimental_duration": float(analysis["meta"]["duration"]),
         "_experimental_scan_rate": float(analysis["meta"]["v"]),
     }
-    if config.feature_mode in ("complex_snr", "lockin_only", "combined"):
+    if config.feature_mode in ("complex_snr", "hybrid", "combined"):
         trace = normalize_trace(rows)
         fs = 1.0 / float(np.mean(np.diff(trace.time)))
         target["complex_harmonics"] = complex_harmonic_metrics(
@@ -167,7 +167,7 @@ def _experimental_target(
             f0=float(analysis["meta"]["f"]),
             n_harmonics=max(config.fit_harmonics),
         )
-    if config.feature_mode in ("lockin_only", "combined"):
+    if config.feature_mode in ("lockin_only", "hybrid", "combined"):
         from oer_aem.inversion import _interpolate_lockin_to_grid
         from oer_aem.signal import estimate_reference_phase, lockin_harmonics
         trace = normalize_trace(rows)
@@ -315,6 +315,18 @@ def _result_row(
             "dataset_specific_harmonics", float("nan")
         ),
         "loss_phase": components.get("phase", float("nan")),
+        "loss_lockin_common_amplitude": components.get(
+            "lockin_common_amplitude", float("nan")
+        ),
+        "loss_lockin_dataset_specific_amplitude": components.get(
+            "lockin_dataset_specific_amplitude", float("nan")
+        ),
+        "loss_lockin_common_phase": components.get(
+            "lockin_common_phase", float("nan")
+        ),
+        "loss_lockin_dataset_specific_phase": components.get(
+            "lockin_dataset_specific_phase", float("nan")
+        ),
         "loss_physical": components.get("physical", float("nan")),
         "common_dc_rmse": common_dc_rmse,
         "common_h1_h3_rmse": common_h1_h3_rmse,
