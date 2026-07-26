@@ -6,8 +6,8 @@
     .venv/bin/python code/python/scripts/staged_inversion.py
 
 输出：
-    results/staged_inversion/staged_summary.md
-    results/staged_inversion/<dataset>_layer3_fit.png
+    results/diagnostics/staged_inversion/staged_summary.md
+    results/diagnostics/staged_inversion/<dataset>_layer3_fit.png
 """
 
 import sys, os, json, copy

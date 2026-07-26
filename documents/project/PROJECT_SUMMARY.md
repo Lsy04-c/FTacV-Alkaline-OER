@@ -89,10 +89,10 @@
   - `code/python/src/oer_aem/data_contract.py`
   - `code/python/scripts/analyze_data_quality.py`
 - 四组数据 FT2、FT3、FT4、FT8 已完成基础质量诊断：
-  - `results/data_quality/`
+  - `results/diagnostics/data_quality/`
 - 残差的电位网格和符号契约已统一：
   - `code/python/scripts/residual_diagnostics.py`
-  - `results/architecture_validation/residual_contract.csv`
+  - `results/formal/architecture_validation/residual_contract.csv`
 
 ### 文件总结
 
@@ -132,7 +132,7 @@
   - `code/python/src/oer_aem/inversion.py`
 - M0 与最小重构 M1 已做初步对照，M1 未通过多数数据门：
   - `code/python/scripts/compare_reconstruction_model.py`
-  - `results/architecture_validation/reconstruction_model_comparison.csv`
+  - `results/formal/architecture_validation/reconstruction_model_comparison.csv`
 
 ### 文件总结
 
@@ -217,7 +217,7 @@
   - 峰位误差小于 5 mV。
 - 四个真实数据集已完成无警告诊断：
   - `code/python/scripts/validate_potential_resolved_harmonics.py`
-  - `results/potential_resolved_harmonics/harmonic_diagnostics.json`
+  - `results/diagnostics/potential_resolved_harmonics/harmonic_diagnostics.json`
 
 ### 文件总结
 
@@ -256,7 +256,7 @@
   - 物理约束。
 - `feature_grid_size` 与损失点数尺度已修正：
   - `code/python/scripts/compare_feature_grids.py`
-  - `results/architecture_validation/grid_convergence.csv`
+  - `results/formal/architecture_validation/grid_convergence.csv`
 - 128 点特征网格是当前候选值，但既有收敛证据样本量不足。
 
 ### 文件总结
@@ -290,12 +290,12 @@
 - 敏感性矩阵、参数分类和合成恢复：
   - `code/python/src/oer_aem/identifiability.py`
   - `code/python/src/oer_aem/importance.py`
-  - `results/architecture_validation/sensitivity_matrix.csv`
-  - `results/architecture_validation/parameter_classification.csv`
-  - `results/architecture_validation/synthetic_recovery.json`
+  - `results/formal/architecture_validation/sensitivity_matrix.csv`
+  - `results/formal/architecture_validation/parameter_classification.csv`
+  - `results/formal/architecture_validation/synthetic_recovery.json`
 - 带符号中心差分和耦合方向：
-  - `results/architecture_validation/signed_sensitivity.csv`
-  - `results/architecture_validation/coupling_direction.csv`
+  - `results/formal/architecture_validation/signed_sensitivity.csv`
+  - `results/formal/architecture_validation/coupling_direction.csv`
 - 单参数设计实验可恢复 `k0_1`，但多参数动力学常数仍高度耦合。
 
 ### 文件总结
@@ -330,7 +330,7 @@
 - 实验比较脚本与基础 manifest：
   - `code/python/scripts/compare_feature_objectives.py`
   - `code/python/scripts/build_validation_manifest.py`
-  - `results/architecture_validation/run_manifest.json`
+  - `results/formal/architecture_validation/run_manifest.json`
 - 计算环境分工已确定：
   - Mac：代码、测试、文档和 Git；
   - Legion：正式长计算。
@@ -533,7 +533,7 @@ Web 可以保留基础开发，但不得先于核心 schema 成为科研主线�
 
 | 模块 | 当前结论 | 主要文件 | 状态 |
 |---|---|---|---|
-| 数据基础诊断 | 四组数据可进入进一步验证 | `results/data_quality/` | 部分完成 |
+| 数据基础诊断 | 四组数据可进入进一步验证 | `results/diagnostics/data_quality/` | 部分完成 |
 | AEM M0 | Python 正演链已建立 | `code/python/src/oer_aem/physics.py` | 部分完成 |
 | 热力学约束 | 标度关系和参数变换已实现 | `code/python/src/oer_aem/thermodynamics.py` | 已实现 |
 | LSODA | 参考求解器已建立 | `code/python/src/oer_aem/physics.py` | 已实现 |

@@ -5,11 +5,11 @@
     cd /Users/liushiyu/OER-FTAcV
     .venv/bin/python code/python/scripts/residual_diagnostics.py
     .venv/bin/python code/python/scripts/residual_diagnostics.py \
-        --output results/architecture_validation/residual_contract.csv
+        --output results/formal/architecture_validation/residual_contract.csv
 
 输出：
-    results/model_gap/model_gap_summary.md
-    results/architecture_validation/residual_contract.csv
+    results/diagnostics/model_gap/model_gap_summary.md
+    results/formal/architecture_validation/residual_contract.csv
 """
 
 import argparse

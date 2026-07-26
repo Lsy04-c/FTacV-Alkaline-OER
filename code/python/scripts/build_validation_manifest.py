@@ -185,7 +185,7 @@ def main() -> None:
                 "command": (
                     ".venv/bin/python code/python/scripts/residual_diagnostics.py "
                     "--trials 30 --output "
-                    "results/architecture_validation/residual_contract.csv"
+                    "results/formal/architecture_validation/residual_contract.csv"
                 ),
                 "rows": len(residual_rows),
                 "simulation_n_points": sorted(

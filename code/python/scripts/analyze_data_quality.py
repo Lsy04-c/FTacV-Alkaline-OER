@@ -6,9 +6,9 @@
     .venv/bin/python code/python/scripts/analyze_data_quality.py
 
 输出：
-    results/data_quality/data_quality_summary.csv
-    results/data_quality/data_quality_summary.md
-    results/data_quality/<name>_harmonics.png
+    results/diagnostics/data_quality/data_quality_summary.csv
+    results/diagnostics/data_quality/data_quality_summary.md
+    results/diagnostics/data_quality/<name>_harmonics.png
 """
 
 import ast

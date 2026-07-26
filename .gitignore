@@ -32,8 +32,8 @@ __pycache__/
 .worktrees/
 
 # Regenerable or failed-download artifacts
-results/benchmarks/bench_artifacts/
-results/unused/
+results/diagnostics/benchmarks/bench_artifacts/
+results/diagnostics/unused/
 documents/research/papers/**/failed_downloads/
 
 # Local C++ build products

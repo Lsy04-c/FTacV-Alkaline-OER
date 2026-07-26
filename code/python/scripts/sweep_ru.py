@@ -2,7 +2,7 @@
 """Ru 扫描：测试 10-50 Ω 下高电流偏差是否改善。
 
 用法：cd /Users/liushiyu/OER-FTAcV && .venv/bin/python code/python/scripts/sweep_ru.py
-输出：results/model_gap/ru_sweep.md
+输出：results/diagnostics/model_gap/ru_sweep.md
 """
 
 import sys, os, csv

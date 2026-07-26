@@ -1,0 +1,16 @@
+{
+  "formal": {
+    "results/formal/architecture_validation": "Manifest-backed 32-point architecture-validation baseline"
+  },
+  "smoke": {
+    "results/smoke/architecture_validation/feature_objective_comparison_3trial.csv": "Three-trial workflow smoke; not formal evidence"
+  },
+  "diagnostics": {
+    "results/diagnostics/benchmarks": "Optimizer benchmark diagnostics",
+    "results/diagnostics/data_quality": "Experimental data-quality diagnostics",
+    "results/diagnostics/figures": "Auxiliary figures",
+    "results/diagnostics/model_gap": "Residual and model-gap diagnostics",
+    "results/diagnostics/potential_resolved_harmonics": "Potential-resolved harmonic diagnostics",
+    "results/diagnostics/staged_inversion": "Historical staged-inversion diagnostics"
+  }
+}
