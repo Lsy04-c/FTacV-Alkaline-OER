@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from oer_aem.features import complex_harmonic_metrics
+from oer_aem import signal as signal_module
 from oer_aem.signal import extract_complex_harmonics, lockin_harmonics
 
 
@@ -201,3 +202,100 @@ def test_lockin_nyquist_check():
     signal = np.cos(2 * np.pi * 10.0 * t)
     with pytest.raises(ValueError, match="Nyquist"):
         lockin_harmonics(signal, t, f0=10.0, harmonics=[6])  # 6*10=60 > 50 Nyquist
+
+
+def test_lockin_complex_matches_reported_amplitude_and_phase():
+    f0, fs = 5.0, 500.0
+    t = np.arange(0.0, 4.0, 1.0 / fs)
+    signal = 0.8 * np.cos(2.0 * np.pi * f0 * t + 0.7)
+
+    result = lockin_harmonics(
+        signal,
+        t,
+        f0,
+        harmonics=[1],
+        potential_resolution=0.1,
+        scan_rate=1.0,
+    )
+
+    valid = result["valid_mask"]
+    complex_values = np.asarray(result["complex"][0])[valid]
+    amplitude = np.asarray(result["amplitude"][0])[valid]
+    phase = np.asarray(result["phase"][0])[valid]
+
+    assert amplitude == pytest.approx(np.abs(complex_values), rel=1e-12, abs=1e-12)
+    phase_error = np.angle(np.exp(1j * (phase - np.angle(complex_values))))
+    assert phase_error == pytest.approx(np.zeros_like(phase_error), abs=1e-12)
+
+
+def test_lockin_uses_explicit_applied_potential_phase_reference():
+    f0, fs = 5.0, 500.0
+    t = np.arange(0.0, 4.0, 1.0 / fs)
+    applied_phase = 2.0 * np.pi * f0 * t + 0.85
+    signal = np.cos(applied_phase + 0.30)
+
+    result = lockin_harmonics(
+        signal,
+        t,
+        f0,
+        harmonics=[1],
+        potential_resolution=0.1,
+        scan_rate=1.0,
+        reference_phase=applied_phase,
+    )
+
+    valid_phase = np.asarray(result["phase"][0])[result["valid_mask"]]
+    recovered = signal_module.circular_mean_phase(valid_phase)
+    assert np.angle(np.exp(1j * (recovered - 0.30))) == pytest.approx(0.0, abs=0.04)
+
+
+def test_circular_mean_phase_preserves_values_across_wrap_boundary():
+    phases = np.array([np.pi - 0.05, -np.pi + 0.05])
+
+    mean_phase = signal_module.circular_mean_phase(phases)
+
+    assert abs(abs(mean_phase) - np.pi) < 0.06
+
+
+def test_estimate_reference_phase_recovers_applied_potential_fundamental():
+    f0, fs = 5.0, 500.0
+    t = np.arange(0.0, 4.0, 1.0 / fs)
+    expected = 2.0 * np.pi * f0 * t + 0.60
+    potential = 1.0 + 0.01 * t + 0.16 * np.cos(expected)
+
+    recovered = signal_module.estimate_reference_phase(potential, t, f0)
+
+    phase_error = np.angle(np.exp(1j * (recovered - expected)))
+    assert phase_error == pytest.approx(np.zeros_like(phase_error), abs=1e-3)
+
+
+@pytest.mark.parametrize(
+    ("points_per_cycle", "n_cycles"),
+    [(32, 24), (32, 40), (64, 24), (64, 40)],
+)
+def test_lockin_peak_is_stable_across_sampling_and_record_length(
+    points_per_cycle,
+    n_cycles,
+):
+    f0 = 5.0
+    fs = points_per_cycle * f0
+    t = np.arange(n_cycles * points_per_cycle) / fs
+    e_dc = np.linspace(1.0, 2.0, t.size)
+    expected_peak = 1.60
+    envelope = 0.2 + np.exp(-0.5 * ((e_dc - expected_peak) / 0.08) ** 2)
+    reference_phase = 2.0 * np.pi * f0 * t - np.pi / 2.0
+    current = envelope * np.cos(reference_phase + 0.35)
+
+    result = lockin_harmonics(
+        current,
+        t,
+        f0,
+        harmonics=[1],
+        potential_resolution=0.025,
+        scan_rate=1.0 / (t[-1] - t[0]),
+        reference_phase=reference_phase,
+    )
+
+    valid = result["valid_mask"]
+    recovered_peak = float(e_dc[valid][np.argmax(result["amplitude"][0][valid])])
+    assert abs(recovered_peak - expected_peak) < 0.005

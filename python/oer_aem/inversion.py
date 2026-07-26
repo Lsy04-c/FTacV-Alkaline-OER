@@ -440,6 +440,52 @@ def _normalize_envelope(values: np.ndarray) -> np.ndarray:
     return values / scale
 
 
+def _interpolate_lockin_to_grid(
+    lockin: Mapping[str, Any],
+    source_e: Sequence[float],
+    target_e: Sequence[float],
+) -> Dict[str, Any]:
+    """Interpolate complex lock-in envelopes and preserve wrapped phase."""
+    source = np.asarray(source_e, dtype=float).reshape(-1)
+    target = np.asarray(target_e, dtype=float).reshape(-1)
+    valid = np.asarray(lockin["valid_mask"], dtype=bool).reshape(-1)
+    if source.size != valid.size or source.size < 2:
+        raise ValueError("source_e and valid_mask must have the same length")
+    valid &= np.isfinite(source)
+    if np.count_nonzero(valid) < 2:
+        raise ValueError("lock-in interpolation requires at least two valid points")
+
+    order = np.argsort(source[valid])
+    valid_source = source[valid][order]
+    valid_source, unique_indices = np.unique(valid_source, return_index=True)
+    grid_valid = (target >= valid_source[0]) & (target <= valid_source[-1])
+    amplitudes: List[np.ndarray] = []
+    phases: List[np.ndarray] = []
+    complex_channels: List[np.ndarray] = []
+
+    for channel in lockin["complex"]:
+        values = np.asarray(channel, dtype=complex).reshape(-1)
+        if values.size != source.size:
+            raise ValueError("lock-in complex channels must match source_e")
+        valid_values = values[valid][order][unique_indices]
+        real = np.interp(target, valid_source, valid_values.real)
+        imag = np.interp(target, valid_source, valid_values.imag)
+        mapped = real + 1j * imag
+        mapped[~grid_valid] = np.nan + 1j * np.nan
+        complex_channels.append(mapped)
+        amplitudes.append(np.abs(mapped))
+        phases.append(np.angle(mapped))
+
+    return {
+        "complex": complex_channels,
+        "amplitude": amplitudes,
+        "phase": phases,
+        "valid_mask": grid_valid,
+        "fc_used": float(lockin["fc_used"]),
+        "effective_resolution_v": float(lockin["effective_resolution_v"]),
+    }
+
+
 def extract_features(current: Sequence[float], config: InversionConfig) -> Dict[str, Any]:
     """Extract normalized DC/harmonic envelopes and Tafel slope."""
 
@@ -482,25 +528,13 @@ def extract_features(current: Sequence[float], config: InversionConfig) -> Dict[
             f0=config.f, harmonics=tuple(range(1, n_required + 1)),
             potential_resolution=0.05,
             scan_rate=config.scan_rate,
+            reference_phase=2.0 * np.pi * config.f * t_trim - np.pi / 2.0,
         )
-        # Map lock-in time→potential and interpolate to e_grid
-        n_h = n_required
-        lockin_amp = []
-        lockin_phase = []
-        for idx in range(n_h):
-            amp_t = lockin["amplitude"][idx]
-            phase_t = lockin["phase"][idx]
-            amp_e = np.interp(e_grid, tdc_trim, amp_t)
-            phase_e = np.interp(e_grid, tdc_trim, phase_t)
-            lockin_amp.append(amp_e)
-            lockin_phase.append(phase_e)
-        features["lockin"] = {
-            "amplitude": lockin_amp,
-            "phase": lockin_phase,
-            "fc_used": lockin["fc_used"],
-            "effective_resolution_v": lockin["effective_resolution_v"],
-            "valid_mask": lockin["valid_mask"],
-        }
+        features["lockin"] = _interpolate_lockin_to_grid(
+            lockin,
+            tdc_trim,
+            e_grid,
+        )
     return features
 
 
@@ -660,6 +694,20 @@ class InversionObjective:
                     exp_amp = np.asarray(exp_li["amplitude"][idx])
                     sim_ph = np.asarray(sim_li["phase"][idx])
                     exp_ph = np.asarray(exp_li["phase"][idx])
+                    common_valid = (
+                        np.asarray(sim_li["valid_mask"], dtype=bool)
+                        & np.asarray(exp_li["valid_mask"], dtype=bool)
+                        & np.isfinite(sim_amp)
+                        & np.isfinite(exp_amp)
+                        & np.isfinite(sim_ph)
+                        & np.isfinite(exp_ph)
+                    )
+                    if not np.any(common_valid):
+                        continue
+                    sim_amp = sim_amp[common_valid]
+                    exp_amp = exp_amp[common_valid]
+                    sim_ph = sim_ph[common_valid]
+                    exp_ph = exp_ph[common_valid]
                     amp_scale = max(float(np.max(np.abs(exp_amp))), np.finfo(float).eps)
                     lockin_amp_loss += float(np.mean(
                         ((sim_amp - exp_amp) / amp_scale / self.config.sigma_harm) ** 2

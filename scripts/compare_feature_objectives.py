@@ -166,7 +166,8 @@ def _experimental_target(
             n_harmonics=max(config.fit_harmonics),
         )
     if config.feature_mode in ("lockin_only", "combined"):
-        from oer_aem.signal import lockin_harmonics
+        from oer_aem.inversion import _interpolate_lockin_to_grid
+        from oer_aem.signal import estimate_reference_phase, lockin_harmonics
         trace = normalize_trace(rows)
         i0 = len(trace.current) // 4
         t_trim = trace.time[i0:]
@@ -177,20 +178,17 @@ def _experimental_target(
             harmonics=tuple(range(1, max(config.fit_harmonics) + 1)),
             potential_resolution=0.05,
             scan_rate=float(analysis["meta"]["v"]),
+            reference_phase=estimate_reference_phase(
+                trace.potential,
+                trace.time,
+                float(analysis["meta"]["f"]),
+            )[i0:],
         )
-        # Interpolate to e_grid
-        e_grid = config.e_grid
-        n_h = max(config.fit_harmonics)
-        lockin_amp, lockin_phase = [], []
-        for idx in range(n_h):
-            lockin_amp.append(np.interp(e_grid, t_trim, lockin["amplitude"][idx]))
-            lockin_phase.append(np.interp(e_grid, t_trim, lockin["phase"][idx]))
-        target["lockin"] = {
-            "amplitude": lockin_amp,
-            "phase": lockin_phase,
-            "fc_used": lockin["fc_used"],
-            "effective_resolution_v": lockin["effective_resolution_v"],
-        }
+        target["lockin"] = _interpolate_lockin_to_grid(
+            lockin,
+            tdc[i0:],
+            config.e_grid,
+        )
     return target
 
 

@@ -229,6 +229,47 @@ def extract_complex_harmonics(
     )
 
 
+def circular_mean_phase(phase: np.ndarray) -> float:
+    """Return the circular mean of wrapped phases in radians."""
+    values = np.asarray(phase, dtype=float).reshape(-1)
+    values = values[np.isfinite(values)]
+    if values.size == 0:
+        return float("nan")
+    return float(np.angle(np.mean(np.exp(1j * values))))
+
+
+def estimate_reference_phase(
+    potential: np.ndarray,
+    t: np.ndarray,
+    f0: float,
+) -> np.ndarray:
+    """Estimate the cosine-phase reference of the applied-potential fundamental."""
+    potential_values = np.asarray(potential, dtype=float).reshape(-1)
+    time = np.asarray(t, dtype=float).reshape(-1)
+    if potential_values.size != time.size or time.size < 4:
+        raise ValueError("potential and t must have the same length of at least 4")
+    if f0 <= 0 or not np.all(np.isfinite(potential_values)):
+        raise ValueError("potential must be finite and f0 must be positive")
+    dt = np.diff(time)
+    if not np.all(np.isfinite(dt)) or np.any(dt <= 0):
+        raise ValueError("t must be finite and strictly increasing")
+
+    omega_t = 2.0 * np.pi * float(f0) * time
+    design = np.column_stack(
+        (
+            np.ones_like(time),
+            time - time[0],
+            np.cos(omega_t),
+            np.sin(omega_t),
+        )
+    )
+    coefficients, *_ = np.linalg.lstsq(design, potential_values, rcond=None)
+    cosine_coefficient = float(coefficients[2])
+    sine_coefficient = float(coefficients[3])
+    phase_offset = np.arctan2(-sine_coefficient, cosine_coefficient)
+    return omega_t + phase_offset
+
+
 def lockin_harmonics(
     signal: np.ndarray,
     t: np.ndarray,
@@ -236,11 +277,14 @@ def lockin_harmonics(
     harmonics: Sequence[int] = (1, 2, 3, 4, 5, 6, 7),
     potential_resolution: float = 0.1,
     scan_rate: float = 1.0,
+    reference_phase: Optional[np.ndarray] = None,
 ) -> Dict[str, Any]:
-    """Software lock-in amplifier for potential-resolved harmonic extraction.
+    """Return potential-referenced complex harmonic envelopes.
 
-    Multiplies the signal by reference sine/cosine at each harmonic frequency,
-    lowpass-filters the products, and returns instantaneous amplitude and phase.
+    ``reference_phase`` is the cosine phase of the applied-potential
+    fundamental.  When omitted, ``2π f0 t`` preserves the legacy time-zero
+    reference.  The returned complex envelope is ``Q - 1j*I`` so its magnitude
+    and angle exactly equal the reported amplitude and phase.
 
     The lowpass cutoff fc = min(0.8 * f0, scan_rate / potential_resolution)
     controls the trade-off between potential resolution and harmonic isolation.
@@ -266,17 +310,26 @@ def lockin_harmonics(
     dict with keys:
         amplitude : list of (N,) arrays — instantaneous amplitude for each harmonic.
         phase : list of (N,) arrays — instantaneous wrapped phase in radians.
-        complex : list of (N,) arrays — I + jQ.
+        complex : list of (N,) arrays — Q - jI.
         t : (N,) array — time axis (same as input).
         fc_used : float — actual lowpass cutoff frequency in Hz.
         effective_resolution : float — scan_rate / fc_used (V).
     """
     signal = _clean_current(np.asarray(signal, dtype=float))
-    t = np.asarray(t, dtype=float)
-    if t.size < 16:
+    t = np.asarray(t, dtype=float).reshape(-1)
+    if signal.size != t.size or t.size < 16:
         raise ValueError("lockin_harmonics requires at least 16 points")
     if f0 <= 0:
         raise ValueError("f0 must be positive")
+    dt = np.diff(t)
+    if not np.all(np.isfinite(dt)) or np.any(dt <= 0):
+        raise ValueError("t must be finite and strictly increasing")
+    if reference_phase is None:
+        carrier_phase = 2.0 * np.pi * f0 * t
+    else:
+        carrier_phase = np.asarray(reference_phase, dtype=float).reshape(-1)
+        if carrier_phase.size != t.size or not np.all(np.isfinite(carrier_phase)):
+            raise ValueError("reference_phase must be finite and match t")
     harmonics = [int(h) for h in harmonics]
     max_h = max(harmonics)
     if max_h * f0 >= (1.0 / np.mean(np.diff(t))) / 2.0:
@@ -291,10 +344,9 @@ def lockin_harmonics(
     phase_list: List[np.ndarray] = []
     complex_list: List[np.ndarray] = []
 
-    omega = 2.0 * np.pi * f0
     for h in harmonics:
-        ref_sin = np.sin(h * omega * t)
-        ref_cos = np.cos(h * omega * t)
+        ref_sin = np.sin(h * carrier_phase)
+        ref_cos = np.cos(h * carrier_phase)
 
         i_raw = 2.0 * signal * ref_sin
         q_raw = 2.0 * signal * ref_cos
@@ -304,10 +356,11 @@ def lockin_harmonics(
 
         amp = np.sqrt(i_filt**2 + q_filt**2)
         phi = np.arctan2(-i_filt, q_filt)
+        complex_envelope = q_filt - 1j * i_filt
 
         amp_list.append(amp)
         phase_list.append(phi)
-        complex_list.append(i_filt + 1j * q_filt)
+        complex_list.append(complex_envelope)
 
     # Edge trim: zero-phase filtfilt settling distance ≈ 4/fc samples
     edge_trim_samples = int(4.0 * fs / max(fc, 1e-6))

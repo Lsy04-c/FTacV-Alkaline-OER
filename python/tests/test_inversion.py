@@ -348,3 +348,28 @@ def test_complex_mode_extracts_only_required_harmonics_below_nyquist():
 
     assert len(target["complex_harmonics"]["amplitude"]) == 5
     assert objective(encode_params(TRUTH)) < 1e-12
+
+
+def test_lockin_interpolation_wraps_phase_and_marks_filter_edges_invalid():
+    from oer_aem import inversion as inversion_module
+
+    source_e = np.array([0.0, 1.0, 2.0, 3.0])
+    target_e = np.array([0.0, 1.0, 1.5, 2.0, 3.0])
+    phases = np.array([2.9, 3.10, -3.10, -2.9])
+    complex_values = np.exp(1j * phases)
+    lockin = {
+        "complex": [complex_values],
+        "valid_mask": np.array([False, True, True, False]),
+        "fc_used": 0.5,
+        "effective_resolution_v": 0.02,
+    }
+
+    mapped = inversion_module._interpolate_lockin_to_grid(
+        lockin,
+        source_e,
+        target_e,
+    )
+
+    assert mapped["valid_mask"].tolist() == [False, True, True, True, False]
+    assert abs(abs(mapped["phase"][0][2]) - np.pi) < 0.06
+    assert mapped["amplitude"][0][1:4] == pytest.approx(np.ones(3), abs=2e-3)

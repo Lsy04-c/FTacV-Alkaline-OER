@@ -788,3 +788,45 @@ Phase 0 重建了 legacy 和 Complex-SNR 在同构 32 points/cycle 下的可信�
 
 **下一阶段：** 按 `docs/superpowers/plans/2026-07-26-staged-potential-resolved-roadmap.md` 执行 Phase 1（锁相信号层验证）。
 
+---
+
+## 18. Phase 1R：电位参考锁相纠错（2026-07-26）
+
+代码复核发现 Phase 1 的真实相位证据和反演映射存在四个根因：
+
+- 圆均值在取角度前转为 `float`，丢失复数虚部；
+- `complex` 与 `phase` 使用了不一致的 I/Q 约定；
+- 实验相位参考 time-zero，而非实测应用电位基频；
+- 实验 target 用时间轴插值电位网格，并直接线性插值环绕相位。
+
+修复内容：
+
+- 新增应用电位基频参考相位估计；
+- 统一 `complex = Q - jI` 与 `phase = angle(complex)`；
+- 模拟使用已知施加电位相位，实验使用实测电位拟合相位；
+- 在复数域插值锁相包络；
+- 仅在实验与模拟的共同有效区计算 lock-in loss；
+- 真实诊断改用 DC 电位趋势报告峰位。
+
+验证：
+
+```text
+新增回归测试：5项完成 RED→GREEN
+全量测试：83 passed
+H1-H7压力测试：
+  points_per_cycle = 32/64
+  record length = 24/40 cycles
+  最大幅值相对误差 = 0.29%
+  最大相位误差 = 0.0029 rad
+  峰位误差 < 5 mV
+真实数据：
+  FT2/FT3/FT4/FT8 warnings-as-errors 诊断通过
+  H1-H7平均相位均为有限值，不再退化为0或π
+```
+
+科学边界：
+
+- 这些结果证明锁相信号层的实现一致性，不证明反演精度提高；
+- Phase 5 formal run继续暂停；
+- 下一步建立C++ CN与LSODA在下游特征空间的等价性门；
+- `feature_objective_comparison.csv`当前为3-trial smoke，不得覆盖Phase 0正式基线提交。

@@ -69,7 +69,11 @@ def main() -> int:
     import sys as _sys
     _sys.path.insert(0, str(ROOT / "python"))
     _sys.path.insert(0, str(ROOT / "web" / "backend"))
-    from oer_aem.signal import lockin_harmonics
+    from oer_aem.signal import (
+        circular_mean_phase,
+        estimate_reference_phase,
+        lockin_harmonics,
+    )
 
     report: dict[str, dict] = {}
     harmonics = (1, 2, 3, 4, 5, 6, 7)
@@ -93,9 +97,15 @@ def main() -> int:
             harmonics=harmonics,
             potential_resolution=0.025,  # 25 mV target
             scan_rate=meta["scan_rate"],
+            reference_phase=estimate_reference_phase(
+                data["potential"],
+                data["time"],
+                meta["f0"],
+            ),
         )
 
-        E_dc = data["potential"]  # use full potential axis (DC + AC)
+        trend = np.polyfit(data["time"], data["potential"], 1)
+        E_dc = np.polyval(trend, data["time"])
 
         dataset_report: dict = {
             "meta": meta,
@@ -121,8 +131,7 @@ def main() -> int:
                 peak_idx = int(np.argmax(amp_valid))
                 peak_E = float(E_valid[peak_idx])
                 peak_amp = float(amp_valid[peak_idx])
-                mean_phase = float(np.mean(np.cos(phase_valid)) + 1j * np.mean(np.sin(phase_valid)))
-                mean_phase = float(np.arctan2(mean_phase.imag, mean_phase.real))
+                mean_phase = circular_mean_phase(phase_valid)
             else:
                 peak_E = float("nan")
                 peak_amp = float("nan")
