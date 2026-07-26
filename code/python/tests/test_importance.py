@@ -76,6 +76,31 @@ def test_signed_sensitivity_matrix_expands_vector_features():
 
     assert rows == ["DC shape[0]", "DC shape[1]"]
     np.testing.assert_allclose(matrix, [[0.5], [0.5]])
+
+
+def test_signed_matrix_globally_excludes_incomplete_feature_channel():
+    base = {"stable": 1.0, "sometimes_missing": 2.0}
+    perturbed = {
+        ("a", "plus"): {"stable": 2.0, "sometimes_missing": 3.0},
+        ("a", "minus"): {"stable": 0.0, "sometimes_missing": 1.0},
+        ("b", "plus"): {"stable": 3.0, "sometimes_missing": None},
+        ("b", "minus"): {"stable": 1.0, "sometimes_missing": 1.0},
+    }
+
+    rows, matrix = _build_signed_sensitivity_matrix(
+        base_features=base,
+        perturbed=perturbed,
+        base_params={"a": 2.0, "b": 2.0},
+        parameter_names=["a", "b"],
+        perturbation_rules={
+            "a": ("linear", 1.0),
+            "b": ("linear", 1.0),
+        },
+        active_names=["stable", "sometimes_missing"],
+    )
+
+    assert rows == ["stable"]
+    assert matrix.shape == (1, 2)
 from oer_aem.inversion import InversionConfig, assess_harmonic_quality
 from oer_aem.defaults import initialize_oer_parameters
 
@@ -164,6 +189,7 @@ def test_importance_report_uses_objective_specific_feature_rows():
     assert any(name.startswith("H1 shape[") for name in legacy_rows)
     assert "Complex H1 real" in complex_rows
     assert not any(name.startswith("H1 shape[") for name in complex_rows)
+    assert "excluded_sensitivity_features" in complex_report
 
 
 # ========== Test 1: G_OH 扰动改变 Tafel + onset ==========

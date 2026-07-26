@@ -225,6 +225,26 @@ def main(argv: list[str] | None = None) -> None:
     labels = classify_columns(parameters, matrix, correlation)
 
     write_matrix(output, features, parameters, matrix)
+    (output / "sensitivity_metadata.json").write_text(
+        json.dumps(
+            {
+                "feature_mode": config.feature_mode,
+                "included_features": importance[
+                    "included_sensitivity_features"
+                ],
+                "excluded_features": importance[
+                    "excluded_sensitivity_features"
+                ],
+                "expanded_feature_rows": len(features),
+                "parameters": parameters,
+                "n_forward_runs": importance["metadata"]["n_forward_runs"],
+                "n_ode_failures": importance["metadata"]["n_ode_failures"],
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n"
+    )
 
     # Signed sensitivity table (Phase 3)
     from oer_aem.identifiability import signed_sensitivity_table, coupling_direction

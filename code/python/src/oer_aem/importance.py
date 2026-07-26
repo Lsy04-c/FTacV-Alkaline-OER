@@ -307,20 +307,48 @@ def _build_signed_sensitivity_matrix(
     active_names: Sequence[str],
 ) -> Tuple[List[str], np.ndarray]:
     """Build a signed matrix, expanding vector features into separate rows."""
+    for parameter in parameter_names:
+        if (
+            perturbed.get((parameter, "plus")) is None
+            or perturbed.get((parameter, "minus")) is None
+        ):
+            raise ValueError(f"missing perturbation result for {parameter}")
+
+    eligible_names: List[str] = []
+    for feature_name in active_names:
+        values = [_resolve_feature(base_features, feature_name)]
+        for parameter in parameter_names:
+            values.extend(
+                [
+                    _resolve_feature(
+                        perturbed[(parameter, "plus")], feature_name
+                    ),
+                    _resolve_feature(
+                        perturbed[(parameter, "minus")], feature_name
+                    ),
+                ]
+            )
+        if any(value is None for value in values):
+            continue
+        arrays = [np.asarray(value, dtype=float) for value in values]
+        if any(array.shape != arrays[0].shape for array in arrays[1:]):
+            continue
+        if not all(np.all(np.isfinite(array)) for array in arrays):
+            continue
+        eligible_names.append(feature_name)
+
     columns: List[np.ndarray] = []
     row_names: List[str] = []
     for parameter in parameter_names:
         plus_features = perturbed.get((parameter, "plus"))
         minus_features = perturbed.get((parameter, "minus"))
-        if plus_features is None or minus_features is None:
-            raise ValueError(f"missing perturbation result for {parameter}")
         rule, delta = perturbation_rules[parameter]
         plus_parameter, minus_parameter, _ = _clamped_perturbation(
             base_params[parameter], delta, rule, parameter
         )
         values: List[float] = []
         current_names: List[str] = []
-        for feature_name in active_names:
+        for feature_name in eligible_names:
             baseline = _resolve_feature(base_features, feature_name)
             plus = _resolve_feature(plus_features, feature_name)
             minus = _resolve_feature(minus_features, feature_name)
@@ -575,6 +603,16 @@ def analyze_parameter_importance(
         perturbation_rules=PERTURBATION_RULES,
         active_names=active_names,
     )
+    included_sensitivity_features = [
+        name
+        for name in active_names
+        if name in signed_features
+        or any(row.startswith(f"{name}[") for row in signed_features)
+    ]
+    excluded_sensitivity_features = [
+        name for name in active_names
+        if name not in included_sensitivity_features
+    ]
 
     param_importance = []
     for name in PARAMETER_LIST:
@@ -616,6 +654,8 @@ def analyze_parameter_importance(
         "parameter_importance": param_importance,
         "feature_weights": {k: round(v, 4) for k, v in feature_weights.items()},
         "feature_sensitivity_matrix": sens_matrix,
+        "included_sensitivity_features": included_sensitivity_features,
+        "excluded_sensitivity_features": excluded_sensitivity_features,
         "signed_feature_sensitivity_matrix": [
             {
                 "feature": feature,
