@@ -166,28 +166,31 @@ def _extract_onset(dc: np.ndarray, e_grid: np.ndarray, frac: float = 0.05) -> Op
 # 三、特征距离与权重
 # ============================================================
 
+def _resolve_feature(features: Dict[str, Any], name: str) -> Any:
+    if name in features:
+        return features[name]
+    if name == "DC shape":
+        return features.get("dc")
+    if name == "DC amplitude":
+        return features.get("dc_amplitude")
+    if name == "DC shape_raw":
+        return features.get("dc_shape_raw")
+    if name == "DC amplitude_raw":
+        return features.get("dc_amplitude_raw")
+    if name.startswith("H"):
+        harmonic, descriptor = name.split(" ", 1)
+        index = int(harmonic[1:]) - 1
+        if descriptor == "shape":
+            harms = features.get("harm", [])
+            return harms[index] if index < len(harms) else None
+        key = f"{harmonic}_{descriptor.replace(' ', '_')}"
+        return features.get(key)
+    return features.get(name)
+
+
 def _feature_distance(fa: Dict[str, Any], fb: Dict[str, Any], name: str) -> float:
     """计算两个特征 dict 在指定特征上的归一化距离。"""
-    def resolve(features: Dict[str, Any]):
-        if name == "DC shape":
-            return features.get("dc")
-        if name == "DC amplitude":
-            return features.get("dc_amplitude")
-        if name == "DC shape_raw":
-            return features.get("dc_shape_raw")
-        if name == "DC amplitude_raw":
-            return features.get("dc_amplitude_raw")
-        if name.startswith("H"):
-            harmonic, descriptor = name.split(" ", 1)
-            index = int(harmonic[1:]) - 1
-            if descriptor == "shape":
-                harms = features.get("harm", [])
-                return harms[index] if index < len(harms) else None
-            key = f"{harmonic}_{descriptor.replace(' ', '_')}"
-            return features.get(key)
-        return features.get(name)
-
-    a, b = resolve(fa), resolve(fb)
+    a, b = _resolve_feature(fa, name), _resolve_feature(fb, name)
     if a is None or b is None:
         return 0.0
 
@@ -200,6 +203,89 @@ def _feature_distance(fa: Dict[str, Any], fb: Dict[str, Any], name: str) -> floa
     else:
         denom = max(abs(float(a_arr[0])), 1e-30)
         return float(abs(float(a_arr[0]) - float(b_arr[0])) / denom)
+
+
+def _normalized_central_difference(
+    plus: Any,
+    minus: Any,
+    baseline: Any,
+    parameter_plus: float,
+    parameter_minus: float,
+    parameter_rule: str,
+) -> np.ndarray | float:
+    """Return a signed, baseline-normalized central-difference response."""
+    plus_values = np.asarray(plus, dtype=float)
+    minus_values = np.asarray(minus, dtype=float)
+    baseline_values = np.asarray(baseline, dtype=float)
+    if (
+        plus_values.shape != minus_values.shape
+        or plus_values.shape != baseline_values.shape
+    ):
+        raise ValueError("plus, minus, and baseline features must have matching shapes")
+
+    if parameter_rule == "log10":
+        parameter_span = np.log10(parameter_plus) - np.log10(parameter_minus)
+    elif parameter_rule in {"linear", "percent"}:
+        parameter_span = parameter_plus - parameter_minus
+    else:
+        raise ValueError(f"Unknown perturbation rule: {parameter_rule}")
+    if not np.isfinite(parameter_span) or abs(parameter_span) <= np.finfo(float).eps:
+        raise ValueError("parameter perturbation span must be finite and non-zero")
+
+    feature_scale = max(float(np.max(np.abs(baseline_values))), 1e-30)
+    response = (plus_values - minus_values) / parameter_span / feature_scale
+    if response.ndim == 0:
+        return float(response)
+    return response
+
+
+def _build_signed_sensitivity_matrix(
+    base_features: Dict[str, Any],
+    perturbed: Dict[Tuple[str, str], Optional[Dict[str, Any]]],
+    base_params: Dict[str, float],
+    parameter_names: Sequence[str],
+    perturbation_rules: Dict[str, Tuple[str, float]],
+    active_names: Sequence[str],
+) -> Tuple[List[str], np.ndarray]:
+    """Build a signed matrix, expanding vector features into separate rows."""
+    columns: List[np.ndarray] = []
+    row_names: List[str] = []
+    for parameter in parameter_names:
+        plus_features = perturbed.get((parameter, "plus"))
+        minus_features = perturbed.get((parameter, "minus"))
+        if plus_features is None or minus_features is None:
+            raise ValueError(f"missing perturbation result for {parameter}")
+        rule, delta = perturbation_rules[parameter]
+        plus_parameter, minus_parameter, _ = _clamped_perturbation(
+            base_params[parameter], delta, rule, parameter
+        )
+        values: List[float] = []
+        current_names: List[str] = []
+        for feature_name in active_names:
+            baseline = _resolve_feature(base_features, feature_name)
+            plus = _resolve_feature(plus_features, feature_name)
+            minus = _resolve_feature(minus_features, feature_name)
+            if baseline is None or plus is None or minus is None:
+                continue
+            response = np.asarray(
+                _normalized_central_difference(
+                    plus, minus, baseline, plus_parameter, minus_parameter, rule
+                ),
+                dtype=float,
+            ).reshape(-1)
+            values.extend(response.tolist())
+            current_names.extend(
+                [feature_name] if response.size == 1 else
+                [f"{feature_name}[{index}]" for index in range(response.size)]
+            )
+        if not columns:
+            row_names = current_names
+        elif current_names != row_names:
+            raise ValueError("signed sensitivity feature rows are inconsistent")
+        columns.append(np.asarray(values, dtype=float))
+    if not columns:
+        return [], np.empty((0, 0), dtype=float)
+    return row_names, np.column_stack(columns)
 
 
 def _compute_feature_weights(harmonic_quality: Dict[str, Any]) -> Dict[str, float]:
@@ -418,6 +504,14 @@ def analyze_parameter_importance(
 
     # ---- 评分 ----
     raw_scores = _compute_scores(base_features, perturbed, feature_weights, active_names)
+    signed_features, signed_matrix = _build_signed_sensitivity_matrix(
+        base_features=base_features,
+        perturbed=perturbed,
+        base_params=base_params,
+        parameter_names=[name for name in PARAMETER_LIST if name in base_params],
+        perturbation_rules=PERTURBATION_RULES,
+        active_names=active_names,
+    )
 
     param_importance = []
     for name in PARAMETER_LIST:
@@ -459,6 +553,18 @@ def analyze_parameter_importance(
         "parameter_importance": param_importance,
         "feature_weights": {k: round(v, 4) for k, v in feature_weights.items()},
         "feature_sensitivity_matrix": sens_matrix,
+        "signed_feature_sensitivity_matrix": [
+            {
+                "feature": feature,
+                "changes": {
+                    parameter: float(signed_matrix[row_index, parameter_index])
+                    for parameter_index, parameter in enumerate(
+                        [name for name in PARAMETER_LIST if name in base_params]
+                    )
+                },
+            }
+            for row_index, feature in enumerate(signed_features)
+        ],
         "warnings": warnings_list,
         "metadata": {
             "n_forward_runs": n_forward,

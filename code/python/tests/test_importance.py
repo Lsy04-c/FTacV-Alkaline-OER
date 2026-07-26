@@ -6,6 +6,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 import numpy as np
 import pytest
 from oer_aem.importance import (
+    _normalized_central_difference,
+    _build_signed_sensitivity_matrix,
     PERTURBATION_RULES,
     DEFAULT_PHYSICAL_BOUNDS,
     _apply_perturbation,
@@ -17,6 +19,61 @@ from oer_aem.importance import (
     _coupling_warnings,
     analyze_parameter_importance,
 )
+
+
+def test_normalized_central_difference_preserves_scalar_direction():
+    positive = _normalized_central_difference(
+        plus=12.0,
+        minus=8.0,
+        baseline=10.0,
+        parameter_plus=3.0,
+        parameter_minus=1.0,
+        parameter_rule="linear",
+    )
+    negative = _normalized_central_difference(
+        plus=8.0,
+        minus=12.0,
+        baseline=10.0,
+        parameter_plus=3.0,
+        parameter_minus=1.0,
+        parameter_rule="linear",
+    )
+
+    assert positive == pytest.approx(0.2)
+    assert negative == pytest.approx(-0.2)
+
+
+def test_normalized_central_difference_preserves_vector_response():
+    response = _normalized_central_difference(
+        plus=np.array([2.0, 3.0]),
+        minus=np.array([0.0, 1.0]),
+        baseline=np.array([1.0, 2.0]),
+        parameter_plus=100.0,
+        parameter_minus=10.0,
+        parameter_rule="log10",
+    )
+
+    np.testing.assert_allclose(response, [1.0, 1.0])
+
+
+def test_signed_sensitivity_matrix_expands_vector_features():
+    base = {"DC shape": np.array([1.0, 2.0])}
+    perturbed = {
+        ("x", "plus"): {"DC shape": np.array([2.0, 3.0])},
+        ("x", "minus"): {"DC shape": np.array([0.0, 1.0])},
+    }
+
+    rows, matrix = _build_signed_sensitivity_matrix(
+        base_features=base,
+        perturbed=perturbed,
+        base_params={"x": 2.0},
+        parameter_names=["x"],
+        perturbation_rules={"x": ("linear", 1.0)},
+        active_names=["DC shape"],
+    )
+
+    assert rows == ["DC shape[0]", "DC shape[1]"]
+    np.testing.assert_allclose(matrix, [[0.5], [0.5]])
 from oer_aem.inversion import InversionConfig, assess_harmonic_quality
 from oer_aem.defaults import initialize_oer_parameters
 

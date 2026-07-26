@@ -12,6 +12,8 @@ def sensitivity_correlation(matrix) -> np.ndarray:
     values = np.asarray(matrix, dtype=float)
     if values.ndim != 2:
         raise ValueError("sensitivity matrix must be two-dimensional")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("sensitivity matrix must contain only finite values")
     norms = np.linalg.norm(values, axis=0)
     normalized = values / np.maximum(norms, np.finfo(float).eps)
     return normalized.T @ normalized
@@ -50,7 +52,10 @@ def matrix_from_importance(
     result: Mapping[str, object],
 ) -> tuple[list[str], list[str], np.ndarray]:
     """Convert an importance report into feature names, parameters, and matrix."""
-    rows = list(result.get("feature_sensitivity_matrix", []))
+    rows = list(
+        result.get("signed_feature_sensitivity_matrix")
+        or result.get("feature_sensitivity_matrix", [])
+    )
     parameters = list(
         result.get("metadata", {}).get("param_order", [])
     )
@@ -130,7 +135,7 @@ def coupling_direction(
                 peers.append({
                     "peer": str(names[j]),
                     "correlation": r,
-                    "direction": "compensating" if r > 0 else "distinguishable",
+                    "direction": "same_response" if r > 0 else "opposite_response",
                 })
         result[str(name)] = peers
     return result
