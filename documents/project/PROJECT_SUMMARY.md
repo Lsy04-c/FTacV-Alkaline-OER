@@ -85,13 +85,13 @@
 ### 已完成
 
 - 数据加载与基础分析：
-  - `python/oer_aem/io.py`
-  - `python/oer_aem/data_contract.py`
-  - `scripts/analyze_data_quality.py`
+  - `code/python/src/oer_aem/io.py`
+  - `code/python/src/oer_aem/data_contract.py`
+  - `code/python/scripts/analyze_data_quality.py`
 - 四组数据 FT2、FT3、FT4、FT8 已完成基础质量诊断：
   - `results/data_quality/`
 - 残差的电位网格和符号契约已统一：
-  - `scripts/residual_diagnostics.py`
+  - `code/python/scripts/residual_diagnostics.py`
   - `results/architecture_validation/residual_contract.csv`
 
 ### 文件总结
@@ -122,16 +122,16 @@
 ### 已完成
 
 - AEM 状态方程与总电流：
-  - `python/oer_aem/physics.py`
+  - `code/python/src/oer_aem/physics.py`
 - 热力学标度关系：
-  - `python/oer_aem/thermodynamics.py`
+  - `code/python/src/oer_aem/thermodynamics.py`
 - 默认参数及统一入口：
-  - `python/oer_aem/defaults.py`
-  - `python/oer_aem/core.py`
+  - `code/python/src/oer_aem/defaults.py`
+  - `code/python/src/oer_aem/core.py`
 - 参数编码、解码和边界：
-  - `python/oer_aem/inversion.py`
+  - `code/python/src/oer_aem/inversion.py`
 - M0 与最小重构 M1 已做初步对照，M1 未通过多数数据门：
-  - `scripts/compare_reconstruction_model.py`
+  - `code/python/scripts/compare_reconstruction_model.py`
   - `results/architecture_validation/reconstruction_model_comparison.csv`
 
 ### 文件总结
@@ -163,16 +163,16 @@
 ### 已完成
 
 - LSODA 参考路径：
-  - `python/oer_aem/physics.py`
+  - `code/python/src/oer_aem/physics.py`
 - C++ Crank–Nicolson 求解器与 Python bridge：
-  - `cpp/oer_cn_solver.cpp`
-  - `python/oer_aem/cpp_bridge.py`
+  - `code/cpp/src/oer_cn_solver.cpp`
+  - `code/python/src/oer_aem/cpp_bridge.py`
 - 显式后端选择：
   - `solver_backend=auto|cn|lsoda`
-  - `python/oer_aem/inversion.py`
+  - `code/python/src/oer_aem/inversion.py`
 - CN 与 LSODA 已统一稳态初值；`cn` 失败时禁止静默回退。
 - 下游特征等价性脚本：
-  - `scripts/validate_solver_equivalence.py`
+  - `code/python/scripts/validate_solver_equivalence.py`
 - 本机压力测试结果：
   - 32 points/cycle：高次谐波失败；
   - 64 points/cycle：6 样本仍有失败；
@@ -207,8 +207,8 @@
 ### 已完成
 
 - FFT 与锁相实现：
-  - `python/oer_aem/signal.py`
-  - `python/oer_aem/features.py`
+  - `code/python/src/oer_aem/signal.py`
+  - `code/python/src/oer_aem/features.py`
 - 应用电位参考相位、I/Q 约定和复数域相位插值已修复：
   - 提交 `f43e441`
 - 合成信号 H1–H7 压力测试：
@@ -216,7 +216,7 @@
   - 最大相位误差 0.0029 rad；
   - 峰位误差小于 5 mV。
 - 四个真实数据集已完成无警告诊断：
-  - `scripts/validate_potential_resolved_harmonics.py`
+  - `code/python/scripts/validate_potential_resolved_harmonics.py`
   - `results/potential_resolved_harmonics/harmonic_diagnostics.json`
 
 ### 文件总结
@@ -247,15 +247,15 @@
 ### 已完成
 
 - legacy、Complex-SNR 和当前 `lockin_only` 模式：
-  - `python/oer_aem/inversion.py`
-  - `scripts/compare_feature_objectives.py`
+  - `code/python/src/oer_aem/inversion.py`
+  - `code/python/scripts/compare_feature_objectives.py`
 - 目标函数已区分：
   - DC；
   - 共同谐波；
   - 数据特有谐波；
   - 物理约束。
 - `feature_grid_size` 与损失点数尺度已修正：
-  - `scripts/compare_feature_grids.py`
+  - `code/python/scripts/compare_feature_grids.py`
   - `results/architecture_validation/grid_convergence.csv`
 - 128 点特征网格是当前候选值，但既有收敛证据样本量不足。
 
@@ -288,8 +288,8 @@
 ### 已完成
 
 - 敏感性矩阵、参数分类和合成恢复：
-  - `python/oer_aem/identifiability.py`
-  - `python/oer_aem/importance.py`
+  - `code/python/src/oer_aem/identifiability.py`
+  - `code/python/src/oer_aem/importance.py`
   - `results/architecture_validation/sensitivity_matrix.csv`
   - `results/architecture_validation/parameter_classification.csv`
   - `results/architecture_validation/synthetic_recovery.json`
@@ -326,10 +326,10 @@
 ### 已完成
 
 - TPE 反演核心与结果结构：
-  - `python/oer_aem/inversion.py`
+  - `code/python/src/oer_aem/inversion.py`
 - 实验比较脚本与基础 manifest：
-  - `scripts/compare_feature_objectives.py`
-  - `scripts/build_validation_manifest.py`
+  - `code/python/scripts/compare_feature_objectives.py`
+  - `code/python/scripts/build_validation_manifest.py`
   - `results/architecture_validation/run_manifest.json`
 - 计算环境分工已确定：
   - Mac：代码、测试、文档和 Git；
@@ -360,11 +360,11 @@
 ### 已完成
 
 - FastAPI 基础接口及反演任务接口：
-  - `web/backend/main.py`
-  - `web/backend/test_analyze_e2e.py`
-  - `web/backend/test_inversion_api.py`
+  - `code/web/backend/main.py`
+  - `code/web/tests/backend/test_analyze_e2e.py`
+  - `code/web/tests/backend/test_inversion_api.py`
 - React/Vite 基础工程：
-  - `web/frontend/`
+  - `code/web/frontend/`
 
 ### 未达成与路径规划
 
@@ -534,18 +534,18 @@ Web 可以保留基础开发，但不得先于核心 schema 成为科研主线�
 | 模块 | 当前结论 | 主要文件 | 状态 |
 |---|---|---|---|
 | 数据基础诊断 | 四组数据可进入进一步验证 | `results/data_quality/` | 部分完成 |
-| AEM M0 | Python 正演链已建立 | `python/oer_aem/physics.py` | 部分完成 |
-| 热力学约束 | 标度关系和参数变换已实现 | `python/oer_aem/thermodynamics.py` | 已实现 |
-| LSODA | 参考求解器已建立 | `python/oer_aem/physics.py` | 已实现 |
-| C++ CN | 已加速，正式等价性门运行中/待验收 | `cpp/oer_cn_solver.cpp` | 待关门 |
-| 全局谐波 | 幅值和复数特征已实现 | `python/oer_aem/signal.py` | 已实现 |
-| 电位分辨锁相 | 核心相位错误已修复 | `python/oer_aem/signal.py` | 待真实重采样 |
-| 目标函数 | 多模式和分量输出已建立 | `python/oer_aem/inversion.py` | 待拆分模式 |
-| 网格 | 128 点为候选 | `scripts/compare_feature_grids.py` | 待扩大验证 |
-| 可识别性 | 初步分类和带符号敏感性已完成 | `python/oer_aem/identifiability.py` | 待最终特征复算 |
-| M1 重构 | 当前证据拒绝 | `scripts/compare_reconstruction_model.py` | 已形成否定结果 |
-| API | 基础任务接口存在 | `web/backend/main.py` | 非当前主线 |
-| Web | 基础前端存在 | `web/frontend/` | 非当前主线 |
+| AEM M0 | Python 正演链已建立 | `code/python/src/oer_aem/physics.py` | 部分完成 |
+| 热力学约束 | 标度关系和参数变换已实现 | `code/python/src/oer_aem/thermodynamics.py` | 已实现 |
+| LSODA | 参考求解器已建立 | `code/python/src/oer_aem/physics.py` | 已实现 |
+| C++ CN | 已加速，正式等价性门运行中/待验收 | `code/cpp/src/oer_cn_solver.cpp` | 待关门 |
+| 全局谐波 | 幅值和复数特征已实现 | `code/python/src/oer_aem/signal.py` | 已实现 |
+| 电位分辨锁相 | 核心相位错误已修复 | `code/python/src/oer_aem/signal.py` | 待真实重采样 |
+| 目标函数 | 多模式和分量输出已建立 | `code/python/src/oer_aem/inversion.py` | 待拆分模式 |
+| 网格 | 128 点为候选 | `code/python/scripts/compare_feature_grids.py` | 待扩大验证 |
+| 可识别性 | 初步分类和带符号敏感性已完成 | `code/python/src/oer_aem/identifiability.py` | 待最终特征复算 |
+| M1 重构 | 当前证据拒绝 | `code/python/scripts/compare_reconstruction_model.py` | 已形成否定结果 |
+| API | 基础任务接口存在 | `code/web/backend/main.py` | 非当前主线 |
+| Web | 基础前端存在 | `code/web/frontend/` | 非当前主线 |
 
 ---
 

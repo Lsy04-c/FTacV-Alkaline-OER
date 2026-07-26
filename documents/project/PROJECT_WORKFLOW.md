@@ -18,8 +18,8 @@ branch main
 ```bash
 git status --short
 git diff
-python scripts/run_tests.py python/tests -q
-python scripts/run_tests.py web/backend/test_analyze_e2e.py -q
+.venv/bin/python code/python/scripts/run_tests.py code/python/tests -q
+.venv/bin/python -m pytest code/web/tests/backend -q
 git add <本次实际修改文件>
 git commit -m "<type(scope): summary>"
 git push origin main
@@ -41,10 +41,10 @@ git push origin main
 项目依赖安装在仓库根目录的 `.venv`。不要依赖终端是否已经激活虚拟环境，也不要直接调用全局 `pytest`。统一使用：
 
 ```bash
-python scripts/run_tests.py python/tests -q
+.venv/bin/python code/python/scripts/run_tests.py code/python/tests -q
 ```
 
-`scripts/run_tests.py` 会优先选择 `.venv/bin/python`，从而保证 Codex、VS Code 和普通终端使用同一套依赖。
+`code/python/scripts/run_tests.py` 会优先选择 `.venv/bin/python`，从而保证 Codex、VS Code 和普通终端使用同一套依赖。
 
 ## 2. 建议压力测试规则
 
@@ -103,7 +103,7 @@ python scripts/run_tests.py python/tests -q
 
 优先级：
 
-1. `python/oer_aem/inversion.py`
+1. `code/python/src/oer_aem/inversion.py`
 2. 合成数据恢复测试
 3. `/api/inversion/start|status|cancel|result`
 4. 前端 `TPE 反演` 标签页
