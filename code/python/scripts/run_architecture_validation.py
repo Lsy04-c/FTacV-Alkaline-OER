@@ -160,8 +160,8 @@ def build_config(args: argparse.Namespace) -> InversionConfig:
     if args.noise_fraction < 0:
         raise ValueError("noise fraction must be non-negative")
     return InversionConfig(
-        n_points=256 if args.smoke else 2048,
-        points_per_cycle=32 if args.smoke else 128,
+        n_points=256 if args.smoke else 8192,
+        points_per_cycle=32,
         feature_grid_size=args.feature_grid_size,
         fit_harmonics=(1, 2, 3),
         feature_mode=args.feature_mode,

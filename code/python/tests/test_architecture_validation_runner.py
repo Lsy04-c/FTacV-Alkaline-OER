@@ -18,6 +18,8 @@ def test_formal_defaults_freeze_grid_solver_and_mode(tmp_path):
     config = build_config(args)
 
     assert config.feature_grid_size == 128
+    assert config.n_points == 8192
+    assert config.points_per_cycle == 32
     assert config.solver_backend == "lsoda"
     assert config.feature_mode == "legacy"
     assert config.seed == 42
