@@ -1,0 +1,60 @@
+{
+  "passed": true,
+  "n_rows": 112,
+  "n_failures": 0,
+  "failures": [],
+  "datasets": [
+    "FT2",
+    "FT3",
+    "FT4",
+    "FT8"
+  ],
+  "variants": [
+    "downsample_2x",
+    "downsample_4x",
+    "trim_start_10pct",
+    "trim_end_10pct"
+  ],
+  "harmonics": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "workers": 8,
+  "thresholds": {
+    "potential_resolution_v": 0.025,
+    "resolvability_fraction": 0.02,
+    "amplitude_nrmse": 0.1,
+    "phase_rmse_rad": 0.1,
+    "peak_shift_v": 0.025,
+    "common_valid_fraction": 0.5,
+    "independent_potential_intervals": 10
+  },
+  "input_sha256": {
+    "FT2": "979fdd7e132f8dffbe32671a9f3476eac4dcdcd79bc6ab8b29578af2401b0091",
+    "FT3": "72af2050d2b8400d68520df7aba5c08c74420b1b711c0e8f229fa64cdfaa468c",
+    "FT4": "f9b6b8448dc27ed7a78147beb9b6b05aa2cba105d195cb6aaa30e473ffcb3a21",
+    "FT8": "943d2406370be468c4a112a337c55d53ef16c43482b610915ca552723ae9be0d"
+  },
+  "environment": {
+    "python": "3.11.2",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1"
+  },
+  "provenance": {
+    "source_commit": "68486134087b6534442cf20963d4606f760c735c",
+    "started_at_cst": "2026-07-26T22:00:13+0800",
+    "thread_limits": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "command": "/home/lsy/OER-FTAcV/.venv/bin/python code/python/scripts/validate_real_harmonic_stability.py --workers 8 --output-dir results/formal/harmonic_stability/gate-a4-6848613"
+  },
+  "csv": "results/formal/harmonic_stability/gate-a4-6848613/harmonic_stability.csv"
+}

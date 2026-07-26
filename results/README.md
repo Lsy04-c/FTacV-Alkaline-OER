@@ -22,6 +22,10 @@
 256 points/cycle 的独立正式失败证据。结构完整且两求解器均成功，但仍有
 22 项锁相相位误差超阈值，因此增加采样密度未关闭 Gate A3。
 
+`formal/harmonic_stability/gate-a4-6848613/` 保存四个真实数据集在
+抗混叠 2×/4×降采样和单端 10% 截断下的正式锁相稳定性证据。112 行结构
+完整，Gate A4 为 PASS；该结论只支持信号层稳定，不代表反演精度提高。
+
 ## Smoke
 
 `smoke/architecture_validation/feature_objective_comparison_3trial.csv` 是 3-trial 流程检查。它不替代正式 feature comparison。

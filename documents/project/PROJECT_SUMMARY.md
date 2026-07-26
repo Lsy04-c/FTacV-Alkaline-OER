@@ -241,6 +241,12 @@ sample 20 的 DC NRMSE 为 2.61%，超过 1% 门。正式 CSV 因两个参考
 - 四个真实数据集已完成无警告诊断：
   - `code/python/scripts/validate_potential_resolved_harmonics.py`
   - `results/diagnostics/potential_resolved_harmonics/harmonic_diagnostics.json`
+- 四个真实数据集的正式稳定性门已通过：
+  - 抗混叠 2×/4×降采样；
+  - 单端 10% 记录截断；
+  - 112 行完整，60 行进入信号门评价；
+  - 最坏被评价幅值 NRMSE 0.411%，最坏相位 RMSE 0.0181 rad；
+  - `results/formal/harmonic_stability/gate-a4-6848613/`。
 
 ### 文件总结
 
@@ -248,10 +254,10 @@ sample 20 的 DC NRMSE 为 2.61%，超过 1% 门。正式 CSV 因两个参考
 
 ### 未达成与路径规划
 
-1. 对真实数据进行至少两种合法重采样或记录长度比较。
-2. 报告峰位漂移、相位环绕差、有效区比例和独立电位区间数。
-3. 分离真正的 `lockin_only` 与包含全局复数特征的 `hybrid`。
-4. Gate A4：真实数据稳定性通过后，锁相特征才允许进入正式精度比较。
+1. 合法重采样和记录长度比较已完成，Gate A4 为 PASS。
+2. 峰位漂移、相位环绕差、有效区比例和独立电位区间数已进入正式证据。
+3. 下一步分离真正的 `lockin_only` 与包含全局复数特征的 `hybrid`。
+4. 锁相特征可以进入 A5 正式精度比较，但不可把信号稳定性写成精度增益。
 
 ### 纠错与失败路径
 

@@ -45,7 +45,7 @@ Gate A4 PASS 要求所有数据集的所有强制比较通过。失败时保留�
 - Create: `code/python/scripts/validate_real_harmonic_stability.py`
 - Test: `code/python/tests/test_real_harmonic_stability.py`
 
-- [ ] **Step 1: 写输入变体失败测试**
+- [x] **Step 1: 写输入变体失败测试**
 
 测试应构造等间隔合成信号，要求：
 
@@ -59,7 +59,7 @@ assert len(variants["downsample_2x"]["time"]) == len(time) // 2
 assert np.all(np.diff(variants["downsample_4x"]["time"]) > 0)
 ```
 
-- [ ] **Step 2: 验证 RED**
+- [x] **Step 2: 验证 RED**
 
 Run:
 
@@ -70,14 +70,14 @@ Run:
 
 Expected: 因模块或 `build_variants` 不存在而失败。
 
-- [ ] **Step 3: 最小实现输入变体**
+- [x] **Step 3: 最小实现输入变体**
 
 `build_variants()` 必须同时对电位和电流使用
 `scipy.signal.resample_poly(..., up=1, down=2|4)`；时间轴由原始起点和
 采样间隔重建。trim 变体只删除一端 10%，至少保留 32 个样本。拒绝非单调
 时间轴和数组长度不一致。
 
-- [ ] **Step 4: 写指标失败测试**
+- [x] **Step 4: 写指标失败测试**
 
 对已知复数包络检查：
 
@@ -90,13 +90,13 @@ assert metrics["peak_shift_v"] == pytest.approx(0.0)
 
 另用 `π-0.05` 与 `-π+0.05` 验证相位差为约 0.10 rad，而不是约 `2π`。
 
-- [ ] **Step 5: 实现共同电位区比较**
+- [x] **Step 5: 实现共同电位区比较**
 
 先将 `complex` 包络按单调 DC 电位插值到共同网格，再由复数值计算 amplitude
 和 phase；禁止直接线性插值相位。返回 amplitude NRMSE、wrapped phase
 RMSE、peak shift、共同有效比例和独立电位区间数。
 
-- [ ] **Step 6: 验证 GREEN**
+- [x] **Step 6: 验证 GREEN**
 
 运行 Task 1 测试，预期全部通过。
 
@@ -107,12 +107,12 @@ RMSE、peak shift、共同有效比例和独立电位区间数。
 - Modify: `code/python/tests/test_real_harmonic_stability.py`
 - Create: `results/formal/harmonic_stability/gate-a4-<commit>/`
 
-- [ ] **Step 1: 写门控失败测试**
+- [x] **Step 1: 写门控失败测试**
 
 构造一行 H2 `phase_rmse_rad=0.11` 的可解析结果，要求 `assess_gate()`
 返回 FAIL；构造 H7 不可解析结果时，不因相位数值失败。
 
-- [ ] **Step 2: 实现真实数据分析**
+- [x] **Step 2: 实现真实数据分析**
 
 对每个数据集：
 
@@ -123,7 +123,7 @@ RMSE、peak shift、共同有效比例和独立电位区间数。
 4. 输出每个 dataset/variant/harmonic 一行 CSV；
 5. JSON summary 写入阈值、通过状态、失败列表和输入文件哈希。
 
-- [ ] **Step 3: 实现 8 进程入口**
+- [x] **Step 3: 实现 8 进程入口**
 
 主进程使用 `ProcessPoolExecutor(max_workers=min(8, os.cpu_count() or 1))`
 按数据集和变体分发；启动前设置：
@@ -137,12 +137,12 @@ NUMEXPR_NUM_THREADS=1
 
 worker 不写共享文件，只返回字典；CSV/JSON 由主进程排序后一次写入。
 
-- [ ] **Step 4: smoke 与确定性检查**
+- [x] **Step 4: smoke 与确定性检查**
 
 先串行和 8 进程各运行一个数据集，要求 CSV 数值与排序一致。若 8 进程
 wall time 没有改善，正式运行允许使用 4 进程，但 manifest 必须记录实际值。
 
-- [ ] **Step 5: 正式运行与验收**
+- [x] **Step 5: 正式运行与验收**
 
 正式证据必须满足：
 
@@ -161,12 +161,12 @@ wall time 没有改善，正式运行允许使用 4 进程，但 manifest 必须
 - Modify: `documents/corrections/项目纠错.md`
 - Modify: `results/README.md`
 
-- [ ] **Step 1: 按真实结果更新 Gate A4**
+- [x] **Step 1: 按真实结果更新 Gate A4**
 
 PASS 只表示信号层稳定，可以进入 A5；不写成反演精度提高。FAIL 时列出具体
 数据集、变体和谐波，并降低对应局部特征的使用范围。
 
-- [ ] **Step 2: 完整验证**
+- [x] **Step 2: 完整验证**
 
 ```bash
 .venv/bin/python code/python/scripts/run_tests.py code/python/tests -q
@@ -175,7 +175,7 @@ PASS 只表示信号层稳定，可以进入 A5；不写成反演精度提高。
 git diff --check
 ```
 
-- [ ] **Step 3: 提交和推送**
+- [x] **Step 3: 提交和推送**
 
 只提交 A4 代码、测试、正式证据和对应文档；不提交原始数据副本、临时 smoke
 或本机环境秘密。
