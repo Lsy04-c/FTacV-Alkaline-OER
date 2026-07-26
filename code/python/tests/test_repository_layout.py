@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -62,3 +63,20 @@ def test_active_validation_scripts_use_classified_web_test_paths():
             if "code/web/backend/test_" in line:
                 obsolete.append(f"{script.relative_to(ROOT)}:{line_number}")
     assert obsolete == []
+
+
+def test_git_does_not_track_legacy_source_directories():
+    result = subprocess.run(
+        ["git", "ls-files"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    legacy_prefixes = ("python/", "web/", "scripts/", "cpp/", "docs/")
+    legacy = sorted(
+        path
+        for path in result.stdout.splitlines()
+        if path.startswith(legacy_prefixes)
+    )
+    assert legacy == []
