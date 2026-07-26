@@ -126,8 +126,7 @@ def _run_forward(params: Dict[str, Any], config: InversionConfig
     e_grid = features["e_grid"]
 
     features["dc_amplitude"] = float(np.max(dc_env)) if len(dc_env) > 0 else 0.0
-    for k in range(7):
-        h = harms[k]
+    for k, h in enumerate(harms):
         idx = int(np.argmax(h)) if len(h) > 0 else 0
         features[f"H{k+1}_peak_amplitude"] = float(h[idx])
         features[f"H{k+1}_peak_potential"] = float(e_grid[idx])

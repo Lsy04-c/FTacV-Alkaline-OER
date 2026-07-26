@@ -14,6 +14,7 @@ from oer_aem.importance import (
     _clamped_perturbation,
     _extract_onset,
     _feature_distance,
+    _run_forward,
     _compute_feature_weights,
     _classify,
     _coupling_warnings,
@@ -76,6 +77,22 @@ def test_signed_sensitivity_matrix_expands_vector_features():
     np.testing.assert_allclose(matrix, [[0.5], [0.5]])
 from oer_aem.inversion import InversionConfig, assess_harmonic_quality
 from oer_aem.defaults import initialize_oer_parameters
+
+
+@pytest.mark.parametrize("feature_mode", ["complex_snr", "lockin_only", "hybrid"])
+def test_forward_importance_supports_nonlegacy_feature_modes(feature_mode):
+    config = InversionConfig(
+        n_points=256,
+        points_per_cycle=32,
+        feature_grid_size=32,
+        fit_harmonics=(1, 2, 3),
+        feature_mode=feature_mode,
+    )
+
+    features = _run_forward(initialize_oer_parameters(), config)
+
+    assert features is not None
+    assert all(f"H{harmonic}_peak_amplitude" in features for harmonic in (1, 2, 3))
 
 
 # ========== Test 1: G_OH 扰动改变 Tafel + onset ==========
