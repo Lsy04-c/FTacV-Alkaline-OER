@@ -67,6 +67,7 @@ class InversionConfig:
     fixed_params: Tuple[Tuple[str, float], ...] = ()
     fit_harmonics: Tuple[int, ...] = (1, 2, 3, 4, 5, 6, 7)
     feature_mode: str = "legacy"
+    solver_backend: str = "auto"
     phase_weight: float = 1.0
     snr_floor: float = 3.0
 
@@ -406,24 +407,34 @@ def forward_current(
     config: InversionConfig,
     specs: Sequence[ParamSpec] = DEFAULT_PARAM_SPECS,
 ) -> Optional[np.ndarray]:
-    """Run the mechanistic forward model and return total current.
+    """Run the selected mechanistic solver and return total current.
 
-    Tries the compiled C++ Crank-Nicolson solver first; falls back to
-    scipy LSODA if the library is unavailable or the C++ solver fails.
+    ``cn`` never falls back, ``lsoda`` never calls C++, and ``auto`` preserves
+    the historical C++-first behavior with an LSODA fallback.
     """
     params = params_from_vector(x, config, specs)
+    backend = str(config.solver_backend).lower()
+    if backend not in {"auto", "cn", "lsoda"}:
+        raise ValueError("solver_backend must be 'auto', 'cn', or 'lsoda'")
 
-    # --- C++ fast path ---
-    try:
-        from .cpp_bridge import is_available, solve_cn
-        if is_available():
-            current = solve_cn(params)
-            if current is not None and current.size == config.n_points:
-                return np.asarray(current, dtype=float).reshape(-1)
-    except Exception:
-        pass  # fall through to scipy
+    if backend in {"auto", "cn"}:
+        try:
+            from .cpp_bridge import is_available, solve_cn
+            if is_available():
+                y0 = np.zeros(6, dtype=float)
+                y0[0] = 1.0
+                y0[5] = params["E_start"]
+                if params.get("use_steady_state", True):
+                    y0 = OERPhysics.calculate_steady_state(params)
+                current = solve_cn(params, y0=y0)
+                if current is not None and current.size == config.n_points:
+                    return np.asarray(current, dtype=float).reshape(-1)
+        except Exception:
+            if backend == "cn":
+                return None
+        if backend == "cn":
+            return None
 
-    # --- scipy fallback ---
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         _, _, _, current = OERPhysics.solve_ode_system(params)

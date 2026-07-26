@@ -98,6 +98,7 @@ def _config(
     *,
     meta: Mapping[str, float] | None = None,
     fit_harmonics: Sequence[int] = (1, 2, 3),
+    solver_backend: str = "auto",
 ) -> InversionConfig:
     values = meta or {
         "E_start": 0.924,
@@ -126,6 +127,7 @@ def _config(
         param_specs=specs,
         fit_harmonics=tuple(int(h) for h in fit_harmonics),
         feature_mode=mode,
+        solver_backend=solver_backend,
     )
 
 
@@ -215,6 +217,7 @@ def _sampling_evidence(
         "fixed_params": ";".join(
             f"{name}={value:g}" for name, value in config.fixed_params
         ),
+        "solver_backend": config.solver_backend,
         "experimental_duration_s": experimental_duration,
         "simulated_duration_s": config.total_time,
         "experimental_scan_rate_v_s": experimental_scan_rate,
@@ -357,13 +360,14 @@ def run_comparison(
     trials: int,
     smoke: bool,
     workers: int = 1,
+    solver_backend: str = "auto",
 ) -> list[dict[str, Any]]:
     n_points = 256 if smoke else 1024
     initial = _base_parameters()
     jobs = []
 
     for mode in MODES:
-        config = _config(mode, n_points)
+        config = _config(mode, n_points, solver_backend=solver_backend)
         specs = config.param_specs
         target = make_synthetic_target(
             TRUTH,
@@ -398,6 +402,7 @@ def run_comparison(
                 n_points,
                 meta=analysis["meta"],
                 fit_harmonics=harmonics,
+                solver_backend=solver_backend,
             )
             specs = config.param_specs
             target = _experimental_target(rows, analysis, config)
@@ -439,6 +444,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--trials", type=int, default=50)
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--output", type=Path, default=OUT)
+    parser.add_argument(
+        "--solver-backend",
+        choices=("auto", "cn", "lsoda"),
+        default="auto",
+    )
     return parser.parse_args()
 
 
@@ -448,7 +458,12 @@ def main() -> None:
         raise ValueError("--trials must be positive")
     if args.workers < 1:
         raise ValueError("--workers must be positive")
-    rows = run_comparison(args.trials, args.smoke, args.workers)
+    rows = run_comparison(
+        args.trials,
+        args.smoke,
+        args.workers,
+        args.solver_backend,
+    )
     expected = len(MODES) * len(SEEDS) * (1 + len(DATASETS))
     if len(rows) != expected:
         raise RuntimeError(f"expected {expected} rows, got {len(rows)}")

@@ -18,6 +18,7 @@ from oer_aem.inversion import (
     decode_vector,
     denormalize_vector,
     encode_params,
+    forward_current,
     make_param_specs_from_physical_bounds,
     match_experimental_sampling,
     make_synthetic_target,
@@ -144,6 +145,7 @@ def test_synthetic_target_skips_unavailable_tafel_channel():
         n_points=256,
         points_per_cycle=32,
         feature_grid_size=32,
+        solver_backend="lsoda",
     )
     target = make_synthetic_target(
         TRUTH,
@@ -325,6 +327,7 @@ def test_sampling_evidence_records_reproducible_configuration():
         points_per_cycle=32,
         fit_harmonics=(1, 2, 3, 5),
         fixed_params=(("Ru", 25.0), ("Cdl", 1e-4)),
+        solver_backend="cn",
     )
     evidence = _sampling_evidence(config, {})
 
@@ -332,6 +335,7 @@ def test_sampling_evidence_records_reproducible_configuration():
     assert evidence["points_per_cycle"] == 32
     assert evidence["fit_harmonics"] == "1;2;3;5"
     assert evidence["fixed_params"] == "Ru=25;Cdl=0.0001"
+    assert evidence["solver_backend"] == "cn"
 
 
 def test_complex_mode_extracts_only_required_harmonics_below_nyquist():
@@ -373,3 +377,122 @@ def test_lockin_interpolation_wraps_phase_and_marks_filter_edges_invalid():
     assert mapped["valid_mask"].tolist() == [False, True, True, True, False]
     assert abs(abs(mapped["phase"][0][2]) - np.pi) < 0.06
     assert mapped["amplitude"][0][1:4] == pytest.approx(np.ones(3), abs=2e-3)
+
+
+def test_lsoda_backend_never_calls_cpp_solver(monkeypatch):
+    from oer_aem import cpp_bridge
+    from oer_aem.physics import OERPhysics
+
+    config = InversionConfig(
+        n_points=32,
+        points_per_cycle=32,
+        solver_backend="lsoda",
+    )
+    expected = np.linspace(0.0, 1.0, config.n_points)
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("C++ solver must not run for the lsoda backend")
+
+    def fake_lsoda(params):
+        return (
+            np.arange(config.n_points),
+            np.zeros((6, config.n_points)),
+            np.zeros(config.n_points),
+            expected,
+        )
+
+    monkeypatch.setattr(cpp_bridge, "is_available", fail_if_called)
+    monkeypatch.setattr(cpp_bridge, "solve_cn", fail_if_called)
+    monkeypatch.setattr(OERPhysics, "solve_ode_system", staticmethod(fake_lsoda))
+
+    current = forward_current(encode_params(TRUTH), config)
+
+    assert current == pytest.approx(expected)
+
+
+def test_cn_backend_does_not_silently_fallback_to_lsoda(monkeypatch):
+    from oer_aem import cpp_bridge
+    from oer_aem.physics import OERPhysics
+
+    config = InversionConfig(
+        n_points=32,
+        points_per_cycle=32,
+        solver_backend="cn",
+    )
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("LSODA fallback is forbidden for the cn backend")
+
+    monkeypatch.setattr(cpp_bridge, "is_available", lambda: False)
+    monkeypatch.setattr(OERPhysics, "solve_ode_system", staticmethod(fail_if_called))
+
+    assert forward_current(encode_params(TRUTH), config) is None
+
+
+def test_cn_backend_uses_same_steady_state_initial_condition_as_lsoda(monkeypatch):
+    from oer_aem import cpp_bridge
+    from oer_aem.physics import OERPhysics
+
+    config = InversionConfig(
+        n_points=32,
+        points_per_cycle=32,
+        solver_backend="cn",
+    )
+    expected_y0 = np.arange(6, dtype=float)
+    expected_current = np.linspace(0.0, 1.0, config.n_points)
+    received = {}
+
+    monkeypatch.setattr(cpp_bridge, "is_available", lambda: True)
+    monkeypatch.setattr(
+        OERPhysics,
+        "calculate_steady_state",
+        staticmethod(lambda params: expected_y0.copy()),
+    )
+
+    def fake_cn(params, y0=None):
+        received["y0"] = y0
+        return expected_current
+
+    monkeypatch.setattr(cpp_bridge, "solve_cn", fake_cn)
+
+    current = forward_current(encode_params(TRUTH), config)
+
+    assert current == pytest.approx(expected_current)
+    assert received["y0"] == pytest.approx(expected_y0)
+
+
+def test_auto_backend_falls_back_to_lsoda_when_cn_is_unavailable(monkeypatch):
+    from oer_aem import cpp_bridge
+    from oer_aem.physics import OERPhysics
+
+    config = InversionConfig(
+        n_points=32,
+        points_per_cycle=32,
+        solver_backend="auto",
+    )
+    expected = np.linspace(0.0, 1.0, config.n_points)
+
+    monkeypatch.setattr(cpp_bridge, "is_available", lambda: False)
+    monkeypatch.setattr(
+        OERPhysics,
+        "solve_ode_system",
+        staticmethod(
+            lambda params: (
+                np.arange(config.n_points),
+                np.zeros((6, config.n_points)),
+                np.zeros(config.n_points),
+                expected,
+            )
+        ),
+    )
+
+    current = forward_current(encode_params(TRUTH), config)
+
+    assert current == pytest.approx(expected)
+
+
+def test_forward_current_rejects_unknown_solver_backend():
+    config = InversionConfig(solver_backend="unknown")
+
+    with pytest.raises(ValueError, match="solver_backend"):
+        forward_current(encode_params(TRUTH), config)
