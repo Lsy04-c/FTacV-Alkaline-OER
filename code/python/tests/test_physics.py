@@ -2,10 +2,13 @@
 
 import sys
 import os
+from types import SimpleNamespace
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 import numpy as np
 import pytest
+import oer_aem.physics as physics_module
 from oer_aem import (
     apply_alkaline_aem,
     OERPhysics,
@@ -89,6 +92,39 @@ def test_ode_solver_runs():
     assert len(t) > 0
     assert not np.any(np.isnan(y))
     assert not np.any(np.isnan(i_total))
+
+
+def test_lsoda_uses_validated_initial_step_for_stiff_parameter_sets(monkeypatch):
+    """锁定 Gate A3 失败样本验证过的 LSODA 初始步长。"""
+    captured = {}
+
+    def fake_solve_ivp(**kwargs):
+        captured.update(kwargs)
+        t_eval = np.asarray(kwargs["t_eval"], dtype=float)
+        y0 = np.asarray(kwargs["y0"], dtype=float)
+        return SimpleNamespace(
+            success=True,
+            t=t_eval,
+            y=np.repeat(y0[:, None], len(t_eval), axis=1),
+            message="ok",
+        )
+
+    monkeypatch.setattr(physics_module, "solve_ivp", fake_solve_ivp)
+    params = initialize_oer_parameters()
+    params.update(
+        {
+            "n_points": 8,
+            "points_per_cycle": 8,
+            "total_time": 1.0,
+            "t_span": np.linspace(0.0, 1.0, 8),
+            "use_steady_state": False,
+        }
+    )
+
+    OERPhysics.solve_ode_system(params)
+
+    assert captured["method"] == "LSODA"
+    assert captured["first_step"] == pytest.approx(1e-8)
 
 
 def test_ode_coverage_trajectory_remains_physical_and_conserved():

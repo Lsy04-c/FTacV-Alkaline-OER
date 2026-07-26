@@ -21,7 +21,17 @@
 - 证据：`results/formal/solver_equivalence/formal-1becc12/`。
 - 完整性：CSV 列结构和 provenance 有效，但只有 156 行；sample 12、21 的 LSODA 失败，各以一行 harmonic 0 记录。
 - 数值失败：15 项 `lockin_phase_rmse_rad` 超阈值；sample 20 的 `dc_nrmse=0.0261167` 超过 0.01，并伴随 H7 相位失败。
-- 决策：不调整阈值、不删除失败样本、不将 6 样本 smoke 外推为正式通过。下一步先诊断 LSODA 失败，再按原失败路径评估 256 points/cycle。
+- LSODA 失败诊断：
+  - sample 12、21 均在 `t=0` 以 repeated convergence failures /
+    `Unexpected istate` 失败，初值有限且覆盖度总和为 1；
+  - 已验证的直接失败机制是高速率参数组合下 LSODA 自动初始步长路径
+    不稳定；不是长扫描累积误差或 NaN 初值。更广参数空间的充分性仍待验证；
+  - 显式 `first_step=1e-8` 后，同一 24 个参数向量在 Legion 上
+    24/24 完成、0 条警告，总 LSODA wall time 147.274 s；
+  - 已增加求解配置回归测试，Mac Python 测试 103 项通过。
+- 决策：原 Gate A3 证据和 **FAIL** 结论保持不变；修复只恢复参考求解器
+  可用性，不能消除 CN 的相位偏差和 sample 20 DC 偏差。下一步按原失败
+  路径以新 commit 独立评估 256 points/cycle。
 
 项目：碱性 OER AEM 微观动力学建模与 FTacV 参数反演平台
 负责人：刘拾玉
