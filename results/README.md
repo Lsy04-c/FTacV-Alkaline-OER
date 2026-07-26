@@ -18,6 +18,10 @@
 正式等价性失败证据。该目录属于正式预算结果，但 Gate A3 为 FAIL，
 不能作为 CN 可进入正式搜索的依据。
 
+`formal/solver_equivalence/formal-a4581de-ppc256/` 保存 LSODA 初始步修复后、
+256 points/cycle 的独立正式失败证据。结构完整且两求解器均成功，但仍有
+22 项锁相相位误差超阈值，因此增加采样密度未关闭 Gate A3。
+
 ## Smoke
 
 `smoke/architecture_validation/feature_objective_comparison_3trial.csv` 是 3-trial 流程检查。它不替代正式 feature comparison。

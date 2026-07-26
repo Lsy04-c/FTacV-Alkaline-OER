@@ -1,0 +1,20 @@
+{
+  "source_commit": "a4581dea2d8d3fcd9c537e56c0257c740d02aaa0",
+  "samples": 24,
+  "seed": 17,
+  "cycles": 256,
+  "points_per_cycle": 256,
+  "resolvability_fraction": 0.02,
+  "python_version": "3.11.2",
+  "numpy_version": "2.4.6",
+  "scipy_version": "1.17.1",
+  "optuna_version": "4.9.0",
+  "library_sha256": "b40172f8a2f8f4a202a04e82d92f6da8e633b159de2c0d0b54831284cd644bef",
+  "script_sha256": "11c8ee29b0318f2eefaef76bf956b2a52589a576a8d019919ef86055e762a885",
+  "started_at_cst": "2026-07-26T21:42:02+0800",
+  "execution_mode": "systemd-run --user",
+  "systemd_unit": "oer-a3-ppc256-a4581de",
+  "worktree": "/home/lsy/OER-FTAcV-run-a4581de",
+  "python_executable": "/home/lsy/OER-FTAcV/.venv/bin/python",
+  "command": "/home/lsy/OER-FTAcV/.venv/bin/python code/python/scripts/validate_solver_equivalence.py --samples 24 --seed 17 --cycles 256 --points-per-cycle 256 --output-dir results/formal/solver_equivalence/formal-a4581de-ppc256"
+}

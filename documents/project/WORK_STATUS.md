@@ -33,6 +33,26 @@
   可用性，不能消除 CN 的相位偏差和 sample 20 DC 偏差。下一步按原失败
   路径以新 commit 独立评估 256 points/cycle。
 
+## 0.2 Gate A3 256 points/cycle 独立正式门（2026-07-26）
+
+- 状态：**SCIENTIFIC FAIL**，CN 继续禁止进入正式搜索。
+- 配置：commit `a4581dea2d8`，24 samples，seed 17，256 cycles，
+  256 points/cycle；阈值和 2% 可解析性规则未修改。
+- 执行：Legion 独立 worktree，`systemd-run --user`；Python 3.11.2、
+  NumPy 2.4.6、SciPy 1.17.1、Optuna 4.9.0。
+- 完整性：168 行、24 个样本、每个样本 H1–H7；所有指标有限，
+  LSODA/CN 全部成功，manifest 的 commit、环境和源码/动态库哈希完整。
+- 科学失败：22 项 `lockin_phase_rmse_rad` 超阈值，涉及 sample
+  0、6、8、9、12、17、20、21；低阶 H2/H3 仍在 sample 0、8、9、17
+  失败。
+- 对照：128 点门中的 LSODA 缺行和 sample 20 DC NRMSE 失败已消失，
+  但主要锁相相位偏差没有随 128→256 points/cycle 收敛，不能归因于输出
+  采样密度不足。
+- 证据：`results/formal/solver_equivalence/formal-a4581de-ppc256/`。
+- 决策：停止继续通过提高 points/cycle 修补 CN；底层架构后续使用 LSODA
+  作为唯一正式后端。若未来重新开发 CN，必须先诊断离散方程/相位传播，
+  再注册新的独立等价性门。
+
 项目：碱性 OER AEM 微观动力学建模与 FTacV 参数反演平台
 负责人：刘拾玉
 目标体系：Co3O4 / CoOx(OH)y 碱性 OER

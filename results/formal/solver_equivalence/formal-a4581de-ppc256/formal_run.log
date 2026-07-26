@@ -1,0 +1,25 @@
+sample 1/24
+sample 2/24
+sample 3/24
+sample 4/24
+sample 5/24
+sample 6/24
+sample 7/24
+sample 8/24
+sample 9/24
+sample 10/24
+sample 11/24
+sample 12/24
+sample 13/24
+sample 14/24
+sample 15/24
+sample 16/24
+sample 17/24
+sample 18/24
+sample 19/24
+sample 20/24
+sample 21/24
+sample 22/24
+sample 23/24
+sample 24/24
+SOLVER_EQUIVALENCE passed=False failures=22 output=results/formal/solver_equivalence/formal-a4581de-ppc256/solver_equivalence_summary.json
