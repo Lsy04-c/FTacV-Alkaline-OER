@@ -30,6 +30,10 @@
 
 `smoke/architecture_validation/feature_objective_comparison_3trial.csv` 是 3-trial 流程检查。它不替代正式 feature comparison。
 
+`smoke/architecture_validation/feature_mode_separation/` 保存 commit
+`e042a00` 上四种目标模式的 1-trial 流程证据。60 行验证模式调度和损失
+分量语义，不用于模式精度排名。
+
 ## Diagnostics
 
 | 路径 | 内容 |

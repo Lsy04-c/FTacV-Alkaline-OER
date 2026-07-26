@@ -72,6 +72,25 @@
   反演精度，也不使低于可解析门的 H4–H7 自动进入拟合。
 - 下一步：A5 拆分真正的 `lockin_only` 与 `hybrid`，输出独立损失分量。
 
+## 0.4 A5 目标模式语义拆分（2026-07-26）
+
+- 状态：接口拆分完成，正式精度比较尚未开始。
+- commit：`e042a00`。
+- 固定语义：
+  - `legacy`：DC + 历史谐波 envelope + physical；
+  - `complex_snr`：DC + 全局复数谐波 + physical；
+  - `lockin_only`：DC + 电位分辨锁相复数谐波 + physical；
+  - `hybrid`：DC + 全局复数 + 锁相复数 + physical。
+- 兼容：历史 `combined` 继续按 `hybrid` 执行，但新结果不再使用该名称。
+- 损失审计：锁相 amplitude/phase 已分别拆成 H1–H3 common 与 H4–H7
+  dataset-specific；未启用的分量显式为 0。
+- Legion smoke：8 workers、LSODA、每模式/数据集/种子 1 trial；共 60 行，
+  四模式各 15 行，所有共同评价指标和损失字段有限，模式语义泄漏检查通过。
+- 证据：`results/smoke/architecture_validation/feature_mode_separation/`。
+- 边界：不同模式的活动观测块数量不同，`total_loss` 不可跨模式排名；
+  该 smoke 只证明接口和证据链可运行，不证明 lock-in 或 hybrid 提高精度。
+- 下一步：冻结共同评价指标、参数库和正式预算，再进行配对精度比较。
+
 项目：碱性 OER AEM 微观动力学建模与 FTacV 参数反演平台
 负责人：刘拾玉
 目标体系：Co3O4 / CoOx(OH)y 碱性 OER

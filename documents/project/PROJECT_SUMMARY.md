@@ -287,15 +287,25 @@ sample 20 的 DC NRMSE 为 2.61%，超过 1% 门。正式 CSV 因两个参考
   - `code/python/scripts/compare_feature_grids.py`
   - `results/formal/architecture_validation/grid_convergence.csv`
 - 128 点特征网格是当前候选值，但既有收敛证据样本量不足。
+- 模式语义已严格拆分：
+  - `legacy`；
+  - `complex_snr`；
+  - 真正不含全局复数项的 `lockin_only`；
+  - 同时包含全局复数和锁相项的 `hybrid`。
+- 锁相损失已拆成 common/dataset-specific 的 amplitude/phase 四个分量。
+- 1-trial Legion smoke 为 60 行，四模式调度一致且损失字段有限：
+  - `results/smoke/architecture_validation/feature_mode_separation/`。
 
 ### 文件总结
 
-当前名为 `lockin_only` 的模式仍包含全局 Complex-SNR，不能用于单独归因锁相特征的贡献。现有 3-trial smoke 只证明流程可运行，不是正式精度证据。
+`lockin_only` 与 `hybrid` 的代码语义现在可独立归因。现有 1-trial/3-trial
+smoke 只证明流程可运行，不是正式精度证据；不同模式的 `total_loss` 也
+不能直接横向排名。
 
 ### 未达成与路径规划
 
-1. 将模式拆为 `legacy`、`complex_snr`、真正的 `lockin_only` 和最小 `hybrid`。
-2. 每个模式输出独立损失分量、有效通道、权重和缺失通道原因。
+1. 模式拆分和独立损失分量已完成。
+2. 下一步补齐有效通道、权重和缺失通道原因的正式证据字段。
 3. 用固定参数库验证 64/128/256/full-grid 的特征与损失收敛。
 4. 再用多种子小预算反演确认 128 点不会改变参数排序。
 5. Gate A5：模式可独立归因、损失口径冻结、网格收敛通过后，才能进入层级 B。

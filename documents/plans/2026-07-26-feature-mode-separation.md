@@ -36,15 +36,15 @@ Optuna smoke。
 - Modify: `code/python/tests/test_inversion.py`
 - Modify: `code/python/src/oer_aem/inversion.py`
 
-- [ ] 写失败测试，要求 `make_synthetic_target(lockin_only)` 含 `lockin`
+- [x] 写失败测试，要求 `make_synthetic_target(lockin_only)` 含 `lockin`
   但不含 `complex_harmonics`。
-- [ ] 写失败测试，要求 `make_synthetic_target(hybrid)` 同时包含两者。
-- [ ] 写失败测试，要求 lockin_only 的全局损失分量严格为 0，修改锁相
+- [x] 写失败测试，要求 `make_synthetic_target(hybrid)` 同时包含两者。
+- [x] 写失败测试，要求 lockin_only 的全局损失分量严格为 0，修改锁相
   amplitude 后只有锁相 amplitude 分量增加。
-- [ ] 运行目标测试并确认因现有语义而失败。
-- [ ] 最小修改 `extract_features()` 和 `InversionObjective` 的模式分支。
-- [ ] 接受 `combined` 但按 hybrid 执行；未知模式继续抛出明确错误。
-- [ ] 运行目标测试并确认通过。
+- [x] 运行目标测试并确认因现有语义而失败。
+- [x] 最小修改 `extract_features()` 和 `InversionObjective` 的模式分支。
+- [x] 接受 `combined` 但按 hybrid 执行；未知模式继续抛出明确错误。
+- [x] 运行目标测试并确认通过。
 
 ## Task 2：损失分量拆分
 
@@ -52,11 +52,11 @@ Optuna smoke。
 - Modify: `code/python/src/oer_aem/inversion.py`
 - Modify: `code/python/tests/test_inversion.py`
 
-- [ ] 将锁相 amplitude 和 phase 分别拆为 common（H1–H3）与
+- [x] 将锁相 amplitude 和 phase 分别拆为 common（H1–H3）与
   dataset-specific（H4–H7）。
-- [ ] ODE 失败行返回与成功路径完全相同的 component schema。
-- [ ] 测试 H4 target 扰动只增加 dataset-specific 锁相分量。
-- [ ] 不改变现有 sigma、phase_weight、SNR 或总损失归一化公式。
+- [x] ODE 失败行返回与成功路径完全相同的 component schema。
+- [x] 测试 H4 target 扰动只增加 dataset-specific 锁相分量。
+- [x] 不改变现有 sigma、phase_weight、SNR 或总损失归一化公式。
 
 固定 component schema：
 
@@ -82,12 +82,12 @@ legacy/global 块；未启用的块必须为 0。
 - Modify: `code/python/tests/test_inversion.py`
 - Create: `results/smoke/architecture_validation/feature_mode_separation/`
 
-- [ ] 新模式顺序固定为 legacy、complex_snr、lockin_only、hybrid。
-- [ ] `_experimental_target()` 按固定语义只构建所需观测块。
-- [ ] CSV 新增四个锁相损失分量列，旧全局列语义保持。
-- [ ] 运行 synthetic 单 seed、每模式 1 trial smoke；只验证流程、字段和
+- [x] 新模式顺序固定为 legacy、complex_snr、lockin_only、hybrid。
+- [x] `_experimental_target()` 按固定语义只构建所需观测块。
+- [x] CSV 新增四个锁相损失分量列，旧全局列语义保持。
+- [x] 运行 synthetic 单 seed、每模式 1 trial smoke；只验证流程、字段和
   共同指标有限，不评价模式优劣。
-- [ ] smoke 使用 LSODA，不重新启用 CN。
+- [x] smoke 使用 LSODA，不重新启用 CN。
 
 ## Task 4：验证、文档与版本
 
@@ -97,9 +97,9 @@ legacy/global 块；未启用的块必须为 0。
 - Modify: `documents/corrections/项目纠错.md`
 - Modify: `results/README.md`
 
-- [ ] 运行 Python 全量、Web 后端、Markdown 审计和 `git diff --check`。
-- [ ] 明确记录 A5 仅完成接口拆分，正式精度比较仍未开始。
-- [ ] 只提交代码、测试、小预算 smoke 和对应文档并推送。
+- [x] 运行 Python 全量、Web 后端、Markdown 审计和 `git diff --check`。
+- [x] 明确记录 A5 仅完成接口拆分，正式精度比较仍未开始。
+- [x] 只提交代码、测试、小预算 smoke 和对应文档并推送。
 
 ## 压力测试结论
 
