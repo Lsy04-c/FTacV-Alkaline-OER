@@ -10,6 +10,7 @@ from oer_aem.recovery import (
     estimate_white_noise_fraction,
     noise_fraction_evidence,
     recovery_metrics,
+    select_trial_budget,
     truth_library,
 )
 
@@ -106,3 +107,40 @@ def test_noise_fraction_estimator_falls_back_to_quantization_floor():
     assert evidence["method"] == "quantization_floor"
     assert evidence["zero_difference_fraction"] > 0.5
     assert evidence["quantization_step"] == pytest.approx(0.01)
+
+
+def test_budget_selection_rejects_unstable_20_and_accepts_50():
+    rows = []
+    for mode in ("legacy", "hybrid"):
+        for seed in (7, 17, 27):
+            reference = 0.10 + 0.001 * seed
+            for trials, error, boundaries in (
+                (20, reference + 0.10, ["k0_1"]),
+                (50, reference + 0.01, []),
+                (100, reference, []),
+            ):
+                rows.append(
+                    {
+                        "feature_mode": mode,
+                        "truth_id": "mixed_b",
+                        "noise_fraction": 0.0015,
+                        "seed": seed,
+                        "trials": trials,
+                        "success": True,
+                        "parameter_metrics": {
+                            "max_normalized_bound_error": error,
+                            "boundary_hits": boundaries,
+                        },
+                    }
+                )
+
+    selection = select_trial_budget(rows)
+
+    assert selection["selected_trials"] == 50
+    assert selection["budgets"]["20"]["passed"] is False
+    assert selection["budgets"]["50"]["passed"] is True
+    assert selection["thresholds"] == {
+        "median_paired_error_delta_max": 0.02,
+        "p90_paired_error_delta_max": 0.05,
+        "boundary_set_agreement_min": 0.8,
+    }

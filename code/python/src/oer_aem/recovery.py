@@ -176,3 +176,95 @@ def build_budget_pilot_jobs(
             )
         )
     return jobs
+
+
+def select_trial_budget(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Select the smallest pilot budget stable against the largest budget."""
+    thresholds = {
+        "median_paired_error_delta_max": 0.02,
+        "p90_paired_error_delta_max": 0.05,
+        "boundary_set_agreement_min": 0.8,
+    }
+    budgets = sorted({int(row["trials"]) for row in rows})
+    if len(budgets) < 2:
+        raise ValueError("budget selection requires at least two trial budgets")
+    reference_budget = budgets[-1]
+
+    def pair_key(row: Mapping[str, Any]) -> tuple[Any, ...]:
+        return (
+            row["feature_mode"],
+            row["truth_id"],
+            float(row["noise_fraction"]),
+            int(row["seed"]),
+        )
+
+    by_budget = {
+        budget: {
+            pair_key(row): row
+            for row in rows
+            if int(row["trials"]) == budget
+        }
+        for budget in budgets
+    }
+    reference = by_budget[reference_budget]
+    summaries: dict[str, Any] = {}
+    for budget in budgets:
+        candidate = by_budget[budget]
+        common = sorted(set(reference) & set(candidate))
+        deltas = []
+        boundary_matches = []
+        success = len(common) == len(reference) and bool(common)
+        for key in common:
+            left = candidate[key]
+            right = reference[key]
+            success = success and bool(left["success"]) and bool(right["success"])
+            deltas.append(
+                abs(
+                    float(
+                        left["parameter_metrics"]["max_normalized_bound_error"]
+                    )
+                    - float(
+                        right["parameter_metrics"]["max_normalized_bound_error"]
+                    )
+                )
+            )
+            boundary_matches.append(
+                set(left["parameter_metrics"]["boundary_hits"])
+                == set(right["parameter_metrics"]["boundary_hits"])
+            )
+        median_delta = float(np.median(deltas)) if deltas else float("inf")
+        p90_delta = float(np.quantile(deltas, 0.9)) if deltas else float("inf")
+        boundary_agreement = (
+            float(np.mean(boundary_matches)) if boundary_matches else 0.0
+        )
+        passed = (
+            success
+            and median_delta
+            <= thresholds["median_paired_error_delta_max"]
+            and p90_delta <= thresholds["p90_paired_error_delta_max"]
+            and boundary_agreement
+            >= thresholds["boundary_set_agreement_min"]
+        )
+        if budget == reference_budget:
+            passed = success
+        summaries[str(budget)] = {
+            "passed": bool(passed),
+            "paired_cases": len(common),
+            "median_paired_error_delta": median_delta,
+            "p90_paired_error_delta": p90_delta,
+            "boundary_set_agreement": boundary_agreement,
+        }
+    selected = next(
+        (
+            budget
+            for budget in budgets
+            if summaries[str(budget)]["passed"]
+        ),
+        reference_budget,
+    )
+    return {
+        "selected_trials": selected,
+        "reference_trials": reference_budget,
+        "thresholds": thresholds,
+        "budgets": summaries,
+    }

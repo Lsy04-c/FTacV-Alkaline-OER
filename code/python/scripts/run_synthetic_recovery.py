@@ -27,6 +27,7 @@ from oer_aem.recovery import (
     build_budget_pilot_jobs,
     build_recovery_jobs,
     recovery_metrics,
+    select_trial_budget,
     truth_library,
 )
 
@@ -255,6 +256,8 @@ def main(argv: list[str] | None = None) -> None:
         "source_commit": source_commit,
         "dirty": dirty,
     }
+    if args.phase == "pilot":
+        summary["budget_selection"] = select_trial_budget(rows)
     (output / "summary.json").write_text(
         json.dumps(summary, indent=2, ensure_ascii=False) + "\n"
     )
