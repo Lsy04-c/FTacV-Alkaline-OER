@@ -70,7 +70,7 @@ def build_manifest(run_tests: bool) -> dict[str, object]:
                     python,
                     "-m",
                     "pytest",
-                    "code/web/backend/test_analyze_e2e.py",
+                    "code/web/tests/backend/test_analyze_e2e.py",
                     "-q",
                 ]
             ),

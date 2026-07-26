@@ -142,7 +142,7 @@ feature candidate, but the H1-H3 regression prevents an unconditional
 replacement of the legacy envelope loss. The next objective should combine
 the accepted complex coefficients with an explicit common-H1-H3 safeguard.
 
-![Feature-objective evidence](../results/architecture_validation/feature_objective_comparison.png)
+![Feature-objective evidence](../../results/formal/architecture_validation/feature_objective_comparison.png)
 
 ## 7. M0 versus M1
 
@@ -171,7 +171,7 @@ harmonic, complexity, and stability failures. The fixed gate rejects M1, so
 the project does not run M2. The 24 recorded runs consumed `17577.0`
 cumulative worker-seconds under parallel execution.
 
-![Reconstruction-model evidence](../results/architecture_validation/reconstruction_model_comparison.png)
+![Reconstruction-model evidence](../../results/formal/architecture_validation/reconstruction_model_comparison.png)
 
 ## 8. Failed checks and risks
 

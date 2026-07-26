@@ -161,8 +161,8 @@ def main() -> None:
             {
                 "command": (
                     "python code/python/scripts/run_tests.py "
-                    "code/web/backend/test_analyze_e2e.py "
-                    "code/web/backend/test_inversion_api.py -q"
+                    "code/web/tests/backend/test_analyze_e2e.py "
+                    "code/web/tests/backend/test_inversion_api.py -q"
                 ),
                 "result": "3 passed, 1 third-party warning",
                 "runtime_seconds": 6.67,

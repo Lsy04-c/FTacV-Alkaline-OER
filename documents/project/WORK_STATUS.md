@@ -1,4 +1,17 @@
-# OER-FTAcV 工作进展总结（2026-07-18，更新：2026-07-20）
+# OER-FTAcV 工作进展总结（2026-07-18，更新：2026-07-26）
+
+## 0. 目录重分类状态（2026-07-26）
+
+- 状态：已完成代码、文档和结果证据的目录迁移，当前分支为 `codex/reclassify-project`。
+- 代码：Python、MATLAB、C++、Web 分别位于 `code/python/`、`code/matlab/`、`code/cpp/`、`code/web/`。
+- 文档：项目状态、纠错、计划、规格、研究、环境和交接材料统一位于 `documents/` 的对应分类目录。
+- 结果：正式证据、小预算流程检查和诊断结果分别位于 `results/formal/`、`results/smoke/`、`results/diagnostics/`。
+- 索引规则：根 `README.md` 说明仓库入口和放置原则，`documents/README.md` 说明文档分类；后续新增内容必须遵守两者。
+- 隐私边界：`documents/environment/private/`、`documents/handoffs/` 和 `code/cpp/build/` 仅本机保留，不提交。
+- 迁移验证：最终 Python 101 项通过（含目录布局 4 项、Markdown 审计 3 项）；Web 后端 3 项通过（另有 1 条 Starlette 弃用警告）；macOS C++ 动态库构建和 bridge 测试通过。
+- Web 前端：当前为静态 `index.html`，没有构建脚本，不把 `npm run build` 作为验收门。
+- 关联提交：`f6acdec`、`d9504fd`、`f4adb58`，均已推送至远端当前分支。
+- 保留范围：实验性 C++、`_rhs_jit.py`、潜在分辨谐波计划和旧工作流总结仍是本机未提交文件，本次分类不得纳入。
 
 项目：碱性 OER AEM 微观动力学建模与 FTacV 参数反演平台
 负责人：刘拾玉

@@ -46,3 +46,19 @@ def test_code_and_document_indexes_exist():
     }
     missing = sorted(path for path in required if not (ROOT / path).is_file())
     assert missing == []
+
+
+def test_active_validation_scripts_use_classified_web_test_paths():
+    scripts = [
+        ROOT / "code/python/scripts/audit_workspace_baseline.py",
+        ROOT / "code/python/scripts/build_validation_manifest.py",
+    ]
+    obsolete = []
+    for script in scripts:
+        for line_number, line in enumerate(
+            script.read_text(encoding="utf-8").splitlines(),
+            start=1,
+        ):
+            if "code/web/backend/test_" in line:
+                obsolete.append(f"{script.relative_to(ROOT)}:{line_number}")
+    assert obsolete == []
