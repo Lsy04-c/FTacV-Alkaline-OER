@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections import defaultdict
 from itertools import product
 from typing import Any, Mapping, Sequence
 
@@ -267,4 +268,77 @@ def select_trial_budget(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "reference_trials": reference_budget,
         "thresholds": thresholds,
         "budgets": summaries,
+    }
+
+
+def summarize_recovery(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    parameter_names: Sequence[str],
+) -> dict[str, Any]:
+    """Aggregate paired seed recovery ranges without claiming confidence intervals."""
+    grouped: dict[tuple[Any, ...], list[Mapping[str, Any]]] = defaultdict(list)
+    for row in rows:
+        key = (
+            row["feature_mode"],
+            row["truth_id"],
+            float(row["noise_fraction"]),
+            int(row["trials"]),
+        )
+        grouped[key].append(row)
+    summaries = []
+    for key in sorted(grouped):
+        mode, truth_id, noise_fraction, trials = key
+        members = grouped[key]
+        parameters = {}
+        for name in parameter_names:
+            estimates = np.asarray(
+                [float(row["best_params"][name]) for row in members],
+                dtype=float,
+            )
+            truth = float(members[0]["truth_params"][name])
+            errors = np.asarray(
+                [
+                    float(
+                        row["parameter_metrics"][name][
+                            "normalized_bound_error"
+                        ]
+                    )
+                    for row in members
+                ],
+                dtype=float,
+            )
+            boundary_hits = [
+                bool(row["parameter_metrics"][name]["boundary_hit"])
+                for row in members
+            ]
+            seed_min = float(np.min(estimates))
+            seed_max = float(np.max(estimates))
+            parameters[name] = {
+                "truth": truth,
+                "seed_min": seed_min,
+                "seed_max": seed_max,
+                "truth_covered_by_seed_range": seed_min <= truth <= seed_max,
+                "median_normalized_bound_error": float(np.median(errors)),
+                "max_normalized_bound_error": float(np.max(errors)),
+                "boundary_hit_rate": float(np.mean(boundary_hits)),
+            }
+        summaries.append(
+            {
+                "feature_mode": mode,
+                "truth_id": truth_id,
+                "noise_fraction": noise_fraction,
+                "trials": trials,
+                "seeds": sorted(int(row["seed"]) for row in members),
+                "all_success": all(bool(row["success"]) for row in members),
+                "parameters": parameters,
+            }
+        )
+    return {
+        "group_count": len(summaries),
+        "groups": summaries,
+        "interval_semantics": (
+            "Seed min/max is an optimizer-stability range, not a statistical "
+            "confidence interval."
+        ),
     }

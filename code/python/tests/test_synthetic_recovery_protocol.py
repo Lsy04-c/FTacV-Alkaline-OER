@@ -11,6 +11,7 @@ from oer_aem.recovery import (
     noise_fraction_evidence,
     recovery_metrics,
     select_trial_budget,
+    summarize_recovery,
     truth_library,
 )
 
@@ -144,3 +145,36 @@ def test_budget_selection_rejects_unstable_20_and_accepts_50():
         "p90_paired_error_delta_max": 0.05,
         "boundary_set_agreement_min": 0.8,
     }
+
+
+def test_recovery_summary_reports_seed_range_coverage():
+    rows = []
+    for seed, estimate in ((7, 8.0), (17, 10.0), (27, 12.0)):
+        rows.append(
+            {
+                "feature_mode": "legacy",
+                "truth_id": "center",
+                "truth_params": {"rate": 10.0},
+                "noise_fraction": 0.0,
+                "seed": seed,
+                "trials": 50,
+                "success": True,
+                "best_params": {"rate": estimate},
+                "parameter_metrics": {
+                    "rate": {
+                        "normalized_bound_error": abs(estimate - 10.0) / 100.0,
+                        "boundary_hit": False,
+                    },
+                    "boundary_hits": [],
+                    "max_normalized_bound_error": abs(estimate - 10.0) / 100.0,
+                },
+            }
+        )
+
+    summary = summarize_recovery(rows, parameter_names=("rate",))
+    parameter = summary["groups"][0]["parameters"]["rate"]
+
+    assert parameter["seed_min"] == 8.0
+    assert parameter["seed_max"] == 12.0
+    assert parameter["truth_covered_by_seed_range"] is True
+    assert parameter["boundary_hit_rate"] == 0.0

@@ -28,6 +28,7 @@ from oer_aem.recovery import (
     build_recovery_jobs,
     recovery_metrics,
     select_trial_budget,
+    summarize_recovery,
     truth_library,
 )
 
@@ -255,6 +256,12 @@ def main(argv: list[str] | None = None) -> None:
         "n_tafel_fail": sum(row["n_tafel_fail"] for row in rows),
         "source_commit": source_commit,
         "dirty": dirty,
+        "recovery_summary": summarize_recovery(
+            rows,
+            parameter_names=tuple(
+                name for name, *_ in DEFAULT_PARAM_SPECS
+            ),
+        ),
     }
     if args.phase == "pilot":
         summary["budget_selection"] = select_trial_budget(rows)
