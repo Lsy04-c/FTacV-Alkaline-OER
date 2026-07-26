@@ -91,6 +91,31 @@
   该 smoke 只证明接口和证据链可运行，不证明 lock-in 或 hybrid 提高精度。
 - 下一步：冻结共同评价指标、参数库和正式预算，再进行配对精度比较。
 
+## 0.5 Gate A5 固定参数库网格收敛（2026-07-26）
+
+- 状态：**PASS**，冻结 `feature_grid_size=128`。
+- commit：`44a020e7e950`。
+- 配置：legacy、complex_snr、lockin_only、hybrid；64/128/256/full；
+  8 个 seed 23 分层参数候选；5 Hz、256 cycles、32 points/cycle；LSODA。
+- 设计：不运行 TPE，只比较同一 mode/candidate 跨网格的损失、共同 DC、
+  共同 H1–H3 和候选损失排序。
+- 执行：Legion 8 workers，每 worker 一个 OMP/OpenBLAS/MKL/NumExpr
+  线程。
+- 完整性：128 行、16 个 mode/grid 组、每组 8 个候选；ODE 全部成功，
+  所有损失和共同指标有限，参数库哈希与 provenance 完整。
+- 128 vs full：
+  - 最坏 total-loss 相对误差 0.01181；
+  - 最坏 common DC RMSE 相对误差 0.00384；
+  - 最坏 common H1–H3 RMSE 相对误差 0.00375；
+  - 四模式 Spearman 均为 1.0。
+- 256 vs full 最坏 total-loss 相对误差 0.00505，但不足以证明双倍网格
+  成本有必要。
+- 证据：`results/formal/feature_grid_convergence/gate-a5-grid-44a020e/`。
+- 决策：后续正式精度比较统一使用 128 点；旧单 target 网格证据保留为
+  历史，不再承担 Gate 结论。
+- 下一步：A6 复核 signed sensitivity 并冻结最终自由参数集；在 A6 前不
+  启动四模式正式 TPE。
+
 项目：碱性 OER AEM 微观动力学建模与 FTacV 参数反演平台
 负责人：刘拾玉
 目标体系：Co3O4 / CoOx(OH)y 碱性 OER

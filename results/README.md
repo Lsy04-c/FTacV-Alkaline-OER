@@ -26,6 +26,10 @@
 抗混叠 2×/4×降采样和单端 10% 截断下的正式锁相稳定性证据。112 行结构
 完整，Gate A4 为 PASS；该结论只支持信号层稳定，不代表反演精度提高。
 
+`formal/feature_grid_convergence/gate-a5-grid-44a020e/` 保存四模式、四网格、
+8 个固定参数候选的 128 行正式收敛证据。Gate PASS，后续正式比较冻结
+`feature_grid_size=128`。
+
 ## Smoke
 
 `smoke/architecture_validation/feature_objective_comparison_3trial.csv` 是 3-trial 流程检查。它不替代正式 feature comparison。

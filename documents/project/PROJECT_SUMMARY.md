@@ -286,7 +286,12 @@ sample 20 的 DC NRMSE 为 2.61%，超过 1% 门。正式 CSV 因两个参考
 - `feature_grid_size` 与损失点数尺度已修正：
   - `code/python/scripts/compare_feature_grids.py`
   - `results/formal/architecture_validation/grid_convergence.csv`
-- 128 点特征网格是当前候选值，但既有收敛证据样本量不足。
+- 固定参数库正式网格门已通过：
+  - 四模式 × 64/128/256/full × 8 候选，共 128 行；
+  - 128 vs full 最坏总损失误差 1.18%，共同 DC/H1–H3 均小于 0.4%；
+  - 四模式损失排序 Spearman 均为 1.0；
+  - 后续冻结 `feature_grid_size=128`；
+  - `results/formal/feature_grid_convergence/gate-a5-grid-44a020e/`。
 - 模式语义已严格拆分：
   - `legacy`；
   - `complex_snr`；
@@ -306,8 +311,9 @@ smoke 只证明流程可运行，不是正式精度证据；不同模式的 `tot
 
 1. 模式拆分和独立损失分量已完成。
 2. 下一步补齐有效通道、权重和缺失通道原因的正式证据字段。
-3. 用固定参数库验证 64/128/256/full-grid 的特征与损失收敛。
-4. 再用多种子小预算反演确认 128 点不会改变参数排序。
+3. 固定参数库的 64/128/256/full-grid 特征与损失收敛已 PASS。
+4. 正式反演统一使用 128 点；优化随机性比较转入层级 B，不再重复用 TPE
+   证明纯数值网格。
 5. Gate A5：模式可独立归因、损失口径冻结、网格收敛通过后，才能进入层级 B。
 
 ### 纠错与失败路径

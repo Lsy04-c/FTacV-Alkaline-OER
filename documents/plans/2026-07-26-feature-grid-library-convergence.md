@@ -68,10 +68,10 @@ CSV/JSON、pytest。
 - Create: `code/python/scripts/validate_feature_grid_convergence.py`
 - Create: `code/python/tests/test_feature_grid_convergence.py`
 
-- [ ] 测试参数库确定性、形状为 8×参数数、严格位于 10%–90% 边界。
-- [ ] 测试零参考值时相对误差使用绝对容差，不能产生 inf/NaN。
-- [ ] 测试 128 点 max error 5.1% 或 Spearman 0.98 时 Gate FAIL。
-- [ ] 实现最小 helper 并完成 RED→GREEN。
+- [x] 测试参数库确定性、形状为 8×参数数、严格位于 10%–90% 边界。
+- [x] 测试零参考值时相对误差使用绝对容差，不能产生 inf/NaN。
+- [x] 测试 128 点 max error 5.1% 或 Spearman 0.98 时 Gate FAIL。
+- [x] 实现最小 helper 并完成 RED→GREEN。
 
 ## Task 2：正式证据入口
 
@@ -79,10 +79,10 @@ CSV/JSON、pytest。
 - Modify: `code/python/scripts/validate_feature_grid_convergence.py`
 - Modify: `code/python/tests/test_feature_grid_convergence.py`
 
-- [ ] 每个 worker 构造相同 truth/候选，使用 LSODA 评价一个任务。
-- [ ] 未启用损失分量显式为 0，字段与 A5 component schema 一致。
-- [ ] 主进程排序并写 128 行 CSV、summary、input/config hash 和 provenance。
-- [ ] 串行与 8-worker 单模式 smoke 必须逐字段一致（runtime 除外）。
+- [x] 每个 worker 构造相同 truth/候选，使用 LSODA 评价一个任务。
+- [x] 未启用损失分量显式为 0，字段与 A5 component schema 一致。
+- [x] 主进程排序并写 128 行 CSV、summary、input/config hash 和 provenance。
+- [x] 串行与 8-worker 单模式 smoke 必须逐字段一致（runtime 除外）。
 
 ## Task 3：运行、验收和项目状态
 
@@ -93,10 +93,10 @@ CSV/JSON、pytest。
 - Modify: `documents/corrections/项目纠错.md`
 - Modify: `results/README.md`
 
-- [ ] 在 Legion 固定 commit 上用 8 workers 正式运行。
-- [ ] 验收 128 行、32 个 mode/grid 组、有限值、后端、配置和 provenance。
-- [ ] PASS 时冻结 128；FAIL 时保留真实失败并停止四模式正式 TPE。
-- [ ] 运行全量测试、审计、提交并推送。
+- [x] 在 Legion 固定 commit 上用 8 workers 正式运行。
+- [x] 验收 128 行、32 个 mode/grid 组、有限值、后端、配置和 provenance。
+- [x] PASS 时冻结 128；FAIL 时保留真实失败并停止四模式正式 TPE。
+- [x] 运行全量测试、审计、提交并推送。
 
 ## 压力测试结论
 
