@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from itertools import product
 from typing import Any, Mapping, Sequence
 
@@ -131,6 +132,8 @@ def build_recovery_jobs(
         if float(noise_fraction) < 0:
             raise ValueError("noise fractions must be non-negative")
         truth_id = str(truth["truth_id"])
+        target_key = f"{truth_id}|{float(noise_fraction):.12g}".encode()
+        target_seed = int(hashlib.sha256(target_key).hexdigest()[:8], 16)
         jobs.append(
             {
                 "job_id": (
@@ -142,7 +145,34 @@ def build_recovery_jobs(
                 "truth_params": dict(truth["parameters"]),
                 "noise_fraction": float(noise_fraction),
                 "seed": int(seed),
+                "target_seed": target_seed,
                 "trials": int(trials),
             }
+        )
+    return jobs
+
+
+def build_budget_pilot_jobs(
+    *,
+    modes: Sequence[str],
+    truths: Sequence[Mapping[str, Any]],
+    noise_fraction: float,
+    seeds: Sequence[int],
+    budgets: Sequence[int],
+) -> list[dict[str, Any]]:
+    """Build the 20/50/100-trial pilot on one difficult interior truth."""
+    difficult = [truth for truth in truths if truth["truth_id"] == "mixed_b"]
+    if len(difficult) != 1:
+        raise ValueError("truth library must contain exactly one mixed_b case")
+    jobs = []
+    for budget in budgets:
+        jobs.extend(
+            build_recovery_jobs(
+                modes=modes,
+                truths=difficult,
+                noise_fractions=(noise_fraction,),
+                seeds=seeds,
+                trials=int(budget),
+            )
         )
     return jobs

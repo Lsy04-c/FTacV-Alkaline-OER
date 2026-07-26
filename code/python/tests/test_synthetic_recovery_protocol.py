@@ -5,6 +5,7 @@ import pytest
 
 from oer_aem.inversion import DEFAULT_PARAM_SPECS, encode_params
 from oer_aem.recovery import (
+    build_budget_pilot_jobs,
     build_recovery_jobs,
     estimate_white_noise_fraction,
     noise_fraction_evidence,
@@ -60,6 +61,26 @@ def test_job_builder_pairs_modes_truths_noise_and_seeds():
     assert len(jobs) == 2 * 2 * 2 * 2
     assert {job["trials"] for job in jobs} == {50}
     assert len({job["job_id"] for job in jobs}) == len(jobs)
+    paired_target_seeds = {}
+    for job in jobs:
+        key = (job["truth_id"], job["noise_fraction"])
+        paired_target_seeds.setdefault(key, set()).add(job["target_seed"])
+    assert all(len(seeds) == 1 for seeds in paired_target_seeds.values())
+
+
+def test_budget_pilot_uses_all_modes_one_hard_case_and_three_budgets():
+    jobs = build_budget_pilot_jobs(
+        modes=("legacy", "complex_snr", "lockin_only", "hybrid"),
+        truths=truth_library(DEFAULT_PARAM_SPECS),
+        noise_fraction=0.0015,
+        seeds=(7, 17, 27),
+        budgets=(20, 50, 100),
+    )
+
+    assert len(jobs) == 4 * 3 * 3
+    assert {job["truth_id"] for job in jobs} == {"mixed_b"}
+    assert {job["noise_fraction"] for job in jobs} == {0.0015}
+    assert {job["trials"] for job in jobs} == {20, 50, 100}
 
 
 def test_noise_fraction_estimator_recovers_added_white_noise():
