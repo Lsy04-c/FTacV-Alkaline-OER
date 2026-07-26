@@ -15,6 +15,7 @@ from oer_aem.importance import (
     _extract_onset,
     _feature_distance,
     _run_forward,
+    _mode_specific_feature_names,
     _compute_feature_weights,
     _classify,
     _coupling_warnings,
@@ -93,6 +94,76 @@ def test_forward_importance_supports_nonlegacy_feature_modes(feature_mode):
 
     assert features is not None
     assert all(f"H{harmonic}_peak_amplitude" in features for harmonic in (1, 2, 3))
+
+
+def test_mode_specific_feature_names_do_not_leak_between_objectives():
+    legacy = _mode_specific_feature_names("legacy", (1, 2, 3))
+    complex_names = _mode_specific_feature_names("complex_snr", (1, 2, 3))
+    lockin = _mode_specific_feature_names("lockin_only", (1, 2, 3))
+    hybrid = _mode_specific_feature_names("hybrid", (1, 2, 3))
+
+    assert "H1 shape" in legacy
+    assert "Complex H1 real" in complex_names
+    assert "Lockin H1 real" in lockin
+    assert set(hybrid) == set(complex_names) | set(lockin)
+    assert not any(name.startswith("H1 shape") for name in complex_names + lockin)
+
+
+@pytest.mark.parametrize(
+    ("feature_mode", "required_key"),
+    [
+        ("complex_snr", "Complex H1 real"),
+        ("lockin_only", "Lockin H1 real"),
+        ("hybrid", "Lockin H1 imag"),
+    ],
+)
+def test_forward_exposes_mode_specific_signed_features(
+    feature_mode,
+    required_key,
+):
+    config = InversionConfig(
+        n_points=256,
+        points_per_cycle=32,
+        feature_grid_size=32,
+        fit_harmonics=(1, 2, 3),
+        feature_mode=feature_mode,
+    )
+
+    features = _run_forward(initialize_oer_parameters(), config)
+
+    assert required_key in features
+    assert np.all(np.isfinite(np.asarray(features[required_key])))
+
+
+def test_importance_report_uses_objective_specific_feature_rows():
+    base = initialize_oer_parameters()
+    common = dict(
+        n_points=256,
+        points_per_cycle=32,
+        feature_grid_size=32,
+        fit_harmonics=(1, 2, 3),
+    )
+    legacy = analyze_parameter_importance(
+        base,
+        InversionConfig(feature_mode="legacy", **common),
+        fit_harmonics=[1, 2, 3],
+    )
+    complex_report = analyze_parameter_importance(
+        base,
+        InversionConfig(feature_mode="complex_snr", **common),
+        fit_harmonics=[1, 2, 3],
+    )
+
+    legacy_rows = {
+        row["feature"] for row in legacy["signed_feature_sensitivity_matrix"]
+    }
+    complex_rows = {
+        row["feature"]
+        for row in complex_report["signed_feature_sensitivity_matrix"]
+    }
+    assert any(name.startswith("H1 shape[") for name in legacy_rows)
+    assert "Complex H1 real" in complex_rows
+    assert not any(name.startswith("H1 shape[") for name in complex_rows)
 
 
 # ========== Test 1: G_OH 扰动改变 Tafel + onset ==========
@@ -215,16 +286,19 @@ def test_feature_distance_resolves_report_labels():
         "dc": np.array([0.0, 1.0]),
         "harm": [np.array([0.0, 1.0])],
         "H1_peak_amplitude": 1.0,
+        "tafel": 0.12,
     }
     changed = {
         "dc": np.array([0.0, 0.8]),
         "harm": [np.array([0.0, 0.7])],
         "H1_peak_amplitude": 0.7,
+        "tafel": 0.08,
     }
 
     assert _feature_distance(changed, base, "DC shape") > 0
     assert _feature_distance(changed, base, "H1 shape") > 0
     assert _feature_distance(changed, base, "H1 peak amplitude") > 0
+    assert _feature_distance(changed, base, "Tafel") > 0
 
 
 # ========== Test 9: 正负方向变化对称性 ==========

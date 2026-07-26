@@ -59,6 +59,43 @@ DEFAULT_PHYSICAL_BOUNDS: Dict[str, Tuple[float, float]] = {
 PARAMETER_LIST = list(PERTURBATION_RULES.keys())
 
 
+def _mode_specific_feature_names(
+    feature_mode: str,
+    fit_harmonics: Sequence[int],
+) -> List[str]:
+    """Return signed feature channels that match one objective mode."""
+    harmonics = tuple(sorted(int(value) for value in fit_harmonics))
+    if feature_mode == "legacy":
+        return [
+            f"H{harmonic} {descriptor}"
+            for harmonic in harmonics
+            for descriptor in (
+                "shape",
+                "peak amplitude",
+                "peak potential",
+                "shape_raw",
+                "peak amplitude_raw",
+            )
+        ]
+    complex_names = [
+        f"Complex H{harmonic} {component}"
+        for harmonic in harmonics
+        for component in ("real", "imag")
+    ]
+    lockin_names = [
+        f"Lockin H{harmonic} {component}"
+        for harmonic in harmonics
+        for component in ("real", "imag")
+    ]
+    if feature_mode == "complex_snr":
+        return complex_names
+    if feature_mode == "lockin_only":
+        return lockin_names
+    if feature_mode in {"hybrid", "combined"}:
+        return complex_names + lockin_names
+    raise ValueError(f"unsupported feature mode: {feature_mode}")
+
+
 def _apply_perturbation(base: float, delta: float, rule: str) -> Tuple[float, float]:
     """返回 (plus_value, minus_value)。"""
     if rule == "log10":
@@ -131,6 +168,27 @@ def _run_forward(params: Dict[str, Any], config: InversionConfig
         features[f"H{k+1}_peak_amplitude"] = float(h[idx])
         features[f"H{k+1}_peak_potential"] = float(e_grid[idx])
 
+    if "complex_harmonics" in features:
+        coefficients = np.asarray(
+            features["complex_harmonics"]["complex"],
+            dtype=complex,
+        )
+        for harmonic in config.fit_harmonics:
+            coefficient = coefficients[harmonic - 1]
+            features[f"Complex H{harmonic} real"] = float(coefficient.real)
+            features[f"Complex H{harmonic} imag"] = float(coefficient.imag)
+    if "lockin" in features:
+        valid = np.asarray(features["lockin"]["valid_mask"], dtype=bool)
+        channels = features["lockin"]["complex"]
+        for harmonic in config.fit_harmonics:
+            channel = np.asarray(channels[harmonic - 1], dtype=complex)
+            features[f"Lockin H{harmonic} real"] = np.where(
+                valid, channel.real, 0.0
+            )
+            features[f"Lockin H{harmonic} imag"] = np.where(
+                valid, channel.imag, 0.0
+            )
+
     onset = _extract_onset(dc_env, e_grid)
     features["onset"] = onset
 
@@ -176,6 +234,8 @@ def _resolve_feature(features: Dict[str, Any], name: str) -> Any:
         return features.get("dc_shape_raw")
     if name == "DC amplitude_raw":
         return features.get("dc_amplitude_raw")
+    if name == "Tafel":
+        return features.get("tafel")
     if name.startswith("H"):
         harmonic, descriptor = name.split(" ", 1)
         index = int(harmonic[1:]) - 1
@@ -462,7 +522,7 @@ def analyze_parameter_importance(
     use_fit = set(exp_harmonic_quality.get("fit_harmonics", [1,2,3,4,5,6,7]))
     use_diag = {1,2,3,4,5,6,7} - use_fit
 
-    def _build_names(tag_set, suffix):
+    def _build_names(tag_set):
         names = []
         for k in sorted(tag_set):
             for sfx in ["shape", "peak amplitude", "peak potential", "shape_raw", "peak amplitude_raw"]:
@@ -473,10 +533,14 @@ def analyze_parameter_importance(
 
     active_names = (
         ["DC shape", "DC shape_raw", "DC amplitude", "DC amplitude_raw"]
-        + _build_names(use_fit, "")
+        + _mode_specific_feature_names(config.feature_mode, sorted(use_fit))
         + ["Tafel", "onset"]
     )
-    diag_names = _build_names(use_diag, "")
+    diag_names = _build_names(use_diag) if config.feature_mode == "legacy" else []
+    for name in _mode_specific_feature_names(
+        config.feature_mode, sorted(use_fit)
+    ):
+        feature_weights.setdefault(name, 1.0)
 
     # ---- 扰动循环 ----
     perturbed: Dict[Tuple[str, str], Dict] = {}
