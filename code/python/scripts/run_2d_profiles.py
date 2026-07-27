@@ -48,7 +48,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--workers", type=int, default=8)
-    p.add_argument("--grid-points", "--grid_points", type=int, default=41)
+    p.add_argument("--grid-points", "--grid_points", type=int, default=21)
     p.add_argument("--smoke", action="store_true")
     p.add_argument("--max-profiles", "--max_profiles", type=int, default=None)
     return p.parse_args(argv)
@@ -126,7 +126,9 @@ def run_2d_profile(task: dict, *, smoke: bool = False) -> dict:
     objective = InversionObjective(target, config=config, specs=(x_spec, y_spec))
 
     rows = []
-    for xc, yc in grid:
+    last_report = time.monotonic()
+    REPORT_INTERVAL = 300  # 5 minutes between progress reports
+    for i, (xc, yc) in enumerate(grid):
         started = time.perf_counter()
         before_ode = objective.n_ode_fail
         before_tafel = objective.n_tafel_fail
@@ -153,6 +155,16 @@ def run_2d_profile(task: dict, *, smoke: bool = False) -> dict:
         }
         row.update({key: float(objective.last_components[key]) for key in COMPONENT_KEYS})
         rows.append(row)
+
+        # Timed progress report (visible in journal via wrapper stderr)
+        now = time.monotonic()
+        if now - last_report >= REPORT_INTERVAL:
+            pct = (i + 1) / len(grid) * 100
+            print(
+                f"[wf:profile] {task['profile_id']} {i+1}/{len(grid)} ({pct:.1f}%)",
+                file=sys.stderr, flush=True,
+            )
+            last_report = now
 
     summary = summarize_profile_2d(
         rows, x_truth=task["x_truth"], y_truth=task["y_truth"],
