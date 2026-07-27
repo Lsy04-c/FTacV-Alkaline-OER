@@ -1,0 +1,3 @@
+parameter,peer,correlation,direction
+k0_3,scaling_OOH_OH,-0.9992477523323685,opposite_response
+scaling_OOH_OH,k0_3,-0.9992477523323685,opposite_response

@@ -1,0 +1,172 @@
+{
+  "source_commit": "66add8d1d38de3dd5a4734dee1193aab4dc28590",
+  "dirty": false,
+  "command": [
+    "/home/lsy/OER-FTAcV/.venv/bin/python",
+    "/home/lsy/OER-FTAcV-run-66add8d/code/python/scripts/run_architecture_validation.py",
+    "--feature-mode",
+    "complex_snr",
+    "--feature-grid-size",
+    "128",
+    "--solver-backend",
+    "lsoda",
+    "--trials",
+    "10",
+    "--output",
+    "/home/lsy/OER-FTAcV/results/formal/identifiability/gate-a6-sensitivity-66add8d/complex_snr"
+  ],
+  "configuration": {
+    "n_points": 8192,
+    "points_per_cycle": 32,
+    "feature_grid_size": 128,
+    "fit_harmonics": [
+      1,
+      2,
+      3
+    ],
+    "feature_mode": "complex_snr",
+    "solver_backend": "lsoda",
+    "seed": 42,
+    "noise_fraction": 0.0,
+    "trials": 10,
+    "smoke": false
+  },
+  "environment": {
+    "python": "3.11.2",
+    "platform": "Linux-6.18.33.1-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "optuna": "4.9.0"
+  },
+  "baseline_parameters": {
+    "k0_1": 5000.0,
+    "k0_2": 5000.0,
+    "k0_3": 20.0,
+    "k0_4": 5000.0,
+    "k0_pre": 500.0,
+    "gamma": 3e-09,
+    "G_OH": 1.1,
+    "G_O": 2.7,
+    "scaling_OOH_OH": 3.2,
+    "E0_pre": 1.45,
+    "Cdl": 2e-05,
+    "Ru": 10.0,
+    "A": 1.0
+  },
+  "perturbation_rules": {
+    "k0_1": [
+      "log10",
+      0.25
+    ],
+    "k0_2": [
+      "log10",
+      0.25
+    ],
+    "k0_3": [
+      "log10",
+      0.25
+    ],
+    "k0_4": [
+      "log10",
+      0.25
+    ],
+    "k0_pre": [
+      "log10",
+      0.25
+    ],
+    "gamma": [
+      "log10",
+      0.25
+    ],
+    "G_OH": [
+      "linear",
+      0.05
+    ],
+    "G_O": [
+      "linear",
+      0.05
+    ],
+    "scaling_OOH_OH": [
+      "linear",
+      0.05
+    ],
+    "E0_pre": [
+      "linear",
+      0.03
+    ],
+    "Cdl": [
+      "percent",
+      0.2
+    ],
+    "Ru": [
+      "percent",
+      0.2
+    ],
+    "A": [
+      "percent",
+      0.05
+    ]
+  },
+  "physical_bounds": {
+    "k0_1": [
+      0.001,
+      1000000.0
+    ],
+    "k0_2": [
+      0.001,
+      1000000.0
+    ],
+    "k0_3": [
+      0.001,
+      1000000.0
+    ],
+    "k0_4": [
+      0.001,
+      1000000.0
+    ],
+    "k0_pre": [
+      0.01,
+      1000000.0
+    ],
+    "gamma": [
+      1e-12,
+      1e-06
+    ],
+    "G_OH": [
+      0.5,
+      2.2
+    ],
+    "G_O": [
+      1.5,
+      4.0
+    ],
+    "scaling_OOH_OH": [
+      2.4,
+      3.8
+    ],
+    "E0_pre": [
+      1.0,
+      2.0
+    ],
+    "Cdl": [
+      1e-06,
+      0.001
+    ],
+    "Ru": [
+      0.1,
+      500.0
+    ],
+    "A": [
+      0.001,
+      10.0
+    ]
+  },
+  "input_sha256": {},
+  "sha256": {
+    "coupling_direction.csv": "31c245c9c42156912c8b4af6e2a56a7b861b19f67cd2c897bf0c03c3e6298281",
+    "parameter_classification.csv": "256fa07022f82d0f1f9da700e8d3b16f17ff1afd2850e6f96cb50c8a77dba4ac",
+    "sensitivity_matrix.csv": "e0efb21f4dbe08c568ff0ded6114d83cf20d4f87a0ac022526220d58fb4f41da",
+    "signed_sensitivity.csv": "bb9372c553c0b964523055f0116d5bfdd576cf05a75eac6789a93a9f928dd85f",
+    "synthetic_recovery.json": "4b84b54ce67410b69091ea0ab5fed995e25a10efe17ff7553d8506d0cd50d5e8"
+  }
+}

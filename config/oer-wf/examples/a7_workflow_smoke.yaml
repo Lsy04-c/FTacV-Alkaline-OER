@@ -15,7 +15,7 @@ env:
 build:
   required: false
 
-script: "scripts/a7_gate_test.py"
+script: "code/python/scripts/a7_gate_test.py"
 args: []
 workers: 1
 output_dir: "results/a7_workflow_smoke"

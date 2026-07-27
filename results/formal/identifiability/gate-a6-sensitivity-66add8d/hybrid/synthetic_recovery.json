@@ -1,0 +1,85 @@
+{
+  "git_commit": "66add8d1d38de3dd5a4734dee1193aab4dc28590",
+  "command": "/home/lsy/OER-FTAcV-run-66add8d/code/python/scripts/run_architecture_validation.py --feature-mode hybrid --feature-grid-size 128 --solver-backend lsoda --trials 10 --output /home/lsy/OER-FTAcV/results/formal/identifiability/gate-a6-sensitivity-66add8d/hybrid",
+  "configuration": {
+    "n_points": 8192,
+    "points_per_cycle": 32,
+    "feature_grid_size": 128,
+    "fit_harmonics": [
+      1,
+      2,
+      3
+    ],
+    "feature_mode": "hybrid",
+    "solver_backend": "lsoda",
+    "noise_fraction": 0.0,
+    "parameter_specs": [
+      [
+        "k0_1",
+        "log10",
+        1.0,
+        3.0
+      ]
+    ],
+    "fixed_params": {
+      "G_O": 2.8,
+      "G_OH": 1.23,
+      "gamma": 1e-09,
+      "k0_2": 50.0,
+      "k0_3": 20.0,
+      "k0_4": 80.0,
+      "scaling_OOH_OH": 3.2
+    }
+  },
+  "seed": 42,
+  "smoke": false,
+  "n_trials": 10,
+  "n_forward": 10,
+  "best_value": 0.03023210429946572,
+  "best_params": {
+    "k0_1": 157.51320499779723
+  },
+  "truth_params": {
+    "k0_1": 100.0,
+    "k0_2": 50.0,
+    "k0_3": 20.0,
+    "k0_4": 80.0,
+    "G_OH": 1.23,
+    "G_O": 2.8,
+    "scaling_OOH_OH": 3.2,
+    "gamma": 1e-09
+  },
+  "designed_identifiable_parameters": [
+    "k0_1"
+  ],
+  "initial_params": {
+    "k0_1": 10.0,
+    "k0_2": 50.0,
+    "k0_3": 20.0,
+    "k0_4": 80.0,
+    "G_OH": 1.23,
+    "G_O": 2.8,
+    "scaling_OOH_OH": 3.2,
+    "gamma": 1e-09
+  },
+  "relative_recovery_error": 0.5751320499779723,
+  "recovery_tolerance": 0.25,
+  "recovered": false,
+  "classifications": {
+    "k0_1": "identifiable",
+    "k0_2": "identifiable",
+    "k0_3": "coupled",
+    "k0_4": "identifiable",
+    "k0_pre": "identifiable",
+    "gamma": "identifiable",
+    "G_OH": "identifiable",
+    "G_O": "identifiable",
+    "scaling_OOH_OH": "coupled",
+    "E0_pre": "identifiable",
+    "Cdl": "identifiable",
+    "Ru": "identifiable",
+    "A": "identifiable"
+  },
+  "importance_forward_runs": 26,
+  "duration_seconds": 369.811
+}

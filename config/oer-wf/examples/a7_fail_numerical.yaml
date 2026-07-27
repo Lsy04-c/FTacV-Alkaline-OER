@@ -15,7 +15,7 @@ env:
 build:
   required: false
 
-script: "scripts/a7_gate_test.py"
+script: "code/python/scripts/a7_gate_test.py"
 args:
   - "--fail-numerical"
 workers: 1
