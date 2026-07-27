@@ -210,22 +210,35 @@ def main(argv: list[str] | None = None) -> None:
         os.environ[v] = "1"
 
     started = time.perf_counter()
-    results = list(iter_results(tasks, workers=args.workers, smoke=args.smoke))
-    results.sort(key=lambda r: r["task"]["profile_id"])
+    n_tasks = len(tasks)
+    n_done = 0
+    all_rows: list[dict] = []
+    summaries: list[dict] = []
 
-    all_rows = [row for r in results for row in r["rows"]]
-
-    # Write rows
     rows_path = output / "profile_2d_rows.csv"
-    with rows_path.open("w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(all_rows[0]))
-        w.writeheader()
-        w.writerows(all_rows)
+    summary_path = output / "profile_2d_summary.json"
+    header_written = False
 
-    # Write summaries
-    summaries = [r["summary"] for r in results]
-    with (output / "profile_2d_summary.json").open("w") as f:
-        json.dump(summaries, f, indent=2)
+    for result in iter_results(tasks, workers=args.workers, smoke=args.smoke):
+        n_done += 1
+        profile_id = result["task"]["profile_id"]
+        n_points = len(result["rows"])
+        print(f"[wf:progress] {n_done}/{n_tasks} {profile_id} ({n_points} points)", flush=True)
+
+        # Incremental CSV write
+        mode = "w" if not header_written else "a"
+        with rows_path.open(mode, newline="") as f:
+            w = csv.DictWriter(f, fieldnames=list(result["rows"][0]))
+            if not header_written:
+                w.writeheader()
+                header_written = True
+            w.writerows(result["rows"])
+        all_rows.extend(result["rows"])
+
+        # Incremental summary write
+        summaries.append(result["summary"])
+        with summary_path.open("w") as f:
+            json.dump(summaries, f, indent=2)
 
     # Manifest
     manifest = {
@@ -234,12 +247,14 @@ def main(argv: list[str] | None = None) -> None:
         "smoke": args.smoke,
         "workers": args.workers,
         "grid_points": args.grid_points,
-        "n_tasks": len(tasks),
+        "n_tasks": n_tasks,
         "n_rows": len(all_rows),
         "runtime_seconds": time.perf_counter() - started,
         "files": {
             "profile_2d_rows.csv": {"bytes": rows_path.stat().st_size,
                                      "sha256": _sha256(rows_path)},
+            "profile_2d_summary.json": {"bytes": summary_path.stat().st_size,
+                                         "sha256": _sha256(summary_path)},
         },
     }
     with (output / "run_manifest.json").open("w") as f:
