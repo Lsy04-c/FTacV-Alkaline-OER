@@ -134,6 +134,11 @@
   `documents/specifications/deepseek-compute-delivery-acceptance.md`，
   规定冻结任务规格、唯一运行目录、原始数据、日志、manifest、哈希、
   失败分类和 Codex 接续顺序。
+- 已建立上位规范
+  `documents/specifications/deepseek-project-continuation-governance.md`：
+  DeepSeek 可以接续代码、测试、诊断、计算、文档和 Git 工作，但判断必须
+  区分观察、工程事实、数值结论、科学判断与机理假设；L3/L4 结论必须列出
+  反证、替代解释和未验证条件，并交由 Codex/用户复核。
 - 当前边界：
   - Legion 已部署 `oer-wf 0.6.3`；commit `ab55c8a` 的远端工作树
     49 项测试通过；

@@ -14,5 +14,6 @@
 
 `handoffs/` 和 `environment/private/` 仅供本机使用，默认不提交。后续 agent 不得在仓库根目录新增背景 Markdown。
 
-计算委派给 DeepSeek 时，必须遵循
+DeepSeek 接续项目时必须先遵循
+`specifications/deepseek-project-continuation-governance.md`；涉及计算时再遵循
 `specifications/deepseek-compute-delivery-acceptance.md` 的任务冻结、数据留痕和验收规则。

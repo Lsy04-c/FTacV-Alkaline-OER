@@ -1,5 +1,6 @@
-# DeepSeek 计算交付与验收协议
+# DeepSeek 计算交付与验收子协议
 
+> 上位规范：`deepseek-project-continuation-governance.md`。
 > 适用范围：DeepSeek/Claude Code 在 Legion 上执行 OER-FTAcV 计算。
 > 目标：允许其他 Agent 用少量上下文复核、接续或否决计算结果。
 > 原则：DeepSeek 负责执行和留痕，不负责修改科学标准或宣布项目结论。
