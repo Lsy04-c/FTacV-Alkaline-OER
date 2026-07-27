@@ -1,0 +1,36 @@
+task_name: "a7_missing_output"
+commit: "cbbcda5d2442ddc318d68df703ff37f08601f47f"
+description: "Gate A7 fault injection: missing output file"
+
+python:
+  source: "main_repo"
+  path: ".venv/bin/python"
+
+worktree_root: "worktrees"
+
+env:
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+
+build:
+  required: false
+
+script: "scripts/a7_gate_test.py"
+args:
+  - "--missing-output"
+workers: 1
+output_dir: "results/a7_missing_output"
+
+smoke:
+  enabled: true
+  overrides: {}
+  expected_files:
+    - "summary.csv"
+    - "STATUS.json"
+
+expected_files:
+  - "summary.csv"
+  - "STATUS.json"
+validators:
+  - schema_check
+  - provenance

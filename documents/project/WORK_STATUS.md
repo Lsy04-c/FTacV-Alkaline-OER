@@ -149,12 +149,25 @@
     `STATUS.json=SUCCESS`，CSV 与 manifest 内容符合冻结契约；
   - 工作流代码、指南和交付协议已由 commit `ab55c8a` 推送至
     `codex/reclassify-project`；
-  - 尚未验收 formal run、sync、verify 和故障注入；
-  - 不把本地 mock/单元测试写成 Gate A7 正式通过。
-- 下一步：
-  1. 用已通过 smoke 的同一 spec 验证 formal gate、status、sync 和 verify；
-  2. 人为验证数值失败、缺文件、哈希冲突和中断恢复；
-  3. 验收后关闭 Gate A7。
+## 0.7 Gate A7 关闭：工作流正式验收与故障注入（2026-07-27）
+
+- 状态：**PASS**（工程基础设施），全链路在真实 Legion 环境通过。
+- 配置：commit `cbbcda5`，spec `a7_workflow_smoke`，确定性测试脚本
+  `scripts/a7_gate_test.py`。
+- 全链路：doctor→prepare→smoke→run→status→sync→verify 全部通过，
+  systemd 与 STATUS.json 双通道一致，spec_hash 写入并验证。
+- 故障注入（均按协议正确分类，不进入下一阶段）：
+  | 故障 | 注入方式 | 分类 | Gate |
+  |------|----------|------|------|
+  | 数值失败 | exit 2 | FAIL_NUMERICAL | smoke gate 拒绝 |
+  | 缺文件 | exit 0 但不写 csv | FAIL_STRUCTURE | smoke gate 拒绝 |
+  | 哈希冲突 | manifest 占位符 | FAIL_TRANSPORT | verify gate 拒绝 |
+- 边界：PASS 只证明工程基础设施可用，不证明科学门槛通过。
+- 证据：`~/OER-FTAcV-archive/results/cbbcda5/a7_workflow_smoke/`；
+  Legion `worktrees/cbbcda5/`。
+- 下一步：A6 缩减参数合成恢复完成后，用 oer-wf 执行正式 TPE。
+
+
 
 项目：碱性 OER AEM 微观动力学建模与 FTacV 参数反演平台
 负责人：刘拾玉

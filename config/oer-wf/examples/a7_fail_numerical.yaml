@@ -1,0 +1,34 @@
+task_name: "a7_fail_numerical"
+commit: "cbbcda5d2442ddc318d68df703ff37f08601f47f"
+description: "Gate A7 fault injection: numerical failure"
+
+python:
+  source: "main_repo"
+  path: ".venv/bin/python"
+
+worktree_root: "worktrees"
+
+env:
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+
+build:
+  required: false
+
+script: "scripts/a7_gate_test.py"
+args:
+  - "--fail-numerical"
+workers: 1
+output_dir: "results/a7_fail_numerical"
+
+smoke:
+  enabled: true
+  overrides: {}
+  expected_files:
+    - "STATUS.json"
+
+expected_files:
+  - "STATUS.json"
+validators:
+  - schema_check
+  - provenance

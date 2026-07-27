@@ -2,7 +2,7 @@
 
 更新日期：2026-07-27
 项目负责人：刘拾玉
-当前代码基线：`1becc12`
+当前代码基线：`cbbcda5`（Gate A7 验收提交）
 
 > 本文是项目目标、完成定义和后续路线的唯一总入口。
 > 历史执行记录见 `WORK_STATUS.md`，阶段纠错见 `documents/corrections/项目纠错.md`，具体实施步骤见 `documents/plans/`。
@@ -403,16 +403,10 @@ smoke 只证明流程可运行，不是正式精度证据；不同模式的 `tot
 
 ### 未达成与路径规划
 
-1. Legion 已部署 `oer-wf 0.6.3`；commit `ab55c8a` 的远端 49 项测试
-   与确定性基础设施 smoke 均通过。
-2. 下一步验证 formal gate、status、sync、verify 和 Mac 归档，不能用
-   smoke PASS 代替完整证据链。
-3. 验证数值失败、缺文件、哈希冲突和中断恢复均按协议停止后续阶段。
-4. 将 DeepSeek 协议中的 manifest、handoff 和验收文件生成过程脚本化。
-5. 正式结果继续执行 schema、唯一键、有限值、文件哈希、环境和最终
-   LSODA 复算。
-6. Gate A7：一次中断恢复演练和一次完整正式运行均通过；本地测试通过
-   不能替代该门。
+1. ✅ Gate A7 已于 2026-07-27 关闭（PASS）：commit `cbbcda5`，
+   全链路 doctor→prepare→smoke→run→status→sync→verify 在真实 Legion
+   通过，故障注入（数值失败/缺文件/哈希冲突）均按协议正确分类和停止。
+2. 将 DeepSeek 协议中的 manifest、handoff 和验收文件生成过程脚本化。
 
 ### 纠错与失败路径
 
