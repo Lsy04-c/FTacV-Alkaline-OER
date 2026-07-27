@@ -1,0 +1,436 @@
+{
+  "source_commit": "3f9aad1248b07de007a8713c47b2d96a742ac8d0",
+  "dirty": false,
+  "command": [
+    "/home/lsy/OER-FTAcV/.venv/bin/python",
+    "/home/lsy/OER-FTAcV-run-3f9aad1/code/python/scripts/run_objective_profiles.py",
+    "--output",
+    "/home/lsy/OER-FTAcV/results/formal/identifiability/gate-a6-profile-3f9aad1",
+    "--grid-points",
+    "41",
+    "--workers",
+    "8"
+  ],
+  "configuration": {
+    "n_points": 8192,
+    "points_per_cycle": 32,
+    "feature_grid_size": 128,
+    "fit_harmonics": [
+      1,
+      2,
+      3
+    ],
+    "feature_modes": [
+      "legacy",
+      "complex_snr",
+      "lockin_only",
+      "hybrid"
+    ],
+    "profile_parameters": [
+      "k0_1",
+      "k0_2",
+      "k0_3",
+      "G_OH",
+      "G_O"
+    ],
+    "truth_id": "mixed_b",
+    "grid_points": 41,
+    "solver_backend": "lsoda",
+    "noise_fraction": 0.0,
+    "workers": 8,
+    "smoke": false
+  },
+  "tasks": [
+    {
+      "profile_id": "legacy__k0_1",
+      "feature_mode": "legacy",
+      "parameter": "k0_1",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.7,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "legacy__k0_2",
+      "feature_mode": "legacy",
+      "parameter": "k0_2",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.3,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "legacy__k0_3",
+      "feature_mode": "legacy",
+      "parameter": "k0_3",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.65,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "legacy__G_OH",
+      "feature_mode": "legacy",
+      "parameter": "G_OH",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.5999999999999999,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "legacy__G_O",
+      "feature_mode": "legacy",
+      "parameter": "G_O",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.4000000000000001,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "complex_snr__k0_1",
+      "feature_mode": "complex_snr",
+      "parameter": "k0_1",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.7,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "complex_snr__k0_2",
+      "feature_mode": "complex_snr",
+      "parameter": "k0_2",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.3,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "complex_snr__k0_3",
+      "feature_mode": "complex_snr",
+      "parameter": "k0_3",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.65,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "complex_snr__G_OH",
+      "feature_mode": "complex_snr",
+      "parameter": "G_OH",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.5999999999999999,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "complex_snr__G_O",
+      "feature_mode": "complex_snr",
+      "parameter": "G_O",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.4000000000000001,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "lockin_only__k0_1",
+      "feature_mode": "lockin_only",
+      "parameter": "k0_1",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.7,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "lockin_only__k0_2",
+      "feature_mode": "lockin_only",
+      "parameter": "k0_2",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.3,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "lockin_only__k0_3",
+      "feature_mode": "lockin_only",
+      "parameter": "k0_3",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.65,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "lockin_only__G_OH",
+      "feature_mode": "lockin_only",
+      "parameter": "G_OH",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.5999999999999999,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "lockin_only__G_O",
+      "feature_mode": "lockin_only",
+      "parameter": "G_O",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.4000000000000001,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "hybrid__k0_1",
+      "feature_mode": "hybrid",
+      "parameter": "k0_1",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.7,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "hybrid__k0_2",
+      "feature_mode": "hybrid",
+      "parameter": "k0_2",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.3,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "hybrid__k0_3",
+      "feature_mode": "hybrid",
+      "parameter": "k0_3",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.65,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "hybrid__G_OH",
+      "feature_mode": "hybrid",
+      "parameter": "G_OH",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.5999999999999999,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    },
+    {
+      "profile_id": "hybrid__G_O",
+      "feature_mode": "hybrid",
+      "parameter": "G_O",
+      "truth_id": "mixed_b",
+      "truth_params": {
+        "k0_1": 398.1071705534969,
+        "k0_2": 0.25118864315095796,
+        "k0_3": 158.48931924611142,
+        "k0_4": 0.630957344480193,
+        "G_OH": 1.4,
+        "G_O": 2.68,
+        "scaling_OOH_OH": 3.36,
+        "gamma": 7.943282347242822e-10
+      },
+      "truth_coordinate": 0.4000000000000001,
+      "grid_points": 41,
+      "noise_fraction": 0.0
+    }
+  ],
+  "environment": {
+    "python": "3.11.2",
+    "platform": "Linux-6.18.33.1-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "optuna": "4.9.0"
+  },
+  "sha256": {
+    "profile_rows.csv": "ac6189761d1582c8296f0071910c77ceb29e4e01eaaa32672ed00d4afb7499da",
+    "profile_summary.json": "daf21222ca348fb54203b86e6df6bd67aa6e979dcb2a17a217b7815a0f4e805c"
+  }
+}

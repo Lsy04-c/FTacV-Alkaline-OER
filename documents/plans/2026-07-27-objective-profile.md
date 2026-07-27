@@ -52,13 +52,13 @@
 
 - [x] Mac 运行 runner smoke，验收 truth 点、schema 和 manifest。
 - [ ] 运行 Python 全量测试。
-- [ ] 提交并推送 profile 代码、测试和计划。
-- [ ] 在 Legion 创建精确 commit worktree，用 8 workers、每 worker 1 BLAS
+- [x] 提交并推送 profile 代码、测试和计划。
+- [x] 在 Legion 创建精确 commit worktree，用 8 workers、每 worker 1 BLAS
   thread 运行正式 profile。
-- [ ] 验收 4×5 个 profile、每个含 41 点与 truth、有限 truth loss、失败计数、
+- [x] 验收 4×5 个 profile、每个含 41 点与 truth、有限 truth loss、失败计数、
   SHA256、配置和 provenance。
-- [ ] 根据预注册门控决定哪些参数进入两参数 profile；不直接启动 TPE。
-- [ ] 同步正式证据，更新项目状态，测试、提交并推送。
+- [x] 根据预注册门控决定哪些参数进入两参数 profile；不直接启动 TPE。
+- [x] 同步正式证据，更新项目状态，测试、提交并推送。
 
 ## 计划压力测试
 

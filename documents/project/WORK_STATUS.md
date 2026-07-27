@@ -1004,3 +1004,8 @@ H1-H7压力测试：
   归一化边界误差。
 - 原 72-study 五参数正式恢复停止。下一步改为确定性单参数与两参数
   objective profile，不增加 TPE trial 数，不调整物理边界。
+- commit `3f9aad1` 的正式单参数 profile 已完成并验收：20 profiles、
+  820 rows、全部 truth 为离散全局最小值。
+- `k0_1` 在四模式的 Δ1 宽度为 0.525–1.000，且均有远端近简并区，不再
+  作为宽边界自由参数。hybrid/lockin-only 对
+  `k0_2,k0_3,G_OH,G_O` 最清晰，下一步只做这四参数的选择性二维 profile。

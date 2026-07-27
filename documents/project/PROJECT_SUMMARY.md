@@ -359,10 +359,12 @@ smoke 只证明流程可运行，不是正式精度证据；不同模式的 `tot
    synthetic truth 的对应值，优化器不以真值初始化。
 5. 五参数预算 pilot 已 Scientific FAIL：20/50 trials 均不稳定，100 trials
    下 `k0_1` 在四模式均未被 seed 范围覆盖，不启动 72-study 正式恢复。
-6. 先执行确定性单参数 objective profile，再对通过者执行两参数组合
-   profile，区分目标不可识别与 TPE 搜索不足。
-7. 将参数正式分类为固定、窄先验、自由反演、仅范围或不可识别。
-8. Gate A6：最小自由参数集通过恢复门后，正式真实数据 TPE 才能启动。
+6. 单参数 objective profile 已完成：20 个 profile 的 truth 均为全局最小，
+   但 `k0_1` 在四模式均存在宽广近简并区，从自由参数候选移除。
+7. `k0_2,k0_3,G_OH,G_O` 在 hybrid/lockin-only 下进入选择性的两参数
+   profile，区分剩余非线性耦合与 TPE 搜索不足。
+8. 将参数正式分类为固定、窄先验、自由反演、仅范围或不可识别。
+9. Gate A6：最小自由参数集通过恢复门后，正式真实数据 TPE 才能启动。
 
 ### 纠错与失败路径
 
