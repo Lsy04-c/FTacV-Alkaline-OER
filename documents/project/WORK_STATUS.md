@@ -998,3 +998,9 @@ H1-H7压力测试：
 - 缩减参数 runner 已完成本地测试与单任务 smoke：支持显式自由参数列表，
   固定参数按各 synthetic truth 注入，TPE 不使用真值初始化。下一步从
   该代码的干净 commit 在 Legion 重新执行 20/50/100 trials 预算 pilot。
+- commit `ebd0685` 的五参数条件 pilot 已完成：36/36 study、基础设施
+  PASS、Scientific FAIL。20/50 trials 均未通过预算稳定性门；100 trials
+  下四模式均不能覆盖 `k0_1` 真值，其他参数也有约 0.14–0.69 的最大
+  归一化边界误差。
+- 原 72-study 五参数正式恢复停止。下一步改为确定性单参数与两参数
+  objective profile，不增加 TPE trial 数，不调整物理边界。

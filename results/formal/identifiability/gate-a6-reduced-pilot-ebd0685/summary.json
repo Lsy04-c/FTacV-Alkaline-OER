@@ -1,0 +1,758 @@
+{
+  "phase": "pilot",
+  "passed": true,
+  "job_count": 36,
+  "completed_jobs": 36,
+  "workers": 8,
+  "duration_seconds": 2805.234330321,
+  "n_ode_fail": 124,
+  "n_tafel_fail": 634,
+  "source_commit": "ebd06858df37cc50003a9d47a3e1f0e959aa8c41",
+  "dirty": false,
+  "recovery_summary": {
+    "group_count": 12,
+    "groups": [
+      {
+        "feature_mode": "complex_snr",
+        "truth_id": "mixed_b",
+        "noise_fraction": 0.001495726085983469,
+        "trials": 20,
+        "seeds": [
+          7,
+          17,
+          27
+        ],
+        "all_success": true,
+        "parameters": {
+          "k0_1": {
+            "truth": 398.1071705534969,
+            "seed_min": 0.0011417681638127269,
+            "seed_max": 7.4404559190045205,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.4793438270538377,
+            "max_normalized_bound_error": 0.6928027588368204,
+            "boundary_hit_rate": 0.3333333333333333
+          },
+          "k0_2": {
+            "truth": 0.25118864315095796,
+            "seed_min": 343.87968961342733,
+            "seed_max": 6700.654545540466,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.42557300763512934,
+            "max_normalized_bound_error": 0.5532646535396901,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_3": {
+            "truth": 158.48931924611142,
+            "seed_min": 0.018346541667980068,
+            "seed_max": 6244.23999242697,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.3063190387999326,
+            "max_normalized_bound_error": 0.492055723552247,
+            "boundary_hit_rate": 0.0
+          },
+          "G_OH": {
+            "truth": 1.4,
+            "seed_min": 1.1746716716301568,
+            "seed_max": 1.7288928280136142,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.22532832836984307,
+            "max_normalized_bound_error": 0.3288928280136143,
+            "boundary_hit_rate": 0.0
+          },
+          "G_O": {
+            "truth": 2.68,
+            "seed_min": 2.8852981244344473,
+            "seed_max": 3.385069743509624,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.3359400395657128,
+            "max_normalized_bound_error": 0.5875581195913535,
+            "boundary_hit_rate": 0.0
+          }
+        }
+      },
+      {
+        "feature_mode": "complex_snr",
+        "truth_id": "mixed_b",
+        "noise_fraction": 0.001495726085983469,
+        "trials": 50,
+        "seeds": [
+          7,
+          17,
+          27
+        ],
+        "all_success": true,
+        "parameters": {
+          "k0_1": {
+            "truth": 398.1071705534969,
+            "seed_min": 0.029110328292745763,
+            "seed_max": 29797.60256195033,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.23427266540885894,
+            "max_normalized_bound_error": 0.5169941120952947,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_2": {
+            "truth": 0.25118864315095796,
+            "seed_min": 0.05772643156307175,
+            "seed_max": 6700.654545540466,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.34399935725403036,
+            "max_normalized_bound_error": 0.5532646535396901,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_3": {
+            "truth": 158.48931924611142,
+            "seed_min": 0.018346541667980068,
+            "seed_max": 21.70838452027918,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.4056807346926045,
+            "max_normalized_bound_error": 0.492055723552247,
+            "boundary_hit_rate": 0.0
+          },
+          "G_OH": {
+            "truth": 1.4,
+            "seed_min": 1.060762616822013,
+            "seed_max": 1.3246141123228843,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.22532832836984307,
+            "max_normalized_bound_error": 0.3392373831779869,
+            "boundary_hit_rate": 0.0
+          },
+          "G_O": {
+            "truth": 2.68,
+            "seed_min": 2.740643124237379,
+            "seed_max": 2.9835465376084316,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.17108177036203934,
+            "max_normalized_bound_error": 0.25295544800702624,
+            "boundary_hit_rate": 0.0
+          }
+        }
+      },
+      {
+        "feature_mode": "complex_snr",
+        "truth_id": "mixed_b",
+        "noise_fraction": 0.001495726085983469,
+        "trials": 100,
+        "seeds": [
+          7,
+          17,
+          27
+        ],
+        "all_success": true,
+        "parameters": {
+          "k0_1": {
+            "truth": 398.1071705534969,
+            "seed_min": 0.00110757645174661,
+            "seed_max": 29797.60256195033,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.44724570282831894,
+            "max_normalized_bound_error": 0.6944532857988638,
+            "boundary_hit_rate": 0.3333333333333333
+          },
+          "k0_2": {
+            "truth": 0.25118864315095796,
+            "seed_min": 0.05772643156307175,
+            "seed_max": 33.51315593889047,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.07982816102106793,
+            "max_normalized_bound_error": 0.2656519159171447,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_3": {
+            "truth": 158.48931924611142,
+            "seed_min": 0.014662505397203544,
+            "seed_max": 21.70838452027918,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.3134631702865156,
+            "max_normalized_bound_error": 0.5042239768768129,
+            "boundary_hit_rate": 0.0
+          },
+          "G_OH": {
+            "truth": 1.4,
+            "seed_min": 1.060762616822013,
+            "seed_max": 1.3769279636702947,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.27080815066494157,
+            "max_normalized_bound_error": 0.3392373831779869,
+            "boundary_hit_rate": 0.0
+          },
+          "G_O": {
+            "truth": 2.68,
+            "seed_min": 2.71787614193625,
+            "seed_max": 3.120141528544721,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.05053593686448237,
+            "max_normalized_bound_error": 0.3667846071206009,
+            "boundary_hit_rate": 0.0
+          }
+        }
+      },
+      {
+        "feature_mode": "hybrid",
+        "truth_id": "mixed_b",
+        "noise_fraction": 0.001495726085983469,
+        "trials": 20,
+        "seeds": [
+          7,
+          17,
+          27
+        ],
+        "all_success": true,
+        "parameters": {
+          "k0_1": {
+            "truth": 398.1071705534969,
+            "seed_min": 0.0010676142535117298,
+            "seed_max": 20.322024157213033,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.2742785894811042,
+            "max_normalized_bound_error": 0.6964482045830079,
+            "boundary_hit_rate": 0.3333333333333333
+          },
+          "k0_2": {
+            "truth": 0.25118864315095796,
+            "seed_min": 10.208541750449793,
+            "seed_max": 3286.017893256363,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.414041951741089,
+            "max_normalized_bound_error": 0.5145837404945526,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_3": {
+            "truth": 158.48931924611142,
+            "seed_min": 0.001185456910356767,
+            "seed_max": 764.1494794459181,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.5779488666402385,
+            "max_normalized_bound_error": 0.6407642784218571,
+            "boundary_hit_rate": 0.3333333333333333
+          },
+          "G_OH": {
+            "truth": 1.4,
+            "seed_min": 1.0684389801018712,
+            "seed_max": 1.6680031998797358,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.3201581943698777,
+            "max_normalized_bound_error": 0.3315610198981287,
+            "boundary_hit_rate": 0.0
+          },
+          "G_O": {
+            "truth": 2.68,
+            "seed_min": 2.6600569274471444,
+            "seed_max": 2.9389124866295626,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.09988250082555997,
+            "max_normalized_bound_error": 0.21576040552463543,
+            "boundary_hit_rate": 0.0
+          }
+        }
+      },
+      {
+        "feature_mode": "hybrid",
+        "truth_id": "mixed_b",
+        "noise_fraction": 0.001495726085983469,
+        "trials": 50,
+        "seeds": [
+          7,
+          17,
+          27
+        ],
+        "all_success": true,
+        "parameters": {
+          "k0_1": {
+            "truth": 398.1071705534969,
+            "seed_min": 0.7083869067531817,
+            "seed_max": 21.610753545505172,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.2892260763639864,
+            "max_normalized_bound_error": 0.3437161843191728,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_2": {
+            "truth": 0.25118864315095796,
+            "seed_min": 0.13447716693058132,
+            "seed_max": 16769.744581069022,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.44011519921544257,
+            "max_normalized_bound_error": 0.6030658059930456,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_3": {
+            "truth": 158.48931924611142,
+            "seed_min": 0.0025749313995305357,
+            "seed_max": 99347.18039833663,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.3496444432226009,
+            "max_normalized_bound_error": 0.5986542920998006,
+            "boundary_hit_rate": 0.3333333333333333
+          },
+          "G_OH": {
+            "truth": 1.4,
+            "seed_min": 1.0359061687874873,
+            "seed_max": 1.5762017599765006,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.17620175997650067,
+            "max_normalized_bound_error": 0.3640938312125126,
+            "boundary_hit_rate": 0.0
+          },
+          "G_O": {
+            "truth": 2.68,
+            "seed_min": 2.539938877522512,
+            "seed_max": 2.9701753462378586,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.15599831858576352,
+            "max_normalized_bound_error": 0.24181278853154878,
+            "boundary_hit_rate": 0.0
+          }
+        }
+      },
+      {
+        "feature_mode": "hybrid",
+        "truth_id": "mixed_b",
+        "noise_fraction": 0.001495726085983469,
+        "trials": 100,
+        "seeds": [
+          7,
+          17,
+          27
+        ],
+        "all_success": true,
+        "parameters": {
+          "k0_1": {
+            "truth": 398.1071705534969,
+            "seed_min": 0.01773340273097257,
+            "seed_max": 1.9328199031088884,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.3759991370349692,
+            "max_normalized_bound_error": 0.5439009903574508,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_2": {
+            "truth": 0.25118864315095796,
+            "seed_min": 0.07875954566796875,
+            "seed_max": 833.530687802293,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.22800868238313693,
+            "max_normalized_bound_error": 0.44011519921544257,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_3": {
+            "truth": 158.48931924611142,
+            "seed_min": 2.058814989809474,
+            "seed_max": 99347.18039833663,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.23579783480016892,
+            "max_normalized_bound_error": 0.3496444432226009,
+            "boundary_hit_rate": 0.3333333333333333
+          },
+          "G_OH": {
+            "truth": 1.4,
+            "seed_min": 1.128122391938326,
+            "seed_max": 1.5762017599765006,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.17620175997650067,
+            "max_normalized_bound_error": 0.2718776080616738,
+            "boundary_hit_rate": 0.0
+          },
+          "G_O": {
+            "truth": 2.68,
+            "seed_min": 2.539938877522512,
+            "seed_max": 3.0973091584520507,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.3034986695156876,
+            "max_normalized_bound_error": 0.3477576320433755,
+            "boundary_hit_rate": 0.0
+          }
+        }
+      },
+      {
+        "feature_mode": "legacy",
+        "truth_id": "mixed_b",
+        "noise_fraction": 0.001495726085983469,
+        "trials": 20,
+        "seeds": [
+          7,
+          17,
+          27
+        ],
+        "all_success": true,
+        "parameters": {
+          "k0_1": {
+            "truth": 398.1071705534969,
+            "seed_min": 0.004078179291264094,
+            "seed_max": 4.521489877966595,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.47549907357168875,
+            "max_normalized_bound_error": 0.6236917106260428,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_2": {
+            "truth": 0.25118864315095796,
+            "seed_min": 10.116670364439477,
+            "seed_max": 1735.2031920235218,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.40464986193322144,
+            "max_normalized_bound_error": 0.47991879224011463,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_3": {
+            "truth": 158.48931924611142,
+            "seed_min": 0.0012470354054619527,
+            "seed_max": 3.2156876041713134,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.3013645332127969,
+            "max_normalized_bound_error": 0.6380151519981742,
+            "boundary_hit_rate": 0.0
+          },
+          "G_OH": {
+            "truth": 1.4,
+            "seed_min": 1.0972342378147482,
+            "seed_max": 1.5234651778309414,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.1336277373686312,
+            "max_normalized_bound_error": 0.30276576218525175,
+            "boundary_hit_rate": 0.0
+          },
+          "G_O": {
+            "truth": 2.68,
+            "seed_min": 3.1367005217520325,
+            "seed_max": 3.373587414395923,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.4516673557927746,
+            "max_normalized_bound_error": 0.5779895119966025,
+            "boundary_hit_rate": 0.0
+          }
+        }
+      },
+      {
+        "feature_mode": "legacy",
+        "truth_id": "mixed_b",
+        "noise_fraction": 0.001495726085983469,
+        "trials": 50,
+        "seeds": [
+          7,
+          17,
+          27
+        ],
+        "all_success": true,
+        "parameters": {
+          "k0_1": {
+            "truth": 398.1071705534969,
+            "seed_min": 0.0023339676078472744,
+            "seed_max": 1.8054096775865245,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.5465760613275967,
+            "max_normalized_bound_error": 0.6539881469548617,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_2": {
+            "truth": 0.25118864315095796,
+            "seed_min": 0.012829729267247668,
+            "seed_max": 28999.726859591683,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.16147281350049325,
+            "max_normalized_bound_error": 0.6327992384273231,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_3": {
+            "truth": 158.48931924611142,
+            "seed_min": 0.010897352553358166,
+            "seed_max": 207.0152511320702,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.11980797681566346,
+            "max_normalized_bound_error": 0.5203348748115668,
+            "boundary_hit_rate": 0.0
+          },
+          "G_OH": {
+            "truth": 1.4,
+            "seed_min": 1.1972190096161675,
+            "seed_max": 1.427980635388872,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.06731160544455128,
+            "max_normalized_bound_error": 0.20278099038383246,
+            "boundary_hit_rate": 0.0
+          },
+          "G_O": {
+            "truth": 2.68,
+            "seed_min": 2.6716707176941528,
+            "seed_max": 3.101176058668642,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.032893382450878514,
+            "max_normalized_bound_error": 0.350980048890535,
+            "boundary_hit_rate": 0.0
+          }
+        }
+      },
+      {
+        "feature_mode": "legacy",
+        "truth_id": "mixed_b",
+        "noise_fraction": 0.001495726085983469,
+        "trials": 100,
+        "seeds": [
+          7,
+          17,
+          27
+        ],
+        "all_success": true,
+        "parameters": {
+          "k0_1": {
+            "truth": 398.1071705534969,
+            "seed_min": 0.18964707780738838,
+            "seed_max": 3.1382188408940412,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.38734924337798027,
+            "max_normalized_bound_error": 0.4152567305964892,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_2": {
+            "truth": 0.25118864315095796,
+            "seed_min": 0.024605703878599474,
+            "seed_max": 485.2060932335086,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.1261205258607468,
+            "max_normalized_bound_error": 0.41074078076408244,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_3": {
+            "truth": 158.48931924611142,
+            "seed_min": 0.14577210339072247,
+            "seed_max": 1084.4140281322786,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.10439939087990535,
+            "max_normalized_bound_error": 0.3795406974503558,
+            "boundary_hit_rate": 0.0
+          },
+          "G_OH": {
+            "truth": 1.4,
+            "seed_min": 0.9300192194123764,
+            "seed_max": 1.3693464358973626,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.033069701788011496,
+            "max_normalized_bound_error": 0.4699807805876235,
+            "boundary_hit_rate": 0.0
+          },
+          "G_O": {
+            "truth": 2.68,
+            "seed_min": 2.539295199961294,
+            "seed_max": 3.2584046527886565,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.1172540000322553,
+            "max_normalized_bound_error": 0.48200387732388045,
+            "boundary_hit_rate": 0.0
+          }
+        }
+      },
+      {
+        "feature_mode": "lockin_only",
+        "truth_id": "mixed_b",
+        "noise_fraction": 0.001495726085983469,
+        "trials": 20,
+        "seeds": [
+          7,
+          17,
+          27
+        ],
+        "all_success": true,
+        "parameters": {
+          "k0_1": {
+            "truth": 398.1071705534969,
+            "seed_min": 0.0010676142535117298,
+            "seed_max": 20.322024157213033,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.2742785894811042,
+            "max_normalized_bound_error": 0.6964482045830079,
+            "boundary_hit_rate": 0.3333333333333333
+          },
+          "k0_2": {
+            "truth": 0.25118864315095796,
+            "seed_min": 10.208541750449793,
+            "seed_max": 3286.017893256363,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.414041951741089,
+            "max_normalized_bound_error": 0.5145837404945526,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_3": {
+            "truth": 158.48931924611142,
+            "seed_min": 0.001185456910356767,
+            "seed_max": 764.1494794459181,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.5779488666402385,
+            "max_normalized_bound_error": 0.6407642784218571,
+            "boundary_hit_rate": 0.3333333333333333
+          },
+          "G_OH": {
+            "truth": 1.4,
+            "seed_min": 1.0684389801018712,
+            "seed_max": 1.6680031998797358,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.3201581943698777,
+            "max_normalized_bound_error": 0.3315610198981287,
+            "boundary_hit_rate": 0.0
+          },
+          "G_O": {
+            "truth": 2.68,
+            "seed_min": 2.6600569274471444,
+            "seed_max": 2.9389124866295626,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.09988250082555997,
+            "max_normalized_bound_error": 0.21576040552463543,
+            "boundary_hit_rate": 0.0
+          }
+        }
+      },
+      {
+        "feature_mode": "lockin_only",
+        "truth_id": "mixed_b",
+        "noise_fraction": 0.001495726085983469,
+        "trials": 50,
+        "seeds": [
+          7,
+          17,
+          27
+        ],
+        "all_success": true,
+        "parameters": {
+          "k0_1": {
+            "truth": 398.1071705534969,
+            "seed_min": 0.0010676142535117298,
+            "seed_max": 3.7928171623335034,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.3437161843191728,
+            "max_normalized_bound_error": 0.6964482045830079,
+            "boundary_hit_rate": 0.3333333333333333
+          },
+          "k0_2": {
+            "truth": 0.25118864315095796,
+            "seed_min": 0.13447716693058132,
+            "seed_max": 2167.8574404307565,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.414041951741089,
+            "max_normalized_bound_error": 0.492003839918376,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_3": {
+            "truth": 158.48931924611142,
+            "seed_min": 0.001185456910356767,
+            "seed_max": 5655.468240258293,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.1940585709795647,
+            "max_normalized_bound_error": 0.6407642784218571,
+            "boundary_hit_rate": 0.3333333333333333
+          },
+          "G_OH": {
+            "truth": 1.4,
+            "seed_min": 1.0798418056301222,
+            "seed_max": 1.2960834159816614,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.13980234037256256,
+            "max_normalized_bound_error": 0.3201581943698777,
+            "boundary_hit_rate": 0.0
+          },
+          "G_O": {
+            "truth": 2.68,
+            "seed_min": 2.436882860892569,
+            "seed_max": 2.9701753462378586,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.21576040552463543,
+            "max_normalized_bound_error": 0.24181278853154878,
+            "boundary_hit_rate": 0.0
+          }
+        }
+      },
+      {
+        "feature_mode": "lockin_only",
+        "truth_id": "mixed_b",
+        "noise_fraction": 0.001495726085983469,
+        "trials": 100,
+        "seeds": [
+          7,
+          17,
+          27
+        ],
+        "all_success": true,
+        "parameters": {
+          "k0_1": {
+            "truth": 398.1071705534969,
+            "seed_min": 0.1301687822934714,
+            "seed_max": 9.384275313559456,
+            "truth_covered_by_seed_range": false,
+            "median_normalized_bound_error": 0.3437161843191728,
+            "max_normalized_bound_error": 0.43568664473527074,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_2": {
+            "truth": 0.25118864315095796,
+            "seed_min": 0.13447716693058132,
+            "seed_max": 342.4053523946115,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.21108346569784325,
+            "max_normalized_bound_error": 0.39181756810507745,
+            "boundary_hit_rate": 0.0
+          },
+          "k0_3": {
+            "truth": 158.48931924611142,
+            "seed_min": 0.0010758639090388455,
+            "seed_max": 15506.659680565737,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.2488147819596631,
+            "max_normalized_bound_error": 0.6460303326370783,
+            "boundary_hit_rate": 0.3333333333333333
+          },
+          "G_OH": {
+            "truth": 1.4,
+            "seed_min": 1.2601976596274373,
+            "seed_max": 1.4581050756078713,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.09937604948592549,
+            "max_normalized_bound_error": 0.13980234037256256,
+            "boundary_hit_rate": 0.0
+          },
+          "G_O": {
+            "truth": 2.68,
+            "seed_min": 2.499343570400514,
+            "seed_max": 3.1534642687204935,
+            "truth_covered_by_seed_range": true,
+            "median_normalized_bound_error": 0.24181278853154878,
+            "max_normalized_bound_error": 0.39455355726707786,
+            "boundary_hit_rate": 0.0
+          }
+        }
+      }
+    ],
+    "interval_semantics": "Seed min/max is an optimizer-stability range, not a statistical confidence interval."
+  },
+  "budget_selection": {
+    "selected_trials": 100,
+    "reference_trials": 100,
+    "thresholds": {
+      "median_paired_error_delta_max": 0.02,
+      "p90_paired_error_delta_max": 0.05,
+      "boundary_set_agreement_min": 0.8
+    },
+    "budgets": {
+      "20": {
+        "passed": false,
+        "paired_cases": 12,
+        "median_paired_error_delta": 0.1485999534667337,
+        "p90_paired_error_delta": 0.2626153309135071,
+        "boundary_set_agreement": 0.5833333333333334
+      },
+      "50": {
+        "passed": false,
+        "paired_cases": 12,
+        "median_paired_error_delta": 0.10288040813144497,
+        "p90_paired_error_delta": 0.24157681905864922,
+        "boundary_set_agreement": 0.8333333333333334
+      },
+      "100": {
+        "passed": true,
+        "paired_cases": 12,
+        "median_paired_error_delta": 0.0,
+        "p90_paired_error_delta": 0.0,
+        "boundary_set_agreement": 1.0
+      }
+    }
+  }
+}
