@@ -143,6 +143,20 @@ INTERRUPTED
 - 任何必需文件缺失、JSON 损坏或哈希不符，均不得标记 `SUCCESS`。
 - `SUCCESS` 只表示预先声明的全部验收门通过。
 
+**科学脚本失败报告规则（强制）**：
+
+所有进入 formal run 的科学脚本必须遵循以下两条路径之一报告失败：
+
+1. **退出码**：`0`=成功，`2`=数值失败，其他非零=基础设施失败。
+   wrapper 自动读取退出码写入 `STATUS.json`。
+2. **子进程/多进程**：当失败发生在子进程中（如 multiprocessing），
+   调用 `from oer_wf.status_wrapper import StatusContext`，
+   使用 `ctx.mark_fail_numerical("reason")` 写入 `._status_signal`。
+   wrapper 的 `_finalize()` 读取信号文件并覆盖退出码判断。
+
+不得使用退出码 `0` 加自定义状态字符串、自定义日志文件或 stdout grep
+代替上述两条路径。违反此规则的 run 在 Gate 1 判为 `FAIL_STRUCTURE`。
+
 ## 5. Provenance 与数据留痕
 
 `provenance/git.json`：
