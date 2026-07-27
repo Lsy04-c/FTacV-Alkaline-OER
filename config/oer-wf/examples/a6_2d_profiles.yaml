@@ -1,5 +1,5 @@
 task_name: "a6_2d_profiles"
-commit: "bafe8b09af0a11a36efc7bcf2bcb19ed8d3d2d1a"
+commit: "1168c1a8e39389dcebf5d75eaa6261d03dfca714"
 description: "Gate A6 selective 2-parameter profiles (lockin_only/hybrid × 6 pairs)"
 
 python:

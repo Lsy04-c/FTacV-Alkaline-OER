@@ -99,8 +99,6 @@ def build_2d_tasks(args: argparse.Namespace) -> list[dict]:
                 "grid_points": int(args.grid_points),
             })
     if args.max_profiles is not None:
-        if not args.smoke:
-            raise ValueError("--max-profiles requires --smoke")
         tasks = tasks[:args.max_profiles]
     return tasks
 

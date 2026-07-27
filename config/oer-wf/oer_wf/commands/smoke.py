@@ -60,6 +60,7 @@ def _check_forbidden_overrides(overrides: dict[str, Any]) -> list[str]:
         "n_samples", "n_sample", "max_steps", "max_step", "max_iter",
         "max_evals", "timeout", "dry_run", "debug", "verbose", "n_jobs",
         "workers",  # note: workers still injected by wf; override here is blocked at args level
+        "max_profiles", "grid_points",  # runtime controls, not scientific
     )
     for k in overrides:
         key = k.lstrip("-").lower().replace("-", "_")
