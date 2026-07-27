@@ -1,43 +1,36 @@
-task_name: "a6_2d_profiles"
-commit: "f92a3006dc3c141e2a8e6ca92b3504c3c5cbb701"
-description: "Gate A6 selective 2-parameter profiles (lockin_only/hybrid × 6 pairs)"
-
-python:
-  source: "main_repo"
-  path: ".venv/bin/python"
-
-worktree_root: "worktrees"
-
-env:
-  OMP_NUM_THREADS: "1"
-  OPENBLAS_NUM_THREADS: "1"
-  PYTHONPATH: "code/python/src"
-
+args: []
 build:
   required: false
-
-script: "code/python/scripts/run_2d_profiles.py"
-args: []
-workers: 8
-output_dir: "results/a6_2d_profiles"
-
+commit: 378c14356cbef19adfdbbcbba508f1b9cc8d08ac
+description: "Gate A6 selective 2-parameter profiles (lockin_only/hybrid \xD7 6 pairs)"
+env:
+  OMP_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  PYTHONPATH: code/python/src
+expected_files:
+- profile_2d_rows.csv
+- profile_2d_summary.json
+- run_manifest.json
+- STATUS.json
+output_dir: results/a6_2d_profiles
+python:
+  path: .venv/bin/python
+  source: main_repo
+script: code/python/scripts/run_2d_profiles.py
 smoke:
   enabled: true
-  overrides:
-    max_profiles: 1
-    grid_points: 5
   expected_files:
-    - "profile_2d_rows.csv"
-    - "profile_2d_summary.json"
-    - "run_manifest.json"
-    - "STATUS.json"
-
-expected_files:
-  - "profile_2d_rows.csv"
-  - "profile_2d_summary.json"
-  - "run_manifest.json"
-  - "STATUS.json"
+  - profile_2d_rows.csv
+  - profile_2d_summary.json
+  - run_manifest.json
+  - STATUS.json
+  overrides:
+    grid_points: 5
+    max_profiles: 1
+task_name: a6_2d_profiles
 validators:
-  - schema_check
-  - finite_check
-  - provenance
+- schema_check
+- finite_check
+- provenance
+workers: 8
+worktree_root: worktrees

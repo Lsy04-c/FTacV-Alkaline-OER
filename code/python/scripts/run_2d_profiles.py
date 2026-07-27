@@ -203,8 +203,6 @@ def main(argv: list[str] | None = None) -> None:
     # Note: .wf_lock and other wf artifacts may appear as untracked;
     # git cleanliness is enforced by wf prepare, not by this runner.
     output = args.output.resolve()
-    if output.exists() and any(output.iterdir()):
-        raise FileExistsError(f"output directory is not empty: {output}")
     output.mkdir(parents=True, exist_ok=True)
 
     for v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS",
