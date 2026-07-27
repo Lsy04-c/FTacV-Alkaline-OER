@@ -135,16 +135,21 @@
   规定冻结任务规格、唯一运行目录、原始数据、日志、manifest、哈希、
   失败分类和 Codex 接续顺序。
 - 当前边界：
-  - Legion 的 `wf --version` 仍返回 `0.1.0`，0.6.3 尚未完成远端部署；
-  - 尚未执行 0.6.3 的真实 Legion smoke；
-  - 工作流代码、指南和交付协议仍为本机未提交文件；
+  - Legion 已部署 `oer-wf 0.6.3`；commit `ab55c8a` 的远端工作树
+    49 项测试通过；
+  - 真实 Legion 基础设施 smoke 已通过：
+    `ab55c8a/a7_workflow_smoke`，spec hash
+    `sha256:5f9a6417e1a7cfd43655320605faeacaab52d43b2e6f041cb17e6d830ed853cc`；
+    systemd 终态为 `inactive/dead`、`Result=success`、退出码 0，
+    `STATUS.json=SUCCESS`，CSV 与 manifest 内容符合冻结契约；
+  - 工作流代码、指南和交付协议已由 commit `ab55c8a` 推送至
+    `codex/reclassify-project`；
+  - 尚未验收 formal run、sync、verify 和故障注入；
   - 不把本地 mock/单元测试写成 Gate A7 正式通过。
 - 下一步：
-  1. 修正文档测试数并清理残留旧说明；
-  2. 将 0.6.3 安装到 Legion，确认远端版本；
-  3. 用最小任务验证 smoke、formal gate、状态、同步和验收；
-  4. 人为验证数值失败、缺文件、哈希冲突和中断恢复；
-  5. 验收后再提交、推送并关闭 Gate A7。
+  1. 用已通过 smoke 的同一 spec 验证 formal gate、status、sync 和 verify；
+  2. 人为验证数值失败、缺文件、哈希冲突和中断恢复；
+  3. 验收后关闭 Gate A7。
 
 项目：碱性 OER AEM 微观动力学建模与 FTacV 参数反演平台
 负责人：刘拾玉

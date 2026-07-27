@@ -403,8 +403,10 @@ smoke 只证明流程可运行，不是正式精度证据；不同模式的 `tot
 
 ### 未达成与路径规划
 
-1. 将本地 `oer-wf 0.6.3` 部署到 Legion；远端当前仍报告 `0.1.0`。
-2. 用真实最小任务验证冻结配置、worktree、systemd、STATUS、同步和归档。
+1. Legion 已部署 `oer-wf 0.6.3`；commit `ab55c8a` 的远端 49 项测试
+   与确定性基础设施 smoke 均通过。
+2. 下一步验证 formal gate、status、sync、verify 和 Mac 归档，不能用
+   smoke PASS 代替完整证据链。
 3. 验证数值失败、缺文件、哈希冲突和中断恢复均按协议停止后续阶段。
 4. 将 DeepSeek 协议中的 manifest、handoff 和验收文件生成过程脚本化。
 5. 正式结果继续执行 schema、唯一键、有限值、文件哈希、环境和最终
