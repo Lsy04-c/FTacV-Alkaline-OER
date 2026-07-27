@@ -7,6 +7,9 @@ from typing import Any, Mapping, Sequence
 import numpy as np
 
 
+COORDINATE_ATOL = 1e-12
+
+
 def profile_grid(truth_coordinate: float, grid_points: int = 41) -> np.ndarray:
     """Return a sorted unit grid that includes the exact truth coordinate."""
     truth = float(truth_coordinate)
@@ -15,7 +18,16 @@ def profile_grid(truth_coordinate: float, grid_points: int = 41) -> np.ndarray:
     if int(grid_points) != grid_points or grid_points < 3:
         raise ValueError("grid_points must be an integer of at least 3")
     base = np.linspace(0.0, 1.0, int(grid_points))
-    return np.unique(np.concatenate((base, np.asarray([truth]))))
+    matches = np.isclose(
+        base,
+        truth,
+        rtol=0.0,
+        atol=COORDINATE_ATOL,
+    )
+    if np.any(matches):
+        base[matches] = truth
+        return np.unique(base)
+    return np.sort(np.concatenate((base, np.asarray([truth]))))
 
 
 def summarize_profile(
@@ -37,7 +49,14 @@ def summarize_profile(
         dtype=bool,
     )
     finite = np.isfinite(coordinates) & np.isfinite(losses) & ode_success
-    truth_matches = np.flatnonzero(np.isclose(coordinates, truth, atol=1e-14))
+    truth_matches = np.flatnonzero(
+        np.isclose(
+            coordinates,
+            truth,
+            rtol=0.0,
+            atol=COORDINATE_ATOL,
+        )
+    )
     if truth_matches.size != 1:
         raise ValueError("profile must contain the truth coordinate exactly once")
     truth_index = int(truth_matches[0])

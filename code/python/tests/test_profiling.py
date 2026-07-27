@@ -3,6 +3,7 @@
 import importlib
 import importlib.util
 
+import numpy as np
 import pytest
 
 
@@ -18,6 +19,20 @@ def test_profile_grid_includes_bounds_and_off_grid_truth_once():
 
     assert grid.tolist() == pytest.approx([0.0, 0.25, 0.37, 0.5, 0.75, 1.0])
     assert sum(value == pytest.approx(0.37) for value in grid) == 1
+
+
+@pytest.mark.parametrize(
+    "truth",
+    [0.7, 0.30000000000000004, 0.5999999999999999, 0.4000000000000001],
+)
+def test_profile_grid_replaces_near_equal_base_point_with_exact_truth(truth):
+    profiling = _profiling()
+
+    grid = profiling.profile_grid(truth, grid_points=41)
+
+    assert len(grid) == 41
+    assert np.count_nonzero(np.isclose(grid, truth, atol=1e-14)) == 1
+    assert truth in grid
 
 
 def test_profile_grid_rejects_invalid_inputs():
