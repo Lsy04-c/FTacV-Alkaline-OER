@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oer-wf"
+version = "0.6.3"
+description = "Reusable computational workflow for OER-FTAcV"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "typer[all]>=0.12",
+    "pydantic>=2.5",
+    "pyyaml>=6.0",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.0",
+]
+
+[project.scripts]
+wf = "oer_wf.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["oer_wf*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

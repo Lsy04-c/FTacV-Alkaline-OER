@@ -1,4 +1,4 @@
-# OER-FTAcV 工作进展总结（2026-07-18，更新：2026-07-26）
+# OER-FTAcV 工作进展总结（2026-07-18，更新：2026-07-27）
 
 ## 0. 目录重分类状态（2026-07-26）
 
@@ -115,6 +115,36 @@
   历史，不再承担 Gate 结论。
 - 下一步：A6 复核 signed sensitivity 并冻结最终自由参数集；在 A6 前不
   启动四模式正式 TPE。
+
+## 0.6 Gate A7 可复用计算工作流与 DeepSeek 交付协议（2026-07-27）
+
+- 本地已建立 `oer-wf 0.6.3` 工作流，覆盖 `doctor`、`prepare`、
+  `smoke`、`run`、`status`、`sync`、`verify`、`git-check` 和
+  `clean`。
+- 本地测试 49 项通过（含 A7 基础设施 smoke 入口契约）；`doctor` 能将
+  systemd `degraded` 与不可用状态
+  分开报告。
+- smoke 状态写入 `spec_hash`，formal run 只接受与当前任务规格哈希匹配
+  的成功 smoke；`status/sync` 从 systemd `ExecStart` 恢复完整输出路径。
+- wrapper 已实测三条终态路径：
+  - 子进程文件信号可产生 `FAIL_NUMERICAL`；
+  - 退出码 0 产生 `SUCCESS`；
+  - 非 0/2 退出码产生 `FAIL_INFRA`。
+- 已建立
+  `documents/specifications/deepseek-compute-delivery-acceptance.md`，
+  规定冻结任务规格、唯一运行目录、原始数据、日志、manifest、哈希、
+  失败分类和 Codex 接续顺序。
+- 当前边界：
+  - Legion 的 `wf --version` 仍返回 `0.1.0`，0.6.3 尚未完成远端部署；
+  - 尚未执行 0.6.3 的真实 Legion smoke；
+  - 工作流代码、指南和交付协议仍为本机未提交文件；
+  - 不把本地 mock/单元测试写成 Gate A7 正式通过。
+- 下一步：
+  1. 修正文档测试数并清理残留旧说明；
+  2. 将 0.6.3 安装到 Legion，确认远端版本；
+  3. 用最小任务验证 smoke、formal gate、状态、同步和验收；
+  4. 人为验证数值失败、缺文件、哈希冲突和中断恢复；
+  5. 验收后再提交、推送并关闭 Gate A7。
 
 项目：碱性 OER AEM 微观动力学建模与 FTacV 参数反演平台
 负责人：刘拾玉

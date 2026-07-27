@@ -1,0 +1,38 @@
+args:
+- --config
+- configs/solver_equiv.yaml
+build:
+  command: cmake --build code/cpp/build --config Release
+  expected_artifact: liboercn
+  required: false
+  source: code/cpp
+commit: 1becc125311e008cd00831875c7be195891f6554
+description: "\u6C42\u89E3\u5668\u7B49\u4EF7\u6027\u9A8C\u8BC1\uFF08\u793A\u4F8B\uFF09"
+env:
+  OMP_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+expected_files:
+- summary.csv
+- manifest.json
+- STATUS.json
+output_dir: results/solver_equiv_01
+python:
+  path: .venv/bin/python
+  source: main_repo
+script: scripts/run_solver_equiv.py
+smoke:
+  enabled: true
+  expected_files:
+  - summary.csv
+  - manifest.json
+  overrides:
+    max_steps: 50
+    n_samples: 2
+task_name: solver_equiv_01
+validators:
+- schema_check
+- finite_check
+- provenance
+- manifest_hash
+workers: 4
+worktree_root: worktrees
