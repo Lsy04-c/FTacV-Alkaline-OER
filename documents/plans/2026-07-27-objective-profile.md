@@ -16,13 +16,13 @@
 - Create: `code/python/src/oer_aem/profiling.py`
 - Create: `code/python/tests/test_profiling.py`
 
-- [ ] 写失败测试：41 点边界网格必须包含 0、1 和非网格 truth，且无重复。
-- [ ] 运行 `test_profiling.py`，确认因模块缺失失败。
-- [ ] 实现 `profile_grid(truth_coordinate, grid_points=41)`。
-- [ ] 写失败测试：已知抛物线的 truth 全局最小、局部曲率、`min+1/min+10`
+- [x] 写失败测试：41 点边界网格必须包含 0、1 和非网格 truth，且无重复。
+- [x] 运行 `test_profiling.py`，确认因模块缺失失败。
+- [x] 实现 `profile_grid(truth_coordinate, grid_points=41)`。
+- [x] 写失败测试：已知抛物线的 truth 全局最小、局部曲率、`min+1/min+10`
   宽度和有限点比例计算正确。
-- [ ] 实现 `summarize_profile(rows, truth_coordinate)`，明确近最优宽度不是置信区间。
-- [ ] 运行目标测试并通过。
+- [x] 实现 `summarize_profile(rows, truth_coordinate)`，明确近最优宽度不是置信区间。
+- [x] 运行目标测试并通过。
 
 ### Task 2：正式 runner
 
@@ -30,16 +30,16 @@
 - Create: `code/python/scripts/run_objective_profiles.py`
 - Create: `code/python/tests/test_objective_profile_runner.py`
 
-- [ ] 写失败测试：默认正式配置为 LSODA、8192/32/128、四模式、五参数、
+- [x] 写失败测试：默认正式配置为 LSODA、8192/32/128、四模式、五参数、
   `mixed_b`、41 网格点和无噪声。
-- [ ] 实现 CLI、配置构造和任务矩阵；smoke 使用小模拟网格和少量任务。
-- [ ] 写失败测试：每个候选向量只自由改变目标参数，其余参数由
+- [x] 实现 CLI、配置构造和任务矩阵；smoke 使用小模拟网格和少量任务。
+- [x] 写失败测试：每个候选向量只自由改变目标参数，其余参数由
   `fixed_params` 取 truth，truth 点必须执行。
-- [ ] 用 `InversionObjective` 执行剖面，记录总损失、九类损失分量、有限性、
+- [x] 用 `InversionObjective` 执行剖面，记录总损失、九类损失分量、有限性、
   ODE/Tafel 计数和运行时间。
-- [ ] 写 `profile_rows.csv`、`profile_summary.json`、`run_manifest.json`；
+- [x] 写 `profile_rows.csv`、`profile_summary.json`、`run_manifest.json`；
   manifest 记录 commit、dirty、命令、环境、配置和 SHA256。
-- [ ] 正式模式拒绝 dirty worktree、输出覆盖、缺行、非有限 truth loss 或
+- [x] 正式模式拒绝 dirty worktree、输出覆盖、缺行、非有限 truth loss 或
   provenance 不完整。
 
 ### Task 3：验证、提交与 Legion 正式计算
@@ -50,7 +50,7 @@
 - Modify: `documents/corrections/项目纠错.md`（仅出现新问题时）
 - Create: `results/formal/identifiability/gate-a6-profile-<commit>/`
 
-- [ ] Mac 运行 runner smoke，验收 truth 点、schema 和 manifest。
+- [x] Mac 运行 runner smoke，验收 truth 点、schema 和 manifest。
 - [ ] 运行 Python 全量测试。
 - [ ] 提交并推送 profile 代码、测试和计划。
 - [ ] 在 Legion 创建精确 commit worktree，用 8 workers、每 worker 1 BLAS
