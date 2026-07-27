@@ -48,9 +48,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--workers", type=int, default=8)
-    p.add_argument("--grid-points", type=int, default=41)
+    p.add_argument("--grid-points", "--grid_points", type=int, default=41)
     p.add_argument("--smoke", action="store_true")
-    p.add_argument("--max-profiles", type=int)
+    p.add_argument("--max-profiles", "--max_profiles", type=int, default=None)
     return p.parse_args(argv)
 
 

@@ -1,0 +1,43 @@
+task_name: "a6_2d_profiles"
+commit: "bafe8b09af0a11a36efc7bcf2bcb19ed8d3d2d1a"
+description: "Gate A6 selective 2-parameter profiles (lockin_only/hybrid × 6 pairs)"
+
+python:
+  source: "main_repo"
+  path: ".venv/bin/python"
+
+worktree_root: "worktrees"
+
+env:
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  PYTHONPATH: "code/python/src"
+
+build:
+  required: false
+
+script: "code/python/scripts/run_2d_profiles.py"
+args: []
+workers: 8
+output_dir: "results/a6_2d_profiles"
+
+smoke:
+  enabled: true
+  overrides:
+    max_profiles: 1
+    grid_points: 5
+  expected_files:
+    - "profile_2d_rows.csv"
+    - "profile_2d_summary.json"
+    - "run_manifest.json"
+    - "STATUS.json"
+
+expected_files:
+  - "profile_2d_rows.csv"
+  - "profile_2d_summary.json"
+  - "run_manifest.json"
+  - "STATUS.json"
+validators:
+  - schema_check
+  - finite_check
+  - provenance

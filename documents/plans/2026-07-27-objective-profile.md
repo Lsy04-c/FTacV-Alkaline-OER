@@ -51,7 +51,7 @@
 - Create: `results/formal/identifiability/gate-a6-profile-<commit>/`
 
 - [x] Mac 运行 runner smoke，验收 truth 点、schema 和 manifest。
-- [ ] 运行 Python 全量测试。
+- [x] 运行 Python 全量测试（168 passed，commit `945414d`）。
 - [x] 提交并推送 profile 代码、测试和计划。
 - [x] 在 Legion 创建精确 commit worktree，用 8 workers、每 worker 1 BLAS
   thread 运行正式 profile。
