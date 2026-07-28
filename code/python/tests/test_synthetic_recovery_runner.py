@@ -17,6 +17,7 @@ from scripts.run_synthetic_recovery import (
     prepare_output_directory,
     run_job,
     main,
+    validate_backend,
     validate_noise_evidence,
 )
 
@@ -41,6 +42,54 @@ def test_formal_runner_matches_frozen_a5_grid(tmp_path):
     assert config.feature_grid_size == 128
     assert config.solver_backend == "lsoda"
     assert config.feature_mode == "hybrid"
+
+
+def test_parse_args_defaults_to_lsoda_backend(tmp_path):
+    args = parse_args(
+        [
+            "--phase",
+            "pilot",
+            "--noise-fraction",
+            "0.0015",
+            "--output",
+            str(tmp_path / "pilot"),
+        ]
+    )
+
+    assert args.backend == "lsoda"
+
+
+def test_explicit_cn_backend_is_preserved_in_config_and_jobs(tmp_path):
+    args = parse_args(
+        [
+            "--phase",
+            "pilot",
+            "--noise-fraction",
+            "0.0015",
+            "--output",
+            str(tmp_path / "pilot"),
+            "--backend",
+            "cn",
+        ]
+    )
+
+    config = build_config(args, feature_mode="hybrid", seed=17)
+    jobs = build_jobs(args)
+
+    assert config.solver_backend == "cn"
+    assert {job["backend"] for job in jobs} == {"cn"}
+
+
+def test_validate_backend_rejects_cn_when_cpp_bridge_unavailable(monkeypatch):
+    from oer_aem import cpp_bridge
+
+    monkeypatch.setattr(cpp_bridge, "is_available", lambda: False)
+
+    with pytest.raises(
+        RuntimeError,
+        match="CN backend requested but unavailable; fallback is forbidden",
+    ):
+        validate_backend("cn")
 
 
 def test_smoke_runner_uses_small_simulation_grid(tmp_path):
@@ -506,6 +555,83 @@ def test_resume_rejects_changed_scientific_configuration(monkeypatch, tmp_path):
                 "--resume",
             ]
         )
+
+
+def test_resume_rejects_legacy_v1_plan_before_fingerprint(monkeypatch, tmp_path):
+    output = tmp_path / "resume"
+    output.mkdir()
+    (output / "job_plan.json").write_text(
+        json.dumps(
+            {
+                "resume_schema_version": 1,
+                "resume_fingerprint": "legacy",
+                "jobs": [],
+            }
+        )
+        + "\n"
+    )
+    provenance = {
+        "source_commit": "deadbeef",
+        "dirty": False,
+        "dirty_paths": [],
+        "ignored_workflow_paths": [],
+    }
+    monkeypatch.setattr(recovery_runner, "git_state_full", lambda: provenance)
+    monkeypatch.setattr(recovery_runner, "summarize_recovery", lambda *a, **k: {})
+    monkeypatch.setattr(recovery_runner, "select_trial_budget", lambda rows: {})
+
+    with pytest.raises(ValueError, match="resume schema version mismatch"):
+        main(
+            [
+                "--phase",
+                "pilot",
+                "--noise-fraction",
+                "0.0015",
+                "--output",
+                str(output),
+                "--smoke",
+                "--max-jobs",
+                "1",
+                "--resume",
+            ]
+        )
+
+
+def test_main_writes_resume_schema_version_two(monkeypatch, tmp_path):
+    output = tmp_path / "schema"
+    provenance = {
+        "source_commit": "deadbeef",
+        "dirty": False,
+        "dirty_paths": [],
+        "ignored_workflow_paths": [],
+    }
+    monkeypatch.setattr(recovery_runner, "git_state_full", lambda: provenance)
+    monkeypatch.setattr(recovery_runner, "summarize_recovery", lambda *a, **k: {})
+    monkeypatch.setattr(recovery_runner, "select_trial_budget", lambda rows: {})
+    monkeypatch.setattr(
+        recovery_runner,
+        "iter_job_results",
+        lambda jobs, **kwargs: iter(
+            [_checkpoint_row(job, job["job_input_hash"]) for job in jobs]
+        ),
+    )
+
+    main(
+        [
+            "--phase",
+            "pilot",
+            "--noise-fraction",
+            "0.0015",
+            "--output",
+            str(output),
+            "--smoke",
+            "--max-jobs",
+            "1",
+        ]
+    )
+
+    plan = json.loads((output / "job_plan.json").read_text())
+    assert plan["resume_schema_version"] == 2
 
 
 def test_a6_workflow_enables_resume_and_eight_workers():

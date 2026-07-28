@@ -57,6 +57,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--noise-fraction", type=float, required=True)
     parser.add_argument("--noise-evidence", type=Path)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--backend", choices=("cn", "lsoda"), default="lsoda")
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--trials", type=int)
     parser.add_argument(
@@ -101,9 +102,19 @@ def build_config(
         feature_grid_size=128,
         fit_harmonics=(1, 2, 3),
         feature_mode=feature_mode,
-        solver_backend="lsoda",
+        solver_backend=args.backend,
         seed=seed,
     )
+
+
+def validate_backend(backend: str) -> None:
+    if backend == "cn":
+        from oer_aem import cpp_bridge
+
+        if not cpp_bridge.is_available():
+            raise RuntimeError(
+                "CN backend requested but unavailable; fallback is forbidden"
+            )
 
 
 def build_jobs(args: argparse.Namespace) -> list[dict]:
@@ -130,6 +141,7 @@ def build_jobs(args: argparse.Namespace) -> list[dict]:
         )
     for job in jobs:
         job["free_parameters"] = free_parameters
+        job["backend"] = args.backend
     return jobs
 
 
@@ -193,6 +205,7 @@ def build_recovery_problem(job: dict, *, smoke: bool):
         smoke=smoke,
         noise_fraction=job["noise_fraction"],
         workers=1,
+        backend=job["backend"],
     )
     config = build_config(
         args,
@@ -244,7 +257,7 @@ def build_resume_metadata(
         job["job_id"]: job_input_hash(job, smoke=args.smoke) for job in jobs
     }
     fingerprint_payload = {
-        "schema_version": 1,
+        "schema_version": 2,
         "source_commit": provenance["source_commit"],
         "dirty": provenance["dirty"],
         "dirty_paths": sorted(provenance.get("dirty_paths", [])),
@@ -260,7 +273,7 @@ def build_resume_metadata(
         ],
     }
     return {
-        "resume_schema_version": 1,
+        "resume_schema_version": 2,
         "resume_fingerprint": hashlib.sha256(
             _canonical_json(fingerprint_payload).encode("utf-8")
         ).hexdigest(),
@@ -579,6 +592,7 @@ def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     if args.resume and args.dry_run:
         raise ValueError("--resume and --dry-run cannot be combined")
+    validate_backend(args.backend)
     jobs = limit_jobs(build_jobs(args), args.max_jobs)
     provenance = git_state_full()
     noise_evidence = None
@@ -621,6 +635,10 @@ def main(argv: list[str] | None = None) -> None:
             raise ValueError("job_plan.json is not valid JSON") from exc
         if not isinstance(existing_plan, dict):
             raise ValueError("job_plan.json must contain a JSON object")
+        if existing_plan.get("resume_schema_version") != 2:
+            raise ValueError(
+                "resume schema version mismatch; legacy checkpoints cannot be mixed with backend-aware evidence"
+            )
         if (
             existing_plan.get("resume_fingerprint")
             != resume_metadata["resume_fingerprint"]
