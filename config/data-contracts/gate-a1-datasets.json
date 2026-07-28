@@ -1,0 +1,246 @@
+{
+  "schema_version": 1,
+  "gate_version": 1,
+  "datasets": [
+    {
+      "dataset_id": "FT2",
+      "path": "data/raw/ftacv2-ref-5hz.txt",
+      "sha256": "979fdd7e132f8dffbe32671a9f3476eac4dcdcd79bc6ab8b29578af2401b0091",
+      "byte_count": 1679678,
+      "expected_rows": 65536,
+      "expected_columns": 3,
+      "metadata": {
+        "potential_unit": {
+          "value": "V",
+          "source_kind": "legacy_assumption",
+          "source_note": "Used by historical project code; no primary experiment record is tracked"
+        },
+        "potential_reference": {
+          "value": null,
+          "source_kind": "unresolved",
+          "source_note": "No primary experiment record is tracked"
+        },
+        "current_unit": {
+          "value": "A",
+          "source_kind": "legacy_assumption",
+          "source_note": "Used by historical project code; no primary experiment record is tracked"
+        },
+        "time_unit": {
+          "value": "s",
+          "source_kind": "legacy_assumption",
+          "source_note": "Used by historical project code; no primary experiment record is tracked"
+        },
+        "frequency_hz": {
+          "value": null,
+          "source_kind": "derived",
+          "source_note": "Derived from detrended applied potential"
+        },
+        "amplitude_v": {
+          "value": null,
+          "source_kind": "derived",
+          "source_note": "Derived from applied-potential harmonic regression"
+        },
+        "scan_rate_v_s": {
+          "value": null,
+          "source_kind": "derived",
+          "source_note": "Derived from joint ramp and harmonic regression"
+        },
+        "scan_direction": {
+          "value": "forward",
+          "source_kind": "derived",
+          "source_note": "Derived from positive fitted DC slope"
+        },
+        "continuous_forward_scan": {
+          "value": true,
+          "source_kind": "derived",
+          "source_note": "Derived from monotonic time and positive DC trend"
+        },
+        "instrument_preprocessing": {
+          "value": null,
+          "source_kind": "unresolved",
+          "source_note": "No instrument method or primary experiment record is tracked"
+        }
+      }
+    },
+    {
+      "dataset_id": "FT3",
+      "path": "data/raw/ftacv3-ref-5Hz.txt",
+      "sha256": "72af2050d2b8400d68520df7aba5c08c74420b1b711c0e8f229fa64cdfaa468c",
+      "byte_count": 1647261,
+      "expected_rows": 65536,
+      "expected_columns": 3,
+      "metadata": {
+        "potential_unit": {
+          "value": "V",
+          "source_kind": "legacy_assumption",
+          "source_note": "Used by historical project code; no primary experiment record is tracked"
+        },
+        "potential_reference": {
+          "value": null,
+          "source_kind": "unresolved",
+          "source_note": "No primary experiment record is tracked"
+        },
+        "current_unit": {
+          "value": "A",
+          "source_kind": "legacy_assumption",
+          "source_note": "Used by historical project code; no primary experiment record is tracked"
+        },
+        "time_unit": {
+          "value": "s",
+          "source_kind": "legacy_assumption",
+          "source_note": "Used by historical project code; no primary experiment record is tracked"
+        },
+        "frequency_hz": {
+          "value": null,
+          "source_kind": "derived",
+          "source_note": "Derived from detrended applied potential"
+        },
+        "amplitude_v": {
+          "value": null,
+          "source_kind": "derived",
+          "source_note": "Derived from applied-potential harmonic regression"
+        },
+        "scan_rate_v_s": {
+          "value": null,
+          "source_kind": "derived",
+          "source_note": "Derived from joint ramp and harmonic regression"
+        },
+        "scan_direction": {
+          "value": "forward",
+          "source_kind": "derived",
+          "source_note": "Derived from positive fitted DC slope"
+        },
+        "continuous_forward_scan": {
+          "value": true,
+          "source_kind": "derived",
+          "source_note": "Derived from monotonic time and positive DC trend"
+        },
+        "instrument_preprocessing": {
+          "value": null,
+          "source_kind": "unresolved",
+          "source_note": "No instrument method or primary experiment record is tracked"
+        }
+      }
+    },
+    {
+      "dataset_id": "FT4",
+      "path": "data/raw/ftacv4-ref-1hz.txt",
+      "sha256": "f9b6b8448dc27ed7a78147beb9b6b05aa2cba105d195cb6aaa30e473ffcb3a21",
+      "byte_count": 1669789,
+      "expected_rows": 65536,
+      "expected_columns": 3,
+      "metadata": {
+        "potential_unit": {
+          "value": "V",
+          "source_kind": "legacy_assumption",
+          "source_note": "Used by historical project code; no primary experiment record is tracked"
+        },
+        "potential_reference": {
+          "value": null,
+          "source_kind": "unresolved",
+          "source_note": "No primary experiment record is tracked"
+        },
+        "current_unit": {
+          "value": "A",
+          "source_kind": "legacy_assumption",
+          "source_note": "Used by historical project code; no primary experiment record is tracked"
+        },
+        "time_unit": {
+          "value": "s",
+          "source_kind": "legacy_assumption",
+          "source_note": "Used by historical project code; no primary experiment record is tracked"
+        },
+        "frequency_hz": {
+          "value": null,
+          "source_kind": "derived",
+          "source_note": "Derived from detrended applied potential"
+        },
+        "amplitude_v": {
+          "value": null,
+          "source_kind": "derived",
+          "source_note": "Derived from applied-potential harmonic regression"
+        },
+        "scan_rate_v_s": {
+          "value": null,
+          "source_kind": "derived",
+          "source_note": "Derived from joint ramp and harmonic regression"
+        },
+        "scan_direction": {
+          "value": "forward",
+          "source_kind": "derived",
+          "source_note": "Derived from positive fitted DC slope"
+        },
+        "continuous_forward_scan": {
+          "value": true,
+          "source_kind": "derived",
+          "source_note": "Derived from monotonic time and positive DC trend"
+        },
+        "instrument_preprocessing": {
+          "value": null,
+          "source_kind": "unresolved",
+          "source_note": "No instrument method or primary experiment record is tracked"
+        }
+      }
+    },
+    {
+      "dataset_id": "FT8",
+      "path": "data/raw/ftacv8-ref-5Hz.txt",
+      "sha256": "943d2406370be468c4a112a337c55d53ef16c43482b610915ca552723ae9be0d",
+      "byte_count": 1674683,
+      "expected_rows": 65536,
+      "expected_columns": 3,
+      "metadata": {
+        "potential_unit": {
+          "value": "V",
+          "source_kind": "legacy_assumption",
+          "source_note": "Used by historical project code; no primary experiment record is tracked"
+        },
+        "potential_reference": {
+          "value": null,
+          "source_kind": "unresolved",
+          "source_note": "No primary experiment record is tracked"
+        },
+        "current_unit": {
+          "value": "A",
+          "source_kind": "legacy_assumption",
+          "source_note": "Used by historical project code; no primary experiment record is tracked"
+        },
+        "time_unit": {
+          "value": "s",
+          "source_kind": "legacy_assumption",
+          "source_note": "Used by historical project code; no primary experiment record is tracked"
+        },
+        "frequency_hz": {
+          "value": null,
+          "source_kind": "derived",
+          "source_note": "Derived from detrended applied potential"
+        },
+        "amplitude_v": {
+          "value": null,
+          "source_kind": "derived",
+          "source_note": "Derived from applied-potential harmonic regression"
+        },
+        "scan_rate_v_s": {
+          "value": null,
+          "source_kind": "derived",
+          "source_note": "Derived from joint ramp and harmonic regression"
+        },
+        "scan_direction": {
+          "value": "forward",
+          "source_kind": "derived",
+          "source_note": "Derived from positive fitted DC slope"
+        },
+        "continuous_forward_scan": {
+          "value": true,
+          "source_kind": "derived",
+          "source_note": "Derived from monotonic time and positive DC trend"
+        },
+        "instrument_preprocessing": {
+          "value": null,
+          "source_kind": "unresolved",
+          "source_note": "No instrument method or primary experiment record is tracked"
+        }
+      }
+    }
+  ]
+}
