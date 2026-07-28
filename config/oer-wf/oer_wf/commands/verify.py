@@ -13,6 +13,7 @@ from oer_wf.snapshot import SNAPSHOT_FILENAME, load_snapshot
 from oer_wf.validators import (
     finite_check,
     manifest_hash,
+    optimizer_benchmark_gate,
     provenance,
     recovery_gate,
     schema_check,
@@ -23,6 +24,7 @@ _VALIDATOR_MAP = {
     "finite_check": finite_check.run,
     "provenance": provenance.run,
     "manifest_hash": manifest_hash.run,
+    "optimizer_benchmark_gate": optimizer_benchmark_gate.run,
     "recovery_gate": recovery_gate.run,
 }
 
@@ -184,12 +186,12 @@ def run_verify(
             )
             continue
         try:
-            if name == "recovery_gate":
+            if name in {"recovery_gate", "optimizer_benchmark_gate"}:
                 checks.extend(
                     fn(
                         archive,
                         expected,
-                        validator_config=validator_config.get("recovery_gate") or {},
+                        validator_config=validator_config.get(name) or {},
                     )
                 )
             else:
