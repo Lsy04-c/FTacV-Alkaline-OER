@@ -611,11 +611,7 @@ M PROJECT_SUMMARY.md
 
 ## 9. 下一步操作计划（2026-07-20）
 
-已生成：
-
-```text
-docs/deepseek/next_action_plan.md
-```
+本节保留当时的内部诊断计划；原临时交接文件已在文档清理时移除。
 
 当前阶段不按中期汇报推进，而按内部诊断推进。核心任务是定位 `poor fit` 的来源，并压力测试热力学描述符稳定性。
 
@@ -1100,3 +1096,16 @@ H1-H7压力测试：
   1. 按新的耦合约束定义最终自由参数集
   2. 在缩减参数集上重跑合成恢复（synthetic recovery），完成 Gate A6
   3. 通过后冻结参数集，启动真实数据 TPE
+
+## 23. A6 job级断点续跑与8 Workers（2026-07-29）
+
+- recovery runner 增加显式 `--resume`；默认模式仍拒绝覆盖已有科学输出。
+- 每个job完成后由父进程按计划顺序原子替换 `results.jsonl`，中断后只运行缺失job。
+- 恢复严格校验源码commit、dirty状态、科学配置、完整job集合和
+  `job_input_hash`；旧结果、损坏JSONL、重复或未知job均拒绝。
+- `oer-wf 0.6.4` 增加 `--resume-timestamp`。只有spec声明
+  `supports_resume: true` 才能复用精确历史目录；不能与 `--force` 混用。
+- A6正式配置从4改为8 workers；smoke仍为1 job × 5 trials。
+- 本机完整测试：255 passed。真实smoke首次运行成功，随后以不同workers恢复时
+  复用1/1 job、执行0个新job。
+- 尚未完成：Legion远端smoke与部署验证；当前旧commit正式计算不支持热更新或续跑。

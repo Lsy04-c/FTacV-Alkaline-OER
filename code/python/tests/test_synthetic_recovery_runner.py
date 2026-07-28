@@ -2,8 +2,10 @@
 
 import hashlib
 import json
+import math
 
 import pytest
+import yaml
 
 from scripts import run_synthetic_recovery as recovery_runner
 from scripts.run_synthetic_recovery import (
@@ -297,6 +299,228 @@ def test_prepare_output_directory_rejects_existing_scientific_output(tmp_path):
         prepare_output_directory(output)
 
     assert result.read_text() == '{"kept": true}\n'
+
+
+def test_parse_args_accepts_explicit_resume(tmp_path):
+    args = parse_args(
+        [
+            "--phase",
+            "pilot",
+            "--noise-fraction",
+            "0.0015",
+            "--output",
+            str(tmp_path),
+            "--resume",
+        ]
+    )
+
+    assert args.resume is True
+
+
+def test_resume_directory_rejects_results_without_plan(tmp_path):
+    (tmp_path / "results.jsonl").write_text("{}\n")
+
+    with pytest.raises(ValueError, match="job_plan"):
+        prepare_output_directory(tmp_path, resume=True)
+
+
+def test_resume_directory_allows_new_or_planned_output(tmp_path):
+    new_output = tmp_path / "new"
+    prepare_output_directory(new_output, resume=True)
+    assert new_output.is_dir()
+
+    planned = tmp_path / "planned"
+    planned.mkdir()
+    (planned / "job_plan.json").write_text("{}\n")
+    (planned / "results.jsonl").write_text("")
+    prepare_output_directory(planned, resume=True)
+
+
+def _checkpoint_row(job, job_hash):
+    return {
+        **job,
+        "job_input_hash": job_hash,
+        "success": True,
+        "best_value": 0.25,
+        "best_params": {"k0_1": 1.0},
+        "parameter_metrics": {"k0_1": {"relative_error": 0.0}},
+        "n_trials": job["trials"],
+        "n_forward": job["trials"],
+        "n_ode_fail": 0,
+        "n_tafel_fail": 0,
+        "runtime_seconds": 0.1,
+        "configuration": {
+            "n_points": 256,
+            "points_per_cycle": 32,
+            "feature_grid_size": 128,
+            "solver_backend": "lsoda",
+        },
+    }
+
+
+def test_checkpoint_loader_rejects_missing_hash_duplicate_and_nonfinite(tmp_path):
+    jobs = [{"job_id": "a"}, {"job_id": "b"}]
+    expected = {"a": "ha", "b": "hb"}
+    path = tmp_path / "results.jsonl"
+
+    path.write_text('{"job_id":"a"}\n')
+    with pytest.raises(ValueError, match="job_input_hash"):
+        recovery_runner.load_checkpoint_rows(path, expected)
+
+    row = {"job_id": "a", "job_input_hash": "ha", "best_value": 1.0}
+    path.write_text(json.dumps(row) + "\n" + json.dumps(row) + "\n")
+    with pytest.raises(ValueError, match="duplicate"):
+        recovery_runner.load_checkpoint_rows(path, expected)
+
+    row["best_value"] = math.inf
+    path.write_text(json.dumps(row) + "\n")
+    with pytest.raises(ValueError, match="non-finite"):
+        recovery_runner.load_checkpoint_rows(path, expected)
+
+
+def test_atomic_checkpoint_preserves_planned_order(tmp_path):
+    path = tmp_path / "results.jsonl"
+    rows = {
+        "b": {"job_id": "b", "job_input_hash": "hb"},
+        "a": {"job_id": "a", "job_input_hash": "ha"},
+    }
+
+    recovery_runner.atomic_write_checkpoint(path, rows, ["a", "b"])
+
+    loaded = [json.loads(line) for line in path.read_text().splitlines()]
+    assert [row["job_id"] for row in loaded] == ["a", "b"]
+
+
+def test_iter_job_results_accepts_empty_job_list():
+    assert list(recovery_runner.iter_job_results([], workers=8, smoke=True)) == []
+
+
+def test_resume_after_interruption_runs_only_missing_jobs(
+    monkeypatch, tmp_path
+):
+    output = tmp_path / "resume"
+    provenance = {
+        "source_commit": "deadbeef",
+        "dirty": False,
+        "dirty_paths": [],
+        "ignored_workflow_paths": [],
+    }
+    monkeypatch.setattr(recovery_runner, "git_state_full", lambda: provenance)
+    monkeypatch.setattr(recovery_runner, "summarize_recovery", lambda *a, **k: {})
+    monkeypatch.setattr(recovery_runner, "select_trial_budget", lambda rows: {})
+
+    calls = []
+    fail_once = {"value": True}
+
+    def interrupted(jobs, **kwargs):
+        for index, job in enumerate(jobs):
+            calls.append(job["job_id"])
+            if index == 1 and fail_once["value"]:
+                fail_once["value"] = False
+                raise RuntimeError("simulated interruption")
+            yield _checkpoint_row(job, job["job_input_hash"])
+
+    monkeypatch.setattr(recovery_runner, "iter_job_results", interrupted)
+    common = [
+        "--phase",
+        "pilot",
+        "--noise-fraction",
+        "0.0015",
+        "--output",
+        str(output),
+        "--workers",
+        "1",
+        "--smoke",
+        "--max-jobs",
+        "3",
+    ]
+
+    with pytest.raises(RuntimeError, match="simulated"):
+        main(common)
+
+    first_rows = [
+        json.loads(line) for line in (output / "results.jsonl").read_text().splitlines()
+    ]
+    assert len(first_rows) == 1
+    first_job_id = first_rows[0]["job_id"]
+
+    calls.clear()
+    main([*common, "--resume"])
+
+    assert first_job_id not in calls
+    assert len(calls) == 2
+    summary = json.loads((output / "summary.json").read_text())
+    assert summary["completed_jobs"] == 3
+    assert summary["reused_jobs"] == 1
+    assert summary["executed_jobs"] == 2
+    assert summary["resumed"] is True
+
+    calls.clear()
+    main([*common, "--resume"])
+    assert calls == []
+
+
+def test_resume_rejects_changed_scientific_configuration(monkeypatch, tmp_path):
+    output = tmp_path / "resume"
+    provenance = {
+        "source_commit": "deadbeef",
+        "dirty": False,
+        "dirty_paths": [],
+        "ignored_workflow_paths": [],
+    }
+    monkeypatch.setattr(recovery_runner, "git_state_full", lambda: provenance)
+    monkeypatch.setattr(recovery_runner, "summarize_recovery", lambda *a, **k: {})
+    monkeypatch.setattr(recovery_runner, "select_trial_budget", lambda rows: {})
+    monkeypatch.setattr(
+        recovery_runner,
+        "iter_job_results",
+        lambda jobs, **kwargs: iter(
+            [_checkpoint_row(job, job["job_input_hash"]) for job in jobs]
+        ),
+    )
+    common = [
+        "--phase",
+        "pilot",
+        "--noise-fraction",
+        "0.0015",
+        "--output",
+        str(output),
+        "--smoke",
+        "--max-jobs",
+        "1",
+    ]
+    main(common)
+
+    with pytest.raises(ValueError, match="fingerprint"):
+        main(
+            [
+                "--phase",
+                "pilot",
+                "--noise-fraction",
+                "0.002",
+                "--output",
+                str(output),
+                "--smoke",
+                "--max-jobs",
+                "1",
+                "--resume",
+            ]
+        )
+
+
+def test_a6_workflow_enables_resume_and_eight_workers():
+    spec_path = (
+        recovery_runner.ROOT
+        / "config"
+        / "oer-wf"
+        / "examples"
+        / "a6_recovery_reduced.yaml"
+    )
+    spec = yaml.safe_load(spec_path.read_text())
+
+    assert spec["supports_resume"] is True
+    assert spec["workers"] == 8
+    assert spec["smoke"]["overrides"] == {"trials": 5, "max_jobs": 1}
 
 
 def test_formal_noise_must_match_evidence_file(tmp_path):

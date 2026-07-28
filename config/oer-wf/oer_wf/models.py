@@ -91,6 +91,7 @@ class TaskSpec(BaseModel):
     script: str
     args: list[str] = Field(default_factory=list)
     workers: int = 1
+    supports_resume: Optional[bool] = None
     output_dir: str  # relative base; actual run creates <output_dir>/<timestamp>/
 
     smoke: SmokeSpec = Field(default_factory=SmokeSpec)

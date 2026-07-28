@@ -17,6 +17,7 @@ build:
   required: false
 
 script: "code/python/scripts/run_synthetic_recovery.py"
+supports_resume: true
 args:
   - "--phase"
   - "formal"
@@ -28,7 +29,7 @@ args:
   - "k0_2,k0_3,G_O"
   - "--trials"
   - "100"
-workers: 4
+workers: 8
 output_dir: "results/a6_recovery_reduced"
 
 smoke:

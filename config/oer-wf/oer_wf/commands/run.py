@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import re
 import shlex
 from pathlib import Path
 from typing import Optional
@@ -28,6 +29,7 @@ def run_run(
     spec_path: str | Path,
     force: bool = False,
     skip_smoke: bool = False,
+    resume_timestamp: Optional[str] = None,
     executor: Optional[Executor] = None,
 ) -> WfResponse:
     """
@@ -50,6 +52,26 @@ def run_run(
             f"invalid task_spec: {e}",
             next_action="fix the YAML schema",
         )
+
+    if resume_timestamp is not None:
+        if force:
+            return fail(
+                FailType.STRUCTURE,
+                "--force and --resume-timestamp are mutually exclusive",
+                next_action="choose a new run or resume one exact prior run",
+            )
+        if not spec.supports_resume:
+            return fail(
+                FailType.STRUCTURE,
+                "task spec does not declare resume support",
+                next_action="add supports_resume: true only after runner validation",
+            )
+        if re.fullmatch(r"\d{8}_\d{6}", resume_timestamp) is None:
+            return fail(
+                FailType.STRUCTURE,
+                f"invalid resume timestamp: {resume_timestamp!r}",
+                next_action="use the exact YYYYMMDD_HHMMSS result directory name",
+            )
 
     main_repo = config.WSL_MAIN_REPO
     wt = spec.worktree_path(main_repo)
@@ -121,7 +143,7 @@ def run_run(
             },
         )
 
-    if sd.exists and sd.is_inactive and not force:
+    if sd.exists and sd.is_inactive and not force and resume_timestamp is None:
         return fail(
             FailType.ENVIRONMENT,
             f"unit exists in state '{sd.active}/{sd.sub}'. "
@@ -135,7 +157,7 @@ def run_run(
     # Timestamp is generated locally; collision probability is negligible.
     from oer_wf.utils.paths import timestamp_utc
 
-    ts = timestamp_utc()
+    ts = resume_timestamp or timestamp_utc()
     # Probe: ensure worktree is reachable for path resolution
     r_wt = ex.ssh_exec(f"test -d {wt} && echo yes || echo no")
     if not r_wt.ok or "yes" not in r_wt.stdout:
@@ -145,17 +167,28 @@ def run_run(
             next_action=f"wf prepare {spec_path}",
         )
 
-    # Create output dir on remote
     out_rel = f"{spec.output_dir}/{ts}"
     out_abs = f"{wt}/{out_rel}"
-    r_mkdir = ex.ssh_exec(f"mkdir -p {shlex.quote(out_abs)} && echo OK")
-    if not r_mkdir.ok or "OK" not in r_mkdir.stdout:
-        return fail(
-            FailType.TRANSPORT,
-            f"cannot create output dir: {out_abs}",
-            next_action="check disk space / permissions",
-            data={"stderr": r_mkdir.stderr},
+    if resume_timestamp is not None:
+        r_existing = ex.ssh_exec(
+            f"test -d {shlex.quote(out_abs)} && "
+            f"test -f {shlex.quote(out_abs + '/job_plan.json')} && echo OK || echo MISSING"
         )
+        if not r_existing.ok or "OK" not in r_existing.stdout:
+            return fail(
+                FailType.STRUCTURE,
+                f"resume output or job_plan.json missing: {out_abs}",
+                next_action="select an existing failed/incomplete result timestamp",
+            )
+    else:
+        r_mkdir = ex.ssh_exec(f"mkdir -p {shlex.quote(out_abs)} && echo OK")
+        if not r_mkdir.ok or "OK" not in r_mkdir.stdout:
+            return fail(
+                FailType.TRANSPORT,
+                f"cannot create output dir: {out_abs}",
+                next_action="check disk space / permissions",
+                data={"stderr": r_mkdir.stderr},
+            )
 
     # Local Path objects for build_command (paths are WSL-absolute strings)
     worktree_p = Path(str(wt))
@@ -168,6 +201,9 @@ def run_run(
         worktree=worktree_p,
         output_dir=output_p,
         is_smoke=False,
+        extra_overrides={"resume": True}
+        if resume_timestamp is not None
+        else None,
     )
 
     # ---- 4. wrap command with universal wrapper ----
@@ -245,6 +281,8 @@ def run_run(
             "output_rel": out_rel,
             "timestamp": ts,
             "force": force,
+            "resumed": resume_timestamp is not None,
+            "resume_timestamp": resume_timestamp,
             "command": plan.argv,
             "wrapped": True,
         },

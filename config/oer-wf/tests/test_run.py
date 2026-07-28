@@ -105,3 +105,77 @@ def test_run_starts_with_force(mock_ex: MockExecutor, sample_spec: Path) -> None
     assert resp.data.get("force") is True
     assert "output_dir" in resp.data
     assert resp.data.get("wrapped") is True
+
+
+def test_run_rejects_resume_for_task_without_support(
+    mock_ex: MockExecutor, sample_spec: Path
+) -> None:
+    resp = run_run(
+        sample_spec,
+        resume_timestamp="20260729_010203",
+        executor=mock_ex,
+        skip_smoke=True,
+    )
+
+    assert resp.status == StatusEnum.FAIL
+    assert "resume" in resp.message.lower()
+
+
+def test_run_resume_reuses_exact_timestamp_directory(
+    mock_ex: MockExecutor, sample_spec: Path
+) -> None:
+    data = yaml.safe_load(sample_spec.read_text())
+    data["supports_resume"] = True
+    sample_spec.write_text(yaml.safe_dump(data))
+    mock_ex.when_ssh(".wf_lock").returns(
+        0,
+        '{"task_id":"3f9aad1/solver_equiv_01","task_name":"solver_equiv_01",'
+        '"spec_hash":"sha256:x","commit":"3f9aad1","created_at":"t","worktree_path":"/w"}\n',
+    )
+    mock_ex.when_ssh("systemctl --user show").returns(
+        0,
+        "LoadState=loaded\nActiveState=failed\nSubState=failed\nMainPID=0\n"
+        "Result=exit-code\nExecMainStatus=1\n",
+    )
+    mock_ex.when_ssh("&& echo yes || echo no").returns(0, "yes\n")
+    mock_ex.when_ssh("job_plan.json").returns(0, "OK\n")
+    mock_ex.when_ssh("base64").returns(0, "OK\n")
+    mock_ex.when_ssh("daemon-reload").returns(0, "OK\n")
+    mock_ex.when_ssh("systemctl --user start").returns(0, "STARTED\n")
+
+    resp = run_run(
+        sample_spec,
+        resume_timestamp="20260729_010203",
+        executor=mock_ex,
+        skip_smoke=True,
+    )
+
+    assert resp.status == StatusEnum.PASS
+    assert resp.data["resumed"] is True
+    assert resp.data["output_rel"].endswith("20260729_010203")
+    assert "--resume" in resp.data["command"]
+
+
+def test_run_rejects_resume_with_force_or_invalid_timestamp(
+    mock_ex: MockExecutor, sample_spec: Path
+) -> None:
+    data = yaml.safe_load(sample_spec.read_text())
+    data["supports_resume"] = True
+    sample_spec.write_text(yaml.safe_dump(data))
+
+    with_force = run_run(
+        sample_spec,
+        force=True,
+        resume_timestamp="20260729_010203",
+        executor=mock_ex,
+        skip_smoke=True,
+    )
+    invalid = run_run(
+        sample_spec,
+        resume_timestamp="../old",
+        executor=mock_ex,
+        skip_smoke=True,
+    )
+
+    assert with_force.status == StatusEnum.FAIL
+    assert invalid.status == StatusEnum.FAIL

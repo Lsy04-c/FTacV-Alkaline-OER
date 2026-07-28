@@ -1,6 +1,6 @@
 # oer-wf 可复用计算工作流 — 使用指南
 
-> 版本：0.6.3 | 49 测试通过 | 真实 Legion 环境验证 | 2026-07-27
+> 版本：0.6.4 | 52 个工作流测试通过 | 断点续跑待 Legion smoke | 2026-07-29
 
 ## 1. 这是什么
 
@@ -24,7 +24,7 @@
 - `vmIdleTimeout=-1`
 - 项目主仓库：`/home/lsy/OER-FTAcV`，虚拟环境：`.venv`
 - rsync 3.2.7，oer-wf 已安装到项目 venv
-- SSH 详情：`documents/specifications/ssh-setup.md`
+- SSH 详情：`config/oer-wf/docs/ssh_setup.md`
 
 ### SSH 连通性验证
 ```bash
@@ -43,7 +43,7 @@ pip install -e ".[dev]" --trusted-host pypi.org --trusted-host files.pythonhoste
 
 验证：
 ```bash
-wf --version   # 0.6.3
+wf --version   # 0.6.4
 pytest -q      # 49 passed
 ```
 
@@ -107,13 +107,19 @@ wf prepare examples/solver_equiv_01.yaml
 wf smoke examples/solver_equiv_01.yaml
 ```
 
-### 6.4 `wf run <spec> [--force]` — 正式计算
+### 6.4 `wf run <spec> [--force|--resume-timestamp]` — 正式计算
 启动 systemd 用户服务。active 时默认拒绝，`--force` 新时间戳目录。
+只有声明 `supports_resume: true` 的任务可以恢复指定历史目录：
 ```bash
 wf run examples/solver_equiv_01.yaml
 wf run examples/solver_equiv_01.yaml --force
+wf run examples/a6_recovery_reduced.yaml --resume-timestamp 20260729_010203
 ```
 输出：`<output_dir>/<YYYYMMDD_HHMMSS>/`
+
+续跑不会创建新目录。runner 必须验证原计划指纹和每个 job 的输入哈希；缺少计划、
+配置或 commit 不一致、结果损坏时均拒绝。`--force` 与
+`--resume-timestamp` 不能同时使用。
 
 ### 6.5 `wf status <task_id>` — 查询状态
 systemd ∩ STATUS.json 双通道。冲突 → `inconsistent`。
@@ -204,6 +210,7 @@ build:
   expected_artifact: "liboercn"
 
 script: "scripts/run_solver_equiv.py"
+supports_resume: false
 args:
   - "--config"
   - "configs/solver_equiv.yaml"
@@ -240,7 +247,7 @@ validators:
 
 ## 9. 工程规则与安全门
 
-### 四个安全门（v0.6.3）
+### 五个安全门（v0.6.4）
 
 | # | 安全门 | 说明 |
 |---|--------|------|
@@ -248,6 +255,7 @@ validators:
 | 2 | **smoke gate + spec_hash** | `wf run` 默认要求存在 `_smoke_*/STATUS.json`，`status=SUCCESS` **且 `spec_hash` 与当前 spec 一致**；仅 `--skip-smoke` 可显式绕过。spec_hash 由 `wf smoke/run` 通过环境变量 `OER_WF_SPEC_HASH` 注入 systemd unit，wrapper 写入 STATUS.json |
 | 3 | **路径校验** | `script` / `output_dir` / `worktree_root` / `python.path` 拒绝绝对路径、`..` 和 `~` |
 | 4 | **smoke override 白名单** | 默认拒绝未知 override key；仅允许 `n_samples` / `max_steps` / `max_iter` / `timeout` / `debug`；`solver_backend` / `points_per_cycle` 等科学参数一律拦截 |
+| 5 | **显式断点续跑** | 仅 `supports_resume: true` 可使用 `--resume-timestamp`；精确复用历史目录，runner 校验 commit、dirty状态、科学配置、job集合、输入哈希及JSONL完整性 |
 
 ### 通用工程规则
 
@@ -257,6 +265,7 @@ validators:
 4. **双通道** — systemd + STATUS.json，不猜成功
 5. **smoke gate** — 未通过 smoke 不允许 run
 6. **不自动 commit** — git-check 只生成草稿
+7. **续跑不混证据** — workers可调整；科学配置、源码或job输入变化立即拒绝
 
 ---
 
@@ -268,4 +277,5 @@ validators:
 - **`doctor` systemd degraded（v0.6.1 修复）**：`running` 和 `degraded` 均视为可用；degraded 仅记 warning。
 - **spec_hash 端到端闭环（v0.6.3 修复）**：`wf smoke/run` 通过 `OER_WF_SPEC_HASH` 环境变量注入 systemd unit，wrapper 写入 STATUS.json，smoke gate 读取并比对。旧版 STATUS.json 缺 spec_hash 会导致 run 被拒绝。
 - **sync 路径层级（v0.6.3 修复）**：ExecStart 提取的完整时间戳路径直接用作远程结果目录，不再被误当作 `output_base` 二次查找子目录。
+- **A6 job级续跑（v0.6.4）**：父进程每完成一个job后按计划顺序原子替换 `results.jsonl`；恢复时只运行缺失job。旧版结果缺少指纹和 `job_input_hash`，不能直接恢复。
 - **sudo**：Legion 端未配免密 sudo。需 root 操作时用 `wsl.exe -u root`。

@@ -104,9 +104,19 @@ def run(
         "--skip-smoke",
         help="Bypass smoke-success gate (explicit; not recommended for formal runs)",
     ),
+    resume_timestamp: Optional[str] = typer.Option(
+        None,
+        "--resume-timestamp",
+        help="Resume one exact prior YYYYMMDD_HHMMSS output directory",
+    ),
 ) -> None:
     """Start formal systemd calculation (wrapper + STATUS.json)."""
-    resp = run_run(spec, force=force, skip_smoke=skip_smoke)
+    resp = run_run(
+        spec,
+        force=force,
+        skip_smoke=skip_smoke,
+        resume_timestamp=resume_timestamp,
+    )
     _emit(resp)
 
 
