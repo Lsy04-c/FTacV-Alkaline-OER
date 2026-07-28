@@ -1205,3 +1205,28 @@ H1-H7压力测试：
   恢复 PASS；CN 候选仍必须由 LSODA 同配置确认。
 - 设计与压力测试：
   `documents/specifications/2026-07-29-recovery-gate-v2-proposal.md`。
+
+## 28. Gate A6 Stage 2 两参数 CN 配置冻结（2026-07-29）
+
+- recovery runner 新增显式 `--feature-modes`，默认仍为四模式；Stage 2
+  冻结为只运行 `hybrid`。选择进入 job plan、summary 和断点指纹，不能与
+  其他 mode 的结果混用。
+- runner 实现提交：`fdc955f`；v2 支持非 legacy-only 任务的修复提交：
+  `732bf5d`。
+- 三份 Stage 2 task spec 固定到 `732bf5d`：
+  - `config/oer-wf/examples/a6_recovery_cn_k0_2_k0_3.yaml`
+  - `config/oer-wf/examples/a6_recovery_cn_k0_2_G_O.yaml`
+  - `config/oer-wf/examples/a6_recovery_cn_k0_3_G_O.yaml`
+- 每项正式配置：`hybrid`、CN、3 truths × 2 noise × 3 seeds = 18 jobs、
+  100 trials/job、8 workers；v2 阈值和完整组合均写入 snapshot 契约。
+- Mac 真实 CN smoke：三个组合各 1 job × 5 trials，均
+  `execution_passed=true`、`n_ode_fail=0`，`best_params` 与指定双参数
+  完全一致。直接运行科研脚本只生成三个科学文件；远端 `wf smoke` 的
+  `STATUS.json` 仍须由 wrapper 单独验收。
+- 本地回归：71 个 oer-wf 测试、212 个 Python 测试和 Markdown 链接审计
+  通过。
+- 本机临时证据：
+  `/tmp/oer-stage2-smoke.rarwRp/`。该路径不提交 Git，也不作为正式科学
+  证据。
+- 下一步：完成全量测试并提交 spec；随后按环境文档部署 Legion，只先跑
+  三个 `wf smoke`。任一 smoke 基础设施失败则停止 formal。

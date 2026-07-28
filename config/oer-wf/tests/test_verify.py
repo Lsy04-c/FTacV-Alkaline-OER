@@ -227,3 +227,70 @@ def test_cn_recovery_specs(tmp_path: Path, spec_name: str, task_name: str, outpu
     ]
     assert spec["validators"] == ["schema_check", "finite_check", "provenance", "recovery_gate"]
     assert spec["validator_config"]["recovery_gate"]["parameter_names"] == [parameter_name]
+
+
+@pytest.mark.parametrize(
+    ("spec_name", "task_name", "parameters"),
+    [
+        (
+            "a6_recovery_cn_k0_2_k0_3.yaml",
+            "a6_recovery_cn_k0_2_k0_3",
+            ["k0_2", "k0_3"],
+        ),
+        (
+            "a6_recovery_cn_k0_2_G_O.yaml",
+            "a6_recovery_cn_k0_2_G_O",
+            ["k0_2", "G_O"],
+        ),
+        (
+            "a6_recovery_cn_k0_3_G_O.yaml",
+            "a6_recovery_cn_k0_3_G_O",
+            ["k0_3", "G_O"],
+        ),
+    ],
+)
+def test_stage2_cn_recovery_specs(
+    spec_name: str,
+    task_name: str,
+    parameters: list[str],
+) -> None:
+    spec_path = Path(__file__).resolve().parents[1] / "examples" / spec_name
+    raw = yaml.safe_load(spec_path.read_text())
+    model = TaskSpec.model_validate(raw)
+
+    assert model.task_name == task_name
+    assert model.commit == "732bf5de27a878192ab46abe76b08de66f3af29b"
+    assert model.output_dir == f"results/{task_name}"
+    assert model.workers == 8
+    assert _arg_value(model.args, "--phase") == "formal"
+    assert _arg_value(model.args, "--backend") == "cn"
+    assert _arg_value(model.args, "--feature-modes") == "hybrid"
+    assert _arg_value(model.args, "--free-parameters") == ",".join(parameters)
+    assert _arg_value(model.args, "--trials") == "100"
+    assert _arg_value(model.args, "--noise-fraction") == (
+        "0.001495726085983469"
+    )
+    assert model.smoke.overrides == {"trials": 5, "max_jobs": 1}
+    assert model.validators == [
+        "schema_check",
+        "finite_check",
+        "provenance",
+        "recovery_gate",
+    ]
+    gate = model.validator_config["recovery_gate"]
+    assert gate == {
+        "gate_version": 2,
+        "parameter_names": parameters,
+        "feature_modes": ["hybrid"],
+        "truth_ids": ["center", "mixed_a", "mixed_b"],
+        "noise_fractions": [0.0, 0.001495726085983469],
+        "seeds": [7, 17, 27],
+        "trials": 100,
+        "require_all_studies_success": True,
+        "max_boundary_hit_rate": 0.0,
+        "max_median_normalized_bound_error": 0.025,
+        "max_normalized_bound_error": 0.05,
+        "max_seed_normalized_bound_dispersion": 0.05,
+        "require_nonlegacy_mode": True,
+        "legacy_mode": "legacy",
+    }

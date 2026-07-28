@@ -1,0 +1,77 @@
+task_name: "a6_recovery_cn_k0_2_G_O"
+commit: "732bf5de27a878192ab46abe76b08de66f3af29b"
+description: "Gate A6 Stage 2 synthetic recovery: k0_2 + G_O (hybrid, CN screen)"
+
+python:
+  source: "main_repo"
+  path: ".venv/bin/python"
+
+worktree_root: "worktrees"
+
+env:
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+
+build:
+  required: false
+
+script: "code/python/scripts/run_synthetic_recovery.py"
+supports_resume: true
+args:
+  - "--phase"
+  - "formal"
+  - "--noise-fraction"
+  - "0.001495726085983469"
+  - "--noise-evidence"
+  - "results/formal/identifiability/gate-a6-d9299f8/noise_evidence.json"
+  - "--free-parameters"
+  - "k0_2,G_O"
+  - "--feature-modes"
+  - "hybrid"
+  - "--trials"
+  - "100"
+  - "--backend"
+  - "cn"
+workers: 8
+output_dir: "results/a6_recovery_cn_k0_2_G_O"
+
+smoke:
+  enabled: true
+  args:
+    - "--smoke"
+  overrides:
+    trials: 5
+    max_jobs: 1
+  expected_files:
+    - "summary.json"
+    - "job_plan.json"
+    - "results.jsonl"
+    - "STATUS.json"
+
+expected_files:
+  - "summary.json"
+  - "job_plan.json"
+  - "results.jsonl"
+  - "STATUS.json"
+validators:
+  - schema_check
+  - finite_check
+  - provenance
+  - recovery_gate
+
+validator_config:
+  recovery_gate:
+    gate_version: 2
+    parameter_names: ["k0_2", "G_O"]
+    feature_modes: ["hybrid"]
+    truth_ids: ["center", "mixed_a", "mixed_b"]
+    noise_fractions: [0.0, 0.001495726085983469]
+    seeds: [7, 17, 27]
+    trials: 100
+    require_all_studies_success: true
+    max_boundary_hit_rate: 0.0
+    max_median_normalized_bound_error: 0.025
+    max_normalized_bound_error: 0.05
+    max_seed_normalized_bound_dispersion: 0.05
+    require_nonlegacy_mode: true
+    legacy_mode: "legacy"

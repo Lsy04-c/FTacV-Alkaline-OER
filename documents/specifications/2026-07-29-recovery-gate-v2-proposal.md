@@ -156,3 +156,9 @@ Stage 1 存在 trial 级 `n_tafel_fail`，但最终 study 均成功且最优解�
 2. Stage 2 暂不引入参数专属复合目标，所有参数共享一个 feature mode；
 3. 以同时通过三个单参数门的 `hybrid` 作为 Stage 2 唯一 mode；
 4. 后续结果若否定该设计，建立新版本和新预注册任务，不回写 v2。
+
+Stage 2 已据此建立三份两参数 CN 筛选 spec，均只运行 `hybrid`：
+
+- `config/oer-wf/examples/a6_recovery_cn_k0_2_k0_3.yaml`
+- `config/oer-wf/examples/a6_recovery_cn_k0_2_G_O.yaml`
+- `config/oer-wf/examples/a6_recovery_cn_k0_3_G_O.yaml`
