@@ -10,10 +10,15 @@ import pytest
 from pathlib import Path
 
 from oer_aem.optimizer_benchmark import (
+    CONFIRMATION_NOISES,
+    CONFIRMATION_SEEDS,
+    CONFIRMATION_TRUTHS,
     DEVELOPMENT_OPTIMIZERS,
+    build_confirmation_jobs,
     build_development_jobs,
     run_benchmark_job,
     select_development_candidate,
+    summarize_confirmation_gate,
 )
 from scripts import run_optimizer_benchmark as benchmark_runner
 
@@ -98,6 +103,118 @@ def _development_rows(
             }
         )
     return rows
+
+
+def _confirmation_row(job, *, signed_error: float = 0.01):
+    error = abs(signed_error)
+    parameter_metrics = {
+        name: {
+            "truth": 1.0,
+            "estimate": 1.0 + signed_error,
+            "normalized_bound_error": error,
+            "boundary_hit": False,
+        }
+        for name in job["free_parameters"]
+    }
+    parameter_metrics["boundary_hits"] = []
+    parameter_metrics["max_normalized_bound_error"] = error
+    return {
+        **job,
+        "success": True,
+        "optimization_calls": 100,
+        "diagnostic_truth_calls": 1,
+        "truth_diagnostic_sequence": 101,
+        "n_ode_fail": 0,
+        "n_tafel_fail": 0,
+        "best_objective": error,
+        "truth_objective": 0.0,
+        "parameter_metrics": parameter_metrics,
+    }
+
+
+def test_confirmation_matrix_is_locked_and_excludes_development() -> None:
+    jobs = build_confirmation_jobs(
+        noise_fraction=0.001495726085983469
+    )
+
+    assert len(jobs) == 51
+    assert {job["optimizer"] for job in jobs} == {"sobol_pattern"}
+    assert {job["budget"] for job in jobs} == {100}
+    assert {
+        tuple(job["free_parameters"]) for job in jobs
+    } == {
+        ("k0_2", "k0_3"),
+        ("k0_2", "G_O"),
+        ("k0_3", "G_O"),
+    }
+    assert {
+        (
+            job["truth_id"],
+            job["noise_fraction"],
+            job["seed"],
+        )
+        for job in jobs
+    } == (
+        {
+            (truth, noise, seed)
+            for truth in CONFIRMATION_TRUTHS
+            for noise in CONFIRMATION_NOISES
+            for seed in CONFIRMATION_SEEDS
+        }
+        - {("center", 0.0, 7)}
+    )
+    assert not any(
+        job["truth_id"] == "center"
+        and job["noise_fraction"] == 0.0
+        and job["seed"] == 7
+        for job in jobs
+    )
+
+
+def test_confirmation_gate_applies_v2_per_pair() -> None:
+    confirmation = [
+        _confirmation_row(job)
+        for job in build_confirmation_jobs(
+            noise_fraction=0.001495726085983469
+        )
+    ]
+    development_jobs = [
+        job
+        for job in build_development_jobs()
+        if job["optimizer"] == "sobol_pattern"
+    ]
+    development = [
+        _confirmation_row(job) for job in development_jobs
+    ]
+    failing_pair = ("k0_3", "G_O")
+    for row in confirmation:
+        if (
+            tuple(row["free_parameters"]) == failing_pair
+            and row["truth_id"] == "mixed_b"
+            and row["noise_fraction"] == CONFIRMATION_NOISES[1]
+            and row["seed"] == 27
+        ):
+            for name in row["free_parameters"]:
+                row["parameter_metrics"][name].update(
+                    {
+                        "estimate": 1.050001,
+                        "normalized_bound_error": 0.050001,
+                    }
+                )
+            row["parameter_metrics"][
+                "max_normalized_bound_error"
+            ] = 0.050001
+
+    gate = summarize_confirmation_gate(development, confirmation)
+
+    assert gate["pair_results"]["k0_2,k0_3"]["passed"] is True
+    assert gate["pair_results"]["k0_2,G_O"]["passed"] is True
+    assert gate["pair_results"]["k0_3,G_O"]["passed"] is False
+    assert gate["eligible_pairs"] == [
+        ["k0_2", "k0_3"],
+        ["k0_2", "G_O"],
+    ]
+    assert gate["scientific_gate_passed"] is True
 
 
 def test_development_matrix_is_preregistered() -> None:
