@@ -1,5 +1,5 @@
 task_name: "a6_recovery_cn_k0_3"
-commit: "60d7a75a2853f6e5d6e975ff6f2531add051aa1b"
+commit: "d0defa75017191302b95269bc5cc701d48df652c"
 description: "Gate A6 synthetic recovery: k0_3 (1 free param, CN backend)"
 
 python:

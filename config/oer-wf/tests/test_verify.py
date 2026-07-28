@@ -202,7 +202,7 @@ def test_cn_recovery_specs(tmp_path: Path, spec_name: str, task_name: str, outpu
     spec = yaml.safe_load(spec_path.read_text())
 
     assert spec["task_name"] == task_name
-    assert spec["commit"] == "60d7a75a2853f6e5d6e975ff6f2531add051aa1b"
+    assert spec["commit"] == "d0defa75017191302b95269bc5cc701d48df652c"
     assert spec["output_dir"] == output_dir
     assert spec["description"] == description
     assert spec["workers"] == 8
