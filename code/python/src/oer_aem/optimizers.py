@@ -250,6 +250,66 @@ def _run_sobol_pattern(
     return _result_from_records("sobol_pattern", objective)
 
 
+def _reflect_unit_cube(values: np.ndarray) -> np.ndarray:
+    """Reflect arbitrary coordinates into the closed unit cube."""
+
+    reflected = np.abs(np.asarray(values, dtype=float)) % 2.0
+    return np.where(reflected > 1.0, 2.0 - reflected, reflected)
+
+
+def _run_de_fixed(
+    objective: BudgetedObjective,
+    *,
+    dimension: int,
+    budget: int,
+    seed: int,
+) -> OptimizerResult:
+    if dimension != 2:
+        raise ValueError("de_fixed requires dimension=2")
+    if budget != 100:
+        raise ValueError("de_fixed requires frozen budget=100")
+
+    population_size = 20
+    rng = np.random.default_rng(seed)
+    population = rng.random((population_size, dimension))
+    losses = np.empty(population_size, dtype=float)
+
+    objective.set_phase("de_initial")
+    for index, point in enumerate(population):
+        losses[index] = objective(point)
+
+    for generation in range(1, 5):
+        objective.set_phase(f"de_generation_{generation}")
+        next_population = population.copy()
+        next_losses = losses.copy()
+        for target_index in range(population_size):
+            eligible = np.delete(np.arange(population_size), target_index)
+            a_index, b_index, c_index = rng.choice(
+                eligible,
+                size=3,
+                replace=False,
+            )
+            mutant = population[a_index] + 0.8 * (
+                population[b_index] - population[c_index]
+            )
+            mutant = _reflect_unit_cube(mutant)
+            crossover = rng.random(dimension) < 0.7
+            crossover[rng.integers(dimension)] = True
+            trial = np.where(crossover, mutant, population[target_index])
+            trial_loss = objective(trial)
+            if trial_loss <= losses[target_index]:
+                next_population[target_index] = trial
+                next_losses[target_index] = trial_loss
+        population = next_population
+        losses = next_losses
+
+    if objective.calls != budget:
+        raise RuntimeError(
+            f"de_fixed call-count mismatch: {objective.calls} != {budget}"
+        )
+    return _result_from_records("de_fixed", objective)
+
+
 def run_optimizer(
     name: str,
     objective: UnitObjective,
@@ -274,6 +334,13 @@ def run_optimizer(
         )
     if name == "sobol_pattern":
         return _run_sobol_pattern(
+            wrapped,
+            dimension=wrapped.dimension,
+            budget=wrapped.budget,
+            seed=int(seed),
+        )
+    if name == "de_fixed":
+        return _run_de_fixed(
             wrapped,
             dimension=wrapped.dimension,
             budget=wrapped.budget,

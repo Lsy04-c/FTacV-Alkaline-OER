@@ -133,3 +133,83 @@ def test_sobol_pattern_rejects_budget_drift() -> None:
             budget=99,
             seed=7,
         )
+
+
+def test_de_fixed_uses_20_points_and_four_generations() -> None:
+    result = run_optimizer(
+        "de_fixed",
+        sphere,
+        dimension=2,
+        budget=100,
+        seed=7,
+    )
+
+    assert result.optimization_calls == 100
+    assert len(result.evaluations) == 100
+    assert {row.phase for row in result.evaluations[:20]} == {"de_initial"}
+    assert [row.phase for row in result.evaluations[20:40]] == [
+        "de_generation_1"
+    ] * 20
+    assert [row.phase for row in result.evaluations[80:100]] == [
+        "de_generation_4"
+    ] * 20
+    assert result.best_loss < 0.02
+
+
+def test_de_fixed_rejects_non_two_dimensional_problem() -> None:
+    with pytest.raises(ValueError, match="dimension=2"):
+        run_optimizer(
+            "de_fixed",
+            sphere,
+            dimension=3,
+            budget=100,
+            seed=7,
+        )
+
+
+def test_de_fixed_rejects_budget_drift() -> None:
+    with pytest.raises(ValueError, match="budget=100"):
+        run_optimizer(
+            "de_fixed",
+            sphere,
+            dimension=2,
+            budget=99,
+            seed=7,
+        )
+
+
+def test_de_reflection_stays_inside_unit_cube() -> None:
+    result = run_optimizer(
+        "de_fixed",
+        lambda unit: -float(
+            np.sum(np.abs(np.asarray(unit, dtype=float) - 0.5))
+        ),
+        dimension=2,
+        budget=100,
+        seed=27,
+    )
+
+    assert all(
+        0.0 <= coordinate <= 1.0
+        for row in result.evaluations
+        for coordinate in row.unit
+    )
+
+
+def test_de_fixed_same_seed_replays_exact_trace() -> None:
+    left = run_optimizer(
+        "de_fixed",
+        sphere,
+        dimension=2,
+        budget=100,
+        seed=17,
+    )
+    right = run_optimizer(
+        "de_fixed",
+        sphere,
+        dimension=2,
+        budget=100,
+        seed=17,
+    )
+
+    assert left.evaluations == right.evaluations
