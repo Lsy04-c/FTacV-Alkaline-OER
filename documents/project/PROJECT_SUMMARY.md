@@ -1,8 +1,9 @@
 # OER-FTAcV 项目目标与架构优先路线
 
-更新日期：2026-07-27
+更新日期：2026-07-29
 项目负责人：刘拾玉
-当前代码基线：`cbbcda5`（Gate A7 验收提交）
+当前分支：`codex/reclassify-project`（正式版本以 `WORK_STATUS.md` 记录的
+commit 和归档 snapshot 为准）
 
 > 本文是项目目标、完成定义和后续路线的唯一总入口。
 > 历史执行记录见 `WORK_STATUS.md`，阶段纠错见 `documents/corrections/项目纠错.md`，具体实施步骤见 `documents/plans/`。
@@ -366,13 +367,19 @@ smoke 只证明流程可运行，不是正式精度证据；不同模式的 `tot
 8. A6 recovery runner 已增加严格job级断点续跑：原子检查点、稳定输入
    哈希、运行级科学指纹和损坏结果拒绝；`oer-wf 0.6.4` 可用明确时间戳恢复。
    A6默认并行度改为8 workers。本机测试、Legion首次smoke和原目录恢复均已通过。
-8. 将参数正式分类为固定、窄先验、自由反演、仅范围或不可识别。
-9. Gate A6：最小自由参数集通过恢复门后，正式真实数据 TPE 才能启动。
-10. commit `a7bc9e4` 的三参数正式合成恢复已完成：基础设施PASS，但科学
+9. 将参数正式分类为固定、窄先验、自由反演、仅范围或不可识别。
+10. Gate A6：最小自由参数集通过恢复门后，正式真实数据 TPE 才能启动。
+11. commit `a7bc9e4` 的三参数正式合成恢复已完成：基础设施PASS，但科学
     Gate FAIL。72/72 study成功执行，只有47/72个组—参数组合的seed范围覆盖
     真值；无噪声也只有24/36覆盖。`k0_2,k0_3,G_O`不能作为当前正式联合
     自由集，真实数据TPE继续暂停。证据位于
     `results/formal/identifiability/gate-a6-reduced-recovery-a7bc9e4/`。
+12. Stage 1 CN 单参数恢复已按冻结 v1 门完成并保持 scientific FAIL。
+    后续审计确认 seed 范围覆盖不是可靠精度门，已设计显式 v2：按 mode
+    分层约束归一化误差、seed 极差、边界和 study 状态。
+13. 现有归档的 v2 离线复核筛出共同候选 `hybrid`；这只允许进入
+    Stage 2 多参数 CN 筛选，不构成联合恢复 PASS。通过后仍需 LSODA
+    同配置确认。
 
 ### 纠错与失败路径
 
@@ -610,12 +617,12 @@ Web 可以保留基础开发，但不得先于核心 schema 成为科研主线�
 | AEM M0 | Python 正演链已建立 | `code/python/src/oer_aem/physics.py` | 部分完成 |
 | 热力学约束 | 标度关系和参数变换已实现 | `code/python/src/oer_aem/thermodynamics.py` | 已实现 |
 | LSODA | 参考求解器已建立 | `code/python/src/oer_aem/physics.py` | 已实现 |
-| C++ CN | 已加速，正式等价性门运行中/待验收 | `code/cpp/src/oer_cn_solver.cpp` | 待关门 |
+| C++ CN | 正式等价性门 FAIL，仅作快速筛选且须 LSODA 确认 | `code/cpp/src/oer_cn_solver.cpp` | 实验后端 |
 | 全局谐波 | 幅值和复数特征已实现 | `code/python/src/oer_aem/signal.py` | 已实现 |
 | 电位分辨锁相 | 核心相位错误已修复 | `code/python/src/oer_aem/signal.py` | 待真实重采样 |
 | 目标函数 | 多模式和分量输出已建立 | `code/python/src/oer_aem/inversion.py` | 待拆分模式 |
 | 网格 | 128 点为候选 | `code/python/scripts/compare_feature_grids.py` | 待扩大验证 |
-| 可识别性 | 初步分类和带符号敏感性已完成 | `code/python/src/oer_aem/identifiability.py` | 待最终特征复算 |
+| 可识别性 | 单参数 v2 离线候选为 hybrid，联合恢复尚未验证 | `code/python/src/oer_aem/identifiability.py` | Gate A6 进行中 |
 | M1 重构 | 当前证据拒绝 | `code/python/scripts/compare_reconstruction_model.py` | 已形成否定结果 |
 | API | 基础任务接口存在 | `code/web/backend/main.py` | 非当前主线 |
 | Web | 基础前端存在 | `code/web/frontend/` | 非当前主线 |
@@ -624,27 +631,26 @@ Web 可以保留基础开发，但不得先于核心 schema 成为科研主线�
 
 # 8. 最近三个可执行里程碑
 
-## 里程碑 1：关闭求解器等价性门
+## 里程碑 1：冻结并验收 Recovery Gate v2
 
-- 验收拯救者 24 样本正式结果；
-- PASS：同步证据、更新文档、提交；
-- FAIL：停止 CN 正式使用，定位失败通道；
-- 不启动正式 TPE。
+- 保持 v1 历史 FAIL，不静默改变旧任务；
+- 对三份 Stage 1 归档完成可复现离线复核；
+- 冻结共享 `hybrid` mode 和 Stage 2 配置；
+- 提交并推送 v2 实现、测试和科学口径。
 
-## 里程碑 2：关闭剩余底层架构缺口
+## 里程碑 2：Stage 2 多参数快速筛选
 
-- 完整覆盖度轨迹不变量；
-- 真实数据锁相重采样稳定性；
-- 真正 `lockin_only` 与 `hybrid` 拆分；
-- 多样本网格收敛；
-- 最终自由参数分类。
+- 先运行 `k0_2,k0_3`、`k0_2,G_O`、`k0_3,G_O` 的 CN smoke；
+- 只对 smoke 结构和数值通过的任务运行冻结 formal；
+- 使用 v2 原阈值，失败后停止，不增加 trials 或修改边界；
+- 至少一个两参数组合通过后，才讨论三参数任务。
 
-## 里程碑 3：冻结层级 B 正式比较协议
+## 里程碑 3：LSODA 确认与 Gate A6 冻结
 
-- 冻结数据、模型、参数、网格、种子、预算和阈值；
-- 建立 legacy/complex/lockin/hybrid 配对比较；
-- 先运行小预算可证伪试验；
-- 所有 Gate 通过后再运行正式 TPE。
+- 对 CN 候选执行同 truth/noise/seed/trial 配置的 LSODA 确认；
+- CN 与 LSODA 科学结论不一致时，以 LSODA 为准；
+- 只有 LSODA 通过的最小自由集才能冻结；
+- Gate A6 关闭前继续禁止真实数据正式 TPE。
 
 ---
 

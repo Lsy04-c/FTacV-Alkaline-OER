@@ -1178,3 +1178,30 @@ H1-H7压力测试：
   - `/Users/liushiyu/OER-FTAcV-archive/results/d0defa7/a6_recovery_cn_k0_2/20260728_210953`
   - `/Users/liushiyu/OER-FTAcV-archive/results/d0defa7/a6_recovery_cn_k0_3/20260728_211150`
   - `/Users/liushiyu/OER-FTAcV-archive/results/d0defa7/a6_recovery_cn_G_O/20260728_211332`
+
+## 27. Gate A6 Recovery Gate v2 离线复核（2026-07-29）
+
+- v1 的 `seed_min <= truth <= seed_max` 会把三个高精度但同侧的估计判为
+  FAIL，也可能让跨真值但离散度很大的结果 PASS；四种 mode 捆绑判定还会
+  使较差 mode 否决较好 mode。
+- v1 的三项 Stage 1 scientific FAIL 保持不变。v2 使用独立版本，不回写
+  或覆盖历史结论。
+- v2 按 `(parameter set, feature_mode)` 独立检查六个 truth/noise group：
+  每组中位归一化误差 `<=0.025`、最大误差 `<=0.05`、seed 归一化极差
+  `<=0.05`、boundary hit rate `=0`、study 全成功。阈值来自既有 41 点
+  profile 的 `1/40` 工程分辨率，不解释为置信区间。
+- 测试驱动实现于
+  `config/oer-wf/oer_wf/validators/recovery_gate.py`；未声明
+  `gate_version` 时仍执行 v1。新增 5 项针对 v2 的回归测试。
+- 本地验证：67 个 oer-wf 测试、210 个 Python 测试和 Markdown 链接审计
+  通过。
+- 三份 Stage 1 归档无需重算即可离线复核：
+  - `k0_2`：`hybrid,lockin_only` 通过；选择 `hybrid`；
+  - `k0_3`：`complex_snr,hybrid,lockin_only` 通过；单参数排序选择
+    `complex_snr`；
+  - `G_O`：`hybrid,lockin_only` 通过；选择 `hybrid`。
+- 为避免引入尚未验证的参数专属复合目标，Stage 2 采用三个参数共同通过的
+  `hybrid`。该决定只允许启动多参数 CN 筛选，不能把单参数结果表述为联合
+  恢复 PASS；CN 候选仍必须由 LSODA 同配置确认。
+- 设计与压力测试：
+  `documents/specifications/2026-07-29-recovery-gate-v2-proposal.md`。
