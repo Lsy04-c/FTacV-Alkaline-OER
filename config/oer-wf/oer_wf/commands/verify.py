@@ -14,6 +14,7 @@ from oer_wf.validators import (
     finite_check,
     manifest_hash,
     optimizer_benchmark_gate,
+    optimizer_confirmation_gate,
     provenance,
     recovery_gate,
     schema_check,
@@ -25,6 +26,7 @@ _VALIDATOR_MAP = {
     "provenance": provenance.run,
     "manifest_hash": manifest_hash.run,
     "optimizer_benchmark_gate": optimizer_benchmark_gate.run,
+    "optimizer_confirmation_gate": optimizer_confirmation_gate.run,
     "recovery_gate": recovery_gate.run,
 }
 
@@ -186,7 +188,11 @@ def run_verify(
             )
             continue
         try:
-            if name in {"recovery_gate", "optimizer_benchmark_gate"}:
+            if name in {
+                "recovery_gate",
+                "optimizer_benchmark_gate",
+                "optimizer_confirmation_gate",
+            }:
                 checks.extend(
                     fn(
                         archive,
