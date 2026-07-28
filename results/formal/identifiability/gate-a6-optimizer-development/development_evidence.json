@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "selected_optimizer": "sobol_pattern",
+  "source_commit": "a5b93f55e540682cc8cddb1fabbe63a7e0e92326",
+  "source_spec_hash": "sha256:94e1b53827390b5f8b9bac8018c871bb81d79b817edd7bc38d6b70cac38f870d",
+  "source_archive": "OER-FTAcV-archive/results/a5b93f5/a6_optimizer_development_cn/20260728_224911",
+  "source_results_sha256": "e93ccab24c4a91d9d4d9a2b8e014826b6b1a07b7d0891c6e7dd944b78e17b432",
+  "source_selection_sha256": "2a9ff7831d1ebfbae6d78e0f6332ccda363e56062b0122864bf8dedf58056bdd",
+  "development_rows": [
+    {
+      "job_id": "k0_2-k0_3__sobol_pattern__center__noise-0__seed-7__budget-100",
+      "optimizer": "sobol_pattern",
+      "free_parameters": ["k0_2", "k0_3"],
+      "truth_id": "center",
+      "truth_params": {
+        "k0_1": 10.0,
+        "k0_2": 10.0,
+        "k0_3": 10.0,
+        "k0_4": 10.0,
+        "G_OH": 1.3,
+        "G_O": 2.8,
+        "scaling_OOH_OH": 3.2,
+        "gamma": 3.1622776601683795e-09
+      },
+      "noise_fraction": 0.0,
+      "seed": 7,
+      "target_seed": 2611092832,
+      "budget": 100,
+      "feature_mode": "hybrid",
+      "backend": "cn",
+      "job_input_hash": "d8719f08e2761f7ac0f02251e0c355b0483334b7924789bd0014a9b2c261bba2",
+      "success": true,
+      "best_unit": [0.5007178857922554, 0.49991508666425943],
+      "best_params": {
+        "k0_2": 10.133117680457397,
+        "k0_3": 9.984370612143737
+      },
+      "best_objective": 0.00031757674501169483,
+      "truth_objective": 0.0,
+      "objective_regret": 0.00031757674501169483,
+      "optimization_calls": 100,
+      "diagnostic_truth_calls": 1,
+      "n_ode_fail": 0,
+      "n_tafel_fail": 27,
+      "n_forward": 100,
+      "parameter_metrics": {
+        "k0_2": {
+          "encoding": "log10",
+          "truth": 10.0,
+          "estimate": 10.133117680457397,
+          "encoded_absolute_error": 0.005743086338043213,
+          "normalized_bound_error": 0.0007178857922554016,
+          "boundary_hit": false
+        },
+        "k0_3": {
+          "encoding": "log10",
+          "truth": 10.0,
+          "estimate": 9.984370612143737,
+          "encoded_absolute_error": 0.00067930668592453,
+          "normalized_bound_error": 8.491333574056625e-05,
+          "boundary_hit": false
+        },
+        "boundary_hits": [],
+        "max_normalized_bound_error": 0.0007178857922554016
+      },
+      "termination_reason": "budget_exhausted",
+      "runtime_seconds": 8.105239226017147,
+      "configuration": {
+        "n_points": 8192,
+        "points_per_cycle": 32,
+        "feature_grid_size": 128,
+        "fit_harmonics": [1, 2, 3],
+        "feature_mode": "hybrid",
+        "solver_backend": "cn",
+        "fixed_params": [
+          ["k0_1", 10.0],
+          ["k0_4", 10.0],
+          ["G_OH", 1.3],
+          ["G_O", 2.8],
+          ["scaling_OOH_OH", 3.2],
+          ["gamma", 3.1622776601683795e-09]
+        ]
+      },
+      "truth_diagnostic_sequence": 101
+    },
+    {
+      "job_id": "k0_2-G_O__sobol_pattern__center__noise-0__seed-7__budget-100",
+      "optimizer": "sobol_pattern",
+      "free_parameters": ["k0_2", "G_O"],
+      "truth_id": "center",
+      "truth_params": {
+        "k0_1": 10.0,
+        "k0_2": 10.0,
+        "k0_3": 10.0,
+        "k0_4": 10.0,
+        "G_OH": 1.3,
+        "G_O": 2.8,
+        "scaling_OOH_OH": 3.2,
+        "gamma": 3.1622776601683795e-09
+      },
+      "noise_fraction": 0.0,
+      "seed": 7,
+      "target_seed": 2611092832,
+      "budget": 100,
+      "feature_mode": "hybrid",
+      "backend": "cn",
+      "job_input_hash": "06012f9632cbe4464a92d01af5530c39c893f464337b21121f2a3fcf5a3fde06",
+      "success": true,
+      "best_unit": [0.5018746918067336, 0.4994089603424072],
+      "best_params": {
+        "k0_2": 10.351362900596168,
+        "G_O": 2.7992907524108888
+      },
+      "best_objective": 0.004697683325678768,
+      "truth_objective": 0.0,
+      "objective_regret": 0.004697683325678768,
+      "optimization_calls": 100,
+      "diagnostic_truth_calls": 1,
+      "n_ode_fail": 0,
+      "n_tafel_fail": 15,
+      "n_forward": 100,
+      "parameter_metrics": {
+        "k0_2": {
+          "encoding": "log10",
+          "truth": 10.0,
+          "estimate": 10.351362900596168,
+          "encoded_absolute_error": 0.014997534453868866,
+          "normalized_bound_error": 0.0018746918067336082,
+          "boundary_hit": false
+        },
+        "G_O": {
+          "encoding": "linear",
+          "truth": 2.8,
+          "estimate": 2.7992907524108888,
+          "encoded_absolute_error": 0.0007092475891110617,
+          "normalized_bound_error": 0.0005910396575925515,
+          "boundary_hit": false
+        },
+        "boundary_hits": [],
+        "max_normalized_bound_error": 0.0018746918067336082
+      },
+      "termination_reason": "budget_exhausted",
+      "runtime_seconds": 8.117904523009202,
+      "configuration": {
+        "n_points": 8192,
+        "points_per_cycle": 32,
+        "feature_grid_size": 128,
+        "fit_harmonics": [1, 2, 3],
+        "feature_mode": "hybrid",
+        "solver_backend": "cn",
+        "fixed_params": [
+          ["k0_1", 10.0],
+          ["k0_3", 10.0],
+          ["k0_4", 10.0],
+          ["G_OH", 1.3],
+          ["scaling_OOH_OH", 3.2],
+          ["gamma", 3.1622776601683795e-09]
+        ]
+      },
+      "truth_diagnostic_sequence": 101
+    },
+    {
+      "job_id": "k0_3-G_O__sobol_pattern__center__noise-0__seed-7__budget-100",
+      "optimizer": "sobol_pattern",
+      "free_parameters": ["k0_3", "G_O"],
+      "truth_id": "center",
+      "truth_params": {
+        "k0_1": 10.0,
+        "k0_2": 10.0,
+        "k0_3": 10.0,
+        "k0_4": 10.0,
+        "G_OH": 1.3,
+        "G_O": 2.8,
+        "scaling_OOH_OH": 3.2,
+        "gamma": 3.1622776601683795e-09
+      },
+      "noise_fraction": 0.0,
+      "seed": 7,
+      "target_seed": 2611092832,
+      "budget": 100,
+      "feature_mode": "hybrid",
+      "backend": "cn",
+      "job_input_hash": "eafe425677f6b822cadc6aec54607f6d5692ef91e68900877ca23e55e0220974",
+      "success": true,
+      "best_unit": [0.4758900934830308, 0.5111938510090113],
+      "best_params": {
+        "k0_3": 6.413878783007267,
+        "G_O": 2.8134326212108136
+      },
+      "best_objective": 0.484577653293168,
+      "truth_objective": 0.0,
+      "objective_regret": 0.484577653293168,
+      "optimization_calls": 100,
+      "diagnostic_truth_calls": 1,
+      "n_ode_fail": 0,
+      "n_tafel_fail": 25,
+      "n_forward": 100,
+      "parameter_metrics": {
+        "k0_3": {
+          "encoding": "log10",
+          "truth": 10.0,
+          "estimate": 6.413878783007267,
+          "encoded_absolute_error": 0.19287925213575363,
+          "normalized_bound_error": 0.024109906516969204,
+          "boundary_hit": false
+        },
+        "G_O": {
+          "encoding": "linear",
+          "truth": 2.8,
+          "estimate": 2.8134326212108136,
+          "encoded_absolute_error": 0.013432621210813789,
+          "normalized_bound_error": 0.011193851009011492,
+          "boundary_hit": false
+        },
+        "boundary_hits": [],
+        "max_normalized_bound_error": 0.024109906516969204
+      },
+      "termination_reason": "budget_exhausted",
+      "runtime_seconds": 7.908761534024961,
+      "configuration": {
+        "n_points": 8192,
+        "points_per_cycle": 32,
+        "feature_grid_size": 128,
+        "fit_harmonics": [1, 2, 3],
+        "feature_mode": "hybrid",
+        "solver_backend": "cn",
+        "fixed_params": [
+          ["k0_1", 10.0],
+          ["k0_2", 10.0],
+          ["k0_4", 10.0],
+          ["G_OH", 1.3],
+          ["scaling_OOH_OH", 3.2],
+          ["gamma", 3.1622776601683795e-09]
+        ]
+      },
+      "truth_diagnostic_sequence": 101
+    }
+  ]
+}

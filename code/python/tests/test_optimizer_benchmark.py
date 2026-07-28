@@ -7,6 +7,7 @@ from typing import Any
 import json
 import numpy as np
 import pytest
+from pathlib import Path
 
 from oer_aem.optimizer_benchmark import (
     DEVELOPMENT_OPTIMIZERS,
@@ -15,6 +16,42 @@ from oer_aem.optimizer_benchmark import (
     select_development_candidate,
 )
 from scripts import run_optimizer_benchmark as benchmark_runner
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def test_development_evidence_is_frozen_from_accepted_archive() -> None:
+    path = (
+        ROOT
+        / "results"
+        / "formal"
+        / "identifiability"
+        / "gate-a6-optimizer-development"
+        / "development_evidence.json"
+    )
+    evidence = json.loads(path.read_text(encoding="utf-8"))
+
+    assert evidence["selected_optimizer"] == "sobol_pattern"
+    assert evidence["source_commit"] == (
+        "a5b93f55e540682cc8cddb1fabbe63a7e0e92326"
+    )
+    assert evidence["source_results_sha256"] == (
+        "e93ccab24c4a91d9d4d9a2b8e014826b6b1a07b7d0891c6e7dd944b78e17b432"
+    )
+    assert len(evidence["development_rows"]) == 3
+    assert {
+        row["optimization_calls"]
+        for row in evidence["development_rows"]
+    } == {100}
+    assert {
+        tuple(row["free_parameters"])
+        for row in evidence["development_rows"]
+    } == {
+        ("k0_2", "k0_3"),
+        ("k0_2", "G_O"),
+        ("k0_3", "G_O"),
+    }
 
 
 def _development_rows(
