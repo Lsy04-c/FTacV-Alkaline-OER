@@ -68,6 +68,7 @@ class BuildSpec(BaseModel):
 
 class SmokeSpec(BaseModel):
     enabled: bool = True
+    args: list[str] = Field(default_factory=list)
     overrides: dict[str, Any] = Field(default_factory=dict)
     expected_files: list[str] = Field(
         default_factory=lambda: ["summary.csv", "manifest.json"]

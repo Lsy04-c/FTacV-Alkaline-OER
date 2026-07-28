@@ -1,12 +1,17 @@
 """Tests for the Gate A6 recovery runner configuration."""
 
+import hashlib
+
 import pytest
 
 from scripts import run_synthetic_recovery as recovery_runner
 from scripts.run_synthetic_recovery import (
+    WORKFLOW_OWNED_FILES,
     build_config,
     build_jobs,
+    limit_jobs,
     parse_args,
+    prepare_output_directory,
     run_job,
     main,
     validate_noise_evidence,
@@ -251,11 +256,66 @@ def test_smoke_main_checkpoints_one_completed_job(tmp_path):
     assert (output / "summary.json").is_file()
 
 
+def test_limit_jobs_applies_positive_limit_without_mutating_input():
+    jobs = [{"job_id": "a"}, {"job_id": "b"}]
+
+    limited = limit_jobs(jobs, 1)
+
+    assert limited == [{"job_id": "a"}]
+    assert jobs == [{"job_id": "a"}, {"job_id": "b"}]
+
+
+@pytest.mark.parametrize("max_jobs", [0, -1])
+def test_limit_jobs_rejects_non_positive_limit(max_jobs):
+    with pytest.raises(ValueError, match="positive"):
+        limit_jobs([{"job_id": "a"}], max_jobs)
+
+
+def test_prepare_output_directory_allows_workflow_files(tmp_path):
+    output = tmp_path / "run"
+    output.mkdir()
+    for name in WORKFLOW_OWNED_FILES:
+        (output / name).write_text("{}")
+    (output / "STATUS.json.tmp.123").write_text("{}")
+
+    prepare_output_directory(output)
+
+    assert {path.name for path in output.iterdir()} == {
+        *WORKFLOW_OWNED_FILES,
+        "STATUS.json.tmp.123",
+    }
+
+
+def test_prepare_output_directory_rejects_existing_scientific_output(tmp_path):
+    output = tmp_path / "run"
+    output.mkdir()
+    result = output / "results.jsonl"
+    result.write_text('{"kept": true}\n')
+
+    with pytest.raises(FileExistsError, match="scientific"):
+        prepare_output_directory(output)
+
+    assert result.read_text() == '{"kept": true}\n'
+
+
 def test_formal_noise_must_match_evidence_file(tmp_path):
     evidence = tmp_path / "noise.json"
-    evidence.write_text('{"selected_noise_fraction": 0.0015}')
+    raw = b'{"selected_noise_fraction": 0.0015, "limitation": "pilot"}'
+    evidence.write_bytes(raw)
 
-    validate_noise_evidence(0.0015, evidence)
+    validated = validate_noise_evidence(0.0015, evidence)
+
+    assert validated["limitation"] == "pilot"
+    assert validated["resolved_path"] == str(evidence.resolve())
+    assert validated["sha256"] == hashlib.sha256(raw).hexdigest()
 
     with pytest.raises(ValueError, match="does not match"):
         validate_noise_evidence(0.002, evidence)
+
+
+def test_formal_noise_rejects_corrupt_json(tmp_path):
+    evidence = tmp_path / "noise.json"
+    evidence.write_text("{not-json")
+
+    with pytest.raises(ValueError, match="valid JSON"):
+        validate_noise_evidence(0.0015, evidence)

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import platform
@@ -37,6 +38,12 @@ from oer_aem.recovery import (
 FEATURE_MODES = ("legacy", "complex_snr", "lockin_only", "hybrid")
 OPTIMIZER_SEEDS = (7, 17, 27)
 PILOT_BUDGETS = (20, 50, 100)
+WORKFLOW_OWNED_FILES = {
+    "STATUS.json",
+    "._status_signal",
+    "stdout.log",
+    "stderr.log",
+}
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -118,6 +125,33 @@ def build_jobs(args: argparse.Namespace) -> list[dict]:
     for job in jobs:
         job["free_parameters"] = free_parameters
     return jobs
+
+
+def limit_jobs(jobs: list[dict], max_jobs: int | None) -> list[dict]:
+    if max_jobs is None:
+        return list(jobs)
+    if max_jobs < 1:
+        raise ValueError("--max-jobs must be positive")
+    return list(jobs[:max_jobs])
+
+
+def prepare_output_directory(output: Path) -> None:
+    if not output.exists():
+        output.mkdir(parents=True, exist_ok=True)
+        return
+    if not output.is_dir():
+        raise FileExistsError(f"output path is not a directory: {output}")
+    scientific_entries = [
+        entry.name
+        for entry in output.iterdir()
+        if entry.name not in WORKFLOW_OWNED_FILES
+        and not entry.name.startswith("STATUS.json.tmp.")
+    ]
+    if scientific_entries:
+        raise FileExistsError(
+            "output directory contains existing scientific output: "
+            f"{sorted(scientific_entries)}"
+        )
 
 
 def build_recovery_problem(job: dict, *, smoke: bool):
@@ -209,14 +243,22 @@ def git_state() -> tuple[str, bool]:
 def validate_noise_evidence(noise_fraction: float, path: Path | None) -> dict:
     if path is None or not path.is_file():
         raise ValueError("formal recovery requires an existing --noise-evidence JSON")
-    evidence = json.loads(path.read_text())
+    resolved = path.resolve()
+    raw = resolved.read_bytes()
+    try:
+        evidence = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"noise evidence is not valid JSON: {resolved}") from exc
     selected = float(evidence["selected_noise_fraction"])
     if not abs(selected - noise_fraction) <= 1e-12:
         raise ValueError(
             "noise fraction does not match evidence: "
             f"requested={noise_fraction:g}, evidence={selected:g}"
         )
-    return evidence
+    enriched = dict(evidence)
+    enriched["resolved_path"] = str(resolved)
+    enriched["sha256"] = hashlib.sha256(raw).hexdigest()
+    return enriched
 
 
 def iter_job_results(jobs: list[dict], *, workers: int, smoke: bool):
@@ -235,10 +277,7 @@ def iter_job_results(jobs: list[dict], *, workers: int, smoke: bool):
 
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
-    jobs = build_jobs(args)
-    if args.max_jobs is not None and args.max_jobs < 1:
-        raise ValueError("--max-jobs must be positive")
-        jobs = jobs[: args.max_jobs]
+    jobs = limit_jobs(build_jobs(args), args.max_jobs)
     source_commit, dirty = git_state()
     # Note: .wf_lock may appear as untracked; wf prepare enforces git cleanliness
     noise_evidence = None
@@ -247,9 +286,7 @@ def main(argv: list[str] | None = None) -> None:
             args.noise_fraction, args.noise_evidence
         )
     output = args.output.resolve()
-    if output.exists() and any(output.iterdir()):
-        raise FileExistsError(f"output directory is not empty: {output}")
-    output.mkdir(parents=True, exist_ok=True)
+    prepare_output_directory(output)
     plan = {
         "phase": args.phase,
         "noise_fraction": args.noise_fraction,

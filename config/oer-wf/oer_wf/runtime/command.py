@@ -91,6 +91,8 @@ def build_command(
 
     argv: list[str] = [str(python), str(script)]
     argv.extend(spec.args)
+    if is_smoke:
+        argv.extend(spec.smoke.args)
 
     overrides: dict[str, Any] = {}
     if is_smoke:
@@ -101,8 +103,13 @@ def build_command(
     for key, val in overrides.items():
         # normalize: allow keys with or without leading dashes
         flag = key if key.startswith("-") else f"--{key}"
-        argv.append(flag)
-        argv.append(str(val))
+        if val is True:
+            argv.append(flag)
+        elif val is False or val is None:
+            continue
+        else:
+            argv.append(flag)
+            argv.append(str(val))
 
     # Injected by wf – always last
     argv.extend(["--output", str(output_dir)])

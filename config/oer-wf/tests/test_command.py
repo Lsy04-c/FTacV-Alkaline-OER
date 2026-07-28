@@ -16,10 +16,20 @@ def spec() -> TaskSpec:
         task_name="solver_equiv_01",
         commit="3f9aad1abcdef",
         script="scripts/run.py",
-        args=["--config", "cfg.yaml"],
+        args=["--config", "cfg.yaml", "--trials", "100"],
         workers=4,
         output_dir="results/solver_equiv_01",
-        smoke={"enabled": True, "overrides": {"n_samples": 2, "max_steps": 50}},
+        smoke={
+            "enabled": True,
+            "args": ["--smoke"],
+            "overrides": {
+                "trials": 5,
+                "max_jobs": 1,
+                "verbose": True,
+                "disabled": False,
+                "unset": None,
+            },
+        },
     )
 
 
@@ -72,8 +82,27 @@ def test_build_command_smoke_overrides(spec: TaskSpec, tmp_path: Path) -> None:
     plan = build_command(spec, main_repo=main, worktree=wt, output_dir=out, is_smoke=True)
 
     assert plan.is_smoke is True
-    assert "--n_samples" in plan.argv
-    assert "2" in plan.argv
-    assert "--max_steps" in plan.argv
+    assert "--smoke" in plan.argv
+    trial_indexes = [i for i, value in enumerate(plan.argv) if value == "--trials"]
+    assert [plan.argv[i + 1] for i in trial_indexes] == ["100", "5"]
+    assert plan.argv[plan.argv.index("--max_jobs") + 1] == "1"
+    assert "--verbose" in plan.argv
+    assert "True" not in plan.argv
+    assert "--disabled" not in plan.argv
+    assert "--unset" not in plan.argv
     assert plan.argv[-4] == "--output"
     assert plan.argv[-2] == "--workers"
+
+
+def test_build_command_formal_keeps_formal_budget(spec: TaskSpec, tmp_path: Path) -> None:
+    main = tmp_path / "main"
+    wt = tmp_path / "wt"
+    main.mkdir()
+    wt.mkdir()
+    out = make_output_dir(wt, spec.output_dir, timestamp="20260727_120000")
+
+    plan = build_command(spec, main_repo=main, worktree=wt, output_dir=out)
+
+    assert "--smoke" not in plan.argv
+    assert plan.argv[plan.argv.index("--trials") + 1] == "100"
+    assert "--max_jobs" not in plan.argv
