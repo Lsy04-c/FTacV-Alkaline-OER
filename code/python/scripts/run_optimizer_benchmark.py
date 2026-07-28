@@ -402,6 +402,7 @@ def _prepare_output(output: Path, *, resume: bool) -> None:
         "summary.json",
         "selection.json",
         "confirmation_gate.json",
+        "development_evidence.snapshot.json",
     }
     if not resume and scientific:
         raise FileExistsError("output contains existing scientific artifacts")
@@ -553,6 +554,32 @@ def main(argv: list[str] | None = None) -> None:
 
     output = args.output.resolve()
     _prepare_output(output, resume=args.resume)
+    development_snapshot_path = (
+        output / "development_evidence.snapshot.json"
+    )
+    if args.phase == "confirmation":
+        assert development_evidence is not None
+        source_path = Path(
+            development_evidence["resolved_path"]
+        )
+        if args.resume:
+            if not development_snapshot_path.is_file():
+                raise ValueError(
+                    "resume requires development evidence snapshot"
+                )
+            snapshot_hash = hashlib.sha256(
+                development_snapshot_path.read_bytes()
+            ).hexdigest()
+            if snapshot_hash != development_evidence["sha256"]:
+                raise ValueError(
+                    "development evidence snapshot hash mismatch"
+                )
+        else:
+            _atomic_write_text(
+                development_snapshot_path,
+                source_path.read_text(encoding="utf-8"),
+                prefix=".development_evidence.",
+            )
     plan_path = output / "benchmark_plan.json"
     if args.resume:
         if not plan_path.exists():

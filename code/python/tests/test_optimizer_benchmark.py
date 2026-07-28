@@ -428,6 +428,11 @@ def test_confirmation_runner_writes_51_jobs_and_5100_calls(
     assert len(evaluations) == 5100
     assert {row["optimizer"] for row in results} == {"sobol_pattern"}
     assert plan["development_evidence"]["sha256"]
+    snapshot = output / "development_evidence.snapshot.json"
+    assert snapshot.is_file()
+    assert json.loads(snapshot.read_text()) == json.loads(
+        evidence.read_text()
+    )
     assert (output / "confirmation_gate.json").is_file()
     assert not (output / "selection.json").exists()
 
