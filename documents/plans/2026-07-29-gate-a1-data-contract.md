@@ -234,7 +234,9 @@ Expected: import failure because the diagnostic function is absent.
 
 Implement `derive_sampling_diagnostics(trace)` using:
 
-- median `dt` for sampling rate;
+- `duration / (n_rows - 1)` for nominal sampling interval and sampling rate;
+- maximum residual from the nominal timestamp grid to measure export
+  quantization;
 - least-squares linear trend for DC potential;
 - FFT of detrended applied potential for an initial frequency;
 - sine/cosine least squares at that frequency for amplitude;
@@ -244,9 +246,9 @@ Implement:
 
 ```python
 GATE_A1_THRESHOLDS = {
-    "expected_rows": 65535,
-    "max_relative_jitter": 1e-3,
-    "max_gap_ratio": 1.01,
+    "expected_rows": 65536,
+    "max_timestamp_residual_samples": 1e-2,
+    "max_gap_ratio": 1.05,
     "min_points_per_cycle": 64.0,
     "min_complete_cycles": 20,
     "max_frequency_relative_error": 1e-3,
@@ -281,7 +283,7 @@ git commit -m "feat(data): derive frozen sampling diagnostics"
 - [ ] **Step 1: Write a failing registry test**
 
 The test must load the registry and assert exactly four dataset IDs, relative
-paths, current hashes, expected 65,535 rows and source levels for every required
+paths, current hashes, expected 65,536 rows and source levels for every required
 metadata field:
 
 ```python

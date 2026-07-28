@@ -148,5 +148,29 @@ def test_sampling_diagnostics_expose_gap_and_jitter():
 
     result = derive_sampling_diagnostics(trace)
 
-    assert result["max_gap_ratio"] == pytest.approx(2.0)
+    assert result["max_gap_ratio"] == pytest.approx(2.0, rel=1e-3)
     assert result["max_relative_jitter"] == pytest.approx(1.0)
+
+
+def test_sampling_diagnostics_handle_quantized_uniform_timestamps():
+    fs = 1280.0
+    exact_time = np.arange(0.0, 51.2, 1.0 / fs)
+    exported_time = np.round(exact_time, 5)
+    potential = (
+        1.0
+        + 0.01 * exact_time
+        + 0.16 * np.sin(2.0 * np.pi * 5.0 * exact_time)
+    )
+    trace = ExperimentalTrace(
+        potential=potential,
+        current=np.zeros_like(exact_time),
+        time=exported_time,
+    )
+
+    result = derive_sampling_diagnostics(trace)
+
+    assert result["sampling_rate_hz"] == pytest.approx(fs, rel=1e-7)
+    assert result["frequency_hz"] == pytest.approx(5.0, rel=1e-7)
+    assert result["amplitude_v"] == pytest.approx(0.16, rel=1e-6)
+    assert result["max_timestamp_residual_samples"] < 0.01
+    assert result["max_gap_ratio"] < 1.05

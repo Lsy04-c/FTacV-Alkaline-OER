@@ -29,9 +29,9 @@ class ExperimentalFileFacts:
 
 
 GATE_A1_THRESHOLDS = {
-    "expected_rows": 65535,
-    "max_relative_jitter": 1e-3,
-    "max_gap_ratio": 1.01,
+    "expected_rows": 65536,
+    "max_timestamp_residual_samples": 1e-2,
+    "max_gap_ratio": 1.05,
     "min_points_per_cycle": 64.0,
     "min_complete_cycles": 20,
     "max_frequency_relative_error": 1e-3,
@@ -107,13 +107,19 @@ def derive_sampling_diagnostics(
     if np.any(dt <= 0):
         raise ValueError("time must be strictly increasing")
     median_dt = float(np.median(dt))
-    sampling_rate = 1.0 / median_dt
+    duration = float(time[-1] - time[0])
+    nominal_dt = duration / (len(time) - 1)
+    sampling_rate = 1.0 / nominal_dt
     relative_jitter = float(
         np.max(np.abs(dt - median_dt)) / median_dt
     )
-    max_gap_ratio = float(np.max(dt) / median_dt)
+    max_gap_ratio = float(np.max(dt) / nominal_dt)
 
     relative_time = time - time[0]
+    nominal_time = np.arange(len(time), dtype=float) * nominal_dt
+    max_timestamp_residual = float(
+        np.max(np.abs(relative_time - nominal_time)) / nominal_dt
+    )
     design = np.column_stack(
         [relative_time, np.ones_like(relative_time)]
     )
@@ -124,7 +130,7 @@ def derive_sampling_diagnostics(
         float(scan_rate) * relative_time + float(intercept)
     )
     spectrum = np.abs(np.fft.rfft(detrended))
-    frequencies = np.fft.rfftfreq(len(time), median_dt)
+    frequencies = np.fft.rfftfreq(len(time), nominal_dt)
     if len(spectrum) < 2:
         raise ValueError("trace is too short for frequency estimation")
     peak_index = int(np.argmax(spectrum[1:]) + 1)
@@ -148,7 +154,6 @@ def derive_sampling_diagnostics(
     amplitude = float(
         np.hypot(joint_coefficients[2], joint_coefficients[3])
     )
-    duration = float(time[-1] - time[0])
     cycles = duration * frequency
 
     return {
@@ -157,9 +162,11 @@ def derive_sampling_diagnostics(
         "duration_s": duration,
         "dt_min_s": float(np.min(dt)),
         "dt_median_s": median_dt,
+        "dt_nominal_s": float(nominal_dt),
         "dt_max_s": float(np.max(dt)),
         "sampling_rate_hz": float(sampling_rate),
         "max_relative_jitter": relative_jitter,
+        "max_timestamp_residual_samples": max_timestamp_residual,
         "max_gap_ratio": max_gap_ratio,
         "frequency_hz": frequency,
         "scan_rate_v_s": float(scan_rate),
