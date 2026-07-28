@@ -571,7 +571,7 @@ def _parse_v2_config(
             return {}, f"{field} must be true for gate_version 2"
         parsed[field] = value
     legacy_mode = cfg.get("legacy_mode")
-    if not isinstance(legacy_mode, str) or legacy_mode not in parsed["feature_modes"]:
-        return {}, "legacy_mode must name one feature_modes entry"
+    if not isinstance(legacy_mode, str) or not legacy_mode:
+        return {}, "legacy_mode must be a non-empty string"
     parsed["legacy_mode"] = legacy_mode
     return parsed, None

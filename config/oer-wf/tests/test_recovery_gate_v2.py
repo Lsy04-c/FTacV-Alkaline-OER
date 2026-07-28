@@ -12,11 +12,11 @@ NOISES = [0.0, 0.0015]
 SEEDS = [7, 17, 27]
 
 
-def _config() -> dict:
+def _config(*, modes: list[str] | None = None) -> dict:
     return {
         "gate_version": 2,
         "parameter_names": ["k0_3"],
-        "feature_modes": MODES,
+        "feature_modes": modes or MODES,
         "truth_ids": TRUTHS,
         "noise_fractions": NOISES,
         "seeds": SEEDS,
@@ -36,11 +36,13 @@ def _write_archive(
     *,
     mode_errors: dict[str, list[float]] | None = None,
     same_side: bool = False,
+    modes: list[str] | None = None,
 ) -> None:
     mode_errors = mode_errors or {}
+    modes = modes or MODES
     rows = []
     groups = []
-    for mode in MODES:
+    for mode in modes:
         errors = mode_errors.get(mode, [0.002, 0.003, 0.004])
         for truth_id in TRUTHS:
             for noise in NOISES:
@@ -215,3 +217,16 @@ def test_v2_requires_all_studies_and_nonlegacy_mode(tmp_path: Path) -> None:
     assert checks[0].name == "structure:recovery_gate_v2_config"
     assert checks[0].passed is False
     assert "require_nonlegacy_mode must be true" in checks[0].detail
+
+
+def test_v2_allows_a_preregistered_nonlegacy_only_task(tmp_path: Path) -> None:
+    _write_archive(tmp_path, modes=["hybrid"], same_side=True)
+
+    checks = run(
+        tmp_path,
+        validator_config=_config(modes=["hybrid"]),
+    )
+
+    assert checks[0].name == "scientific:recovery_gate_v2"
+    assert checks[0].passed is True
+    assert "eligible_modes=hybrid" in checks[0].detail
