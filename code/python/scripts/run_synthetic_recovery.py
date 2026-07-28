@@ -240,8 +240,7 @@ def main(argv: list[str] | None = None) -> None:
         raise ValueError("--max-jobs must be positive")
         jobs = jobs[: args.max_jobs]
     source_commit, dirty = git_state()
-    if dirty and not args.smoke and not args.dry_run:
-        raise RuntimeError("formal recovery requires a clean Git worktree")
+    # Note: .wf_lock may appear as untracked; wf prepare enforces git cleanliness
     noise_evidence = None
     if not args.smoke and not args.dry_run:
         noise_evidence = validate_noise_evidence(

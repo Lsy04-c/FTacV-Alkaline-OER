@@ -1,50 +1,43 @@
-task_name: "a6_recovery_reduced"
-commit: "a737aed472712d4a1e843aa81c66dbbd2863fc33"
-description: "Gate A6 synthetic recovery: k0_2,k0_3,G_O (3 free params)"
-
-python:
-  source: "main_repo"
-  path: ".venv/bin/python"
-
-worktree_root: "worktrees"
-
-env:
-  OMP_NUM_THREADS: "1"
-  OPENBLAS_NUM_THREADS: "1"
-  PYTHONPATH: "code/python/src"
-
+args:
+- --phase
+- formal
+- --noise-fraction
+- '0.001495726085983469'
+- --free-parameters
+- k0_2,k0_3,G_O
+- --trials
+- '100'
 build:
   required: false
-
-script: "code/python/scripts/run_synthetic_recovery.py"
-args:
-  - "--phase"
-  - "formal"
-  - "--noise-fraction"
-  - "0.001495726085983469"
-  - "--free-parameters"
-  - "k0_2,k0_3,G_O"
-  - "--trials"
-  - "100"
-workers: 4
-output_dir: "results/a6_recovery_reduced"
-
+commit: 119bde7043dd8f164679c3b355d3f48ea530abbd
+description: 'Gate A6 synthetic recovery: k0_2,k0_3,G_O (3 free params)'
+env:
+  OMP_NUM_THREADS: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  PYTHONPATH: code/python/src
+expected_files:
+- summary.json
+- job_plan.json
+- results.jsonl
+- STATUS.json
+output_dir: results/a6_recovery_reduced
+python:
+  path: .venv/bin/python
+  source: main_repo
+script: code/python/scripts/run_synthetic_recovery.py
 smoke:
   enabled: true
+  expected_files:
+  - summary.json
+  - job_plan.json
+  - results.jsonl
+  - STATUS.json
   overrides:
     max_jobs: 1
-  expected_files:
-    - "summary.json"
-    - "job_plan.json"
-    - "results.jsonl"
-    - "STATUS.json"
-
-expected_files:
-  - "summary.json"
-  - "job_plan.json"
-  - "results.jsonl"
-  - "STATUS.json"
+task_name: a6_recovery_reduced
 validators:
-  - schema_check
-  - finite_check
-  - provenance
+- schema_check
+- finite_check
+- provenance
+workers: 4
+worktree_root: worktrees

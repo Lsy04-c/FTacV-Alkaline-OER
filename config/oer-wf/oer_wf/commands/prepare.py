@@ -105,10 +105,13 @@ def run_prepare(
         )
 
     # ---- create worktree ----
-    # Ensure the commit is available
+    # Ensure the commit is available: check locally first, fetch only if missing
     r_fetch = ex.ssh_exec(
-        f"cd {main_repo} && git fetch --all --quiet 2>/dev/null; "
-        f"git rev-parse --verify {spec.commit}^{{commit}} >/dev/null 2>&1 && echo ok || echo missing"
+        f"cd {main_repo} && ("
+        f"git rev-parse --verify {spec.commit}^{{commit}} >/dev/null 2>&1 && echo ok || "
+        f"(git fetch origin 2>/dev/null && "
+        f"git rev-parse --verify {spec.commit}^{{commit}} >/dev/null 2>&1 && echo ok || echo missing)"
+        f")"
     )
     if not r_fetch.ok or "missing" in r_fetch.stdout:
         return fail(
