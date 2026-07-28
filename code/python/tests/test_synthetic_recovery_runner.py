@@ -1,6 +1,7 @@
 """Tests for the Gate A6 recovery runner configuration."""
 
 import hashlib
+import json
 
 import pytest
 
@@ -319,3 +320,124 @@ def test_formal_noise_rejects_corrupt_json(tmp_path):
 
     with pytest.raises(ValueError, match="valid JSON"):
         validate_noise_evidence(0.0015, evidence)
+
+
+@pytest.mark.parametrize(
+    ("raw_status", "dirty", "dirty_paths", "ignored_paths"),
+    [
+        ("", False, [], []),
+        ("?? .wf_lock\0", False, [], [".wf_lock"]),
+        (
+            "?? results/a6/output.json\0",
+            False,
+            [],
+            ["results/a6/output.json"],
+        ),
+        (
+            "?? .wf_lock\0?? results/a6/output.json\0",
+            False,
+            [],
+            [".wf_lock", "results/a6/output.json"],
+        ),
+        (
+            " M results/formal/evidence.json\0",
+            True,
+            ["results/formal/evidence.json"],
+            [],
+        ),
+        (
+            "M  results/formal/evidence.json\0",
+            True,
+            ["results/formal/evidence.json"],
+            [],
+        ),
+        (
+            "?? code/python/new script.py\0",
+            True,
+            ["code/python/new script.py"],
+            [],
+        ),
+        ("?? .wf_lock.py\0", True, [".wf_lock.py"], []),
+        ("?? results.py\0", True, ["results.py"], []),
+        (
+            "R  results/old.py\0code/old.py\0",
+            True,
+            ["code/old.py -> results/old.py"],
+            [],
+        ),
+    ],
+)
+def test_classify_git_status_porcelain_z(
+    raw_status, dirty, dirty_paths, ignored_paths
+):
+    classified = recovery_runner.classify_git_status(raw_status)
+
+    assert classified == {
+        "dirty": dirty,
+        "dirty_paths": dirty_paths,
+        "ignored_workflow_paths": ignored_paths,
+    }
+
+
+def test_main_writes_consistent_structured_provenance(monkeypatch, tmp_path):
+    output = tmp_path / "smoke"
+    provenance = {
+        "source_commit": "deadbeef",
+        "dirty": False,
+        "dirty_paths": [],
+        "ignored_workflow_paths": [".wf_lock", "results/a6/"],
+    }
+    monkeypatch.setattr(
+        recovery_runner, "git_state_full", lambda: provenance, raising=False
+    )
+    monkeypatch.setattr(
+        recovery_runner,
+        "iter_job_results",
+        lambda jobs, **kwargs: iter(
+            [
+                {
+                    **jobs[0],
+                    "success": True,
+                    "n_ode_fail": 0,
+                    "n_tafel_fail": 0,
+                }
+            ]
+        ),
+    )
+    monkeypatch.setattr(
+        recovery_runner,
+        "summarize_recovery",
+        lambda rows, parameter_names: {},
+    )
+
+    main(
+        [
+            "--phase",
+            "formal",
+            "--noise-fraction",
+            "0.0015",
+            "--trials",
+            "1",
+            "--output",
+            str(output),
+            "--workers",
+            "1",
+            "--smoke",
+            "--max-jobs",
+            "1",
+        ]
+    )
+
+    plan = json.loads((output / "job_plan.json").read_text())
+    summary = json.loads((output / "summary.json").read_text())
+
+    assert plan["provenance"] == summary["provenance"]
+    assert summary["source_commit"] == plan["provenance"]["source_commit"]
+    assert summary["dirty"] == plan["provenance"]["dirty"]
+    assert plan["provenance"]["source_commit"] == "deadbeef"
+    assert plan["provenance"]["ignored_workflow_paths"] == [
+        ".wf_lock",
+        "results/a6/",
+    ]
+    assert plan["provenance"]["python"]
+    assert plan["provenance"]["command"]

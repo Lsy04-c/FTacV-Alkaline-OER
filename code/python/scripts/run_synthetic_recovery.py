@@ -44,6 +44,8 @@ WORKFLOW_OWNED_FILES = {
     "stdout.log",
     "stderr.log",
 }
+WORKFLOW_UNTRACKED_PATHS = {".wf_lock"}
+WORKFLOW_UNTRACKED_PREFIXES = ("results/",)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -220,7 +222,45 @@ def run_job(job: dict, *, smoke: bool = False) -> dict:
     }
 
 
-def git_state() -> tuple[str, bool]:
+def _is_workflow_untracked_path(path: str) -> bool:
+    return path in WORKFLOW_UNTRACKED_PATHS or path.startswith(
+        WORKFLOW_UNTRACKED_PREFIXES
+    )
+
+
+def classify_git_status(status_porcelain_z: str) -> dict:
+    """Classify NUL-delimited porcelain v1 without hiding source changes."""
+    dirty_paths = []
+    ignored_workflow_paths = []
+    fields = status_porcelain_z.split("\0")
+    index = 0
+    while index < len(fields):
+        entry = fields[index]
+        index += 1
+        if not entry:
+            continue
+        if len(entry) < 4 or entry[2] != " ":
+            raise ValueError(f"malformed git status entry: {entry!r}")
+        status = entry[:2]
+        path = entry[3:]
+        if "R" in status or "C" in status:
+            if index >= len(fields) or not fields[index]:
+                raise ValueError(f"missing source path for git status: {entry!r}")
+            old_path = fields[index]
+            index += 1
+            dirty_paths.append(f"{old_path} -> {path}")
+        elif status == "??" and _is_workflow_untracked_path(path):
+            ignored_workflow_paths.append(path)
+        else:
+            dirty_paths.append(path)
+    return {
+        "dirty": bool(dirty_paths),
+        "dirty_paths": dirty_paths,
+        "ignored_workflow_paths": ignored_workflow_paths,
+    }
+
+
+def git_state_full() -> dict:
     commit = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=ROOT,
@@ -228,16 +268,27 @@ def git_state() -> tuple[str, bool]:
         text=True,
         capture_output=True,
     ).stdout.strip()
-    dirty = bool(
-        subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=ROOT,
-            check=True,
-            text=True,
-            capture_output=True,
-        ).stdout.strip()
+    status = subprocess.run(
+        ["git", "status", "--porcelain=v1", "-z"],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    ).stdout
+    classified = classify_git_status(status)
+    return {
+        "source_commit": commit,
+        **classified,
+    }
+
+
+def git_state() -> tuple[str, bool]:
+    """Return the legacy provenance tuple for existing callers."""
+    provenance = git_state_full()
+    return (
+        provenance["source_commit"],
+        provenance["dirty"],
     )
-    return commit, dirty
 
 
 def validate_noise_evidence(noise_fraction: float, path: Path | None) -> dict:
@@ -278,8 +329,9 @@ def iter_job_results(jobs: list[dict], *, workers: int, smoke: bool):
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     jobs = limit_jobs(build_jobs(args), args.max_jobs)
-    source_commit, dirty = git_state()
-    # Note: .wf_lock may appear as untracked; wf prepare enforces git cleanliness
+    provenance = git_state_full()
+    source_commit = provenance["source_commit"]
+    dirty = provenance["dirty"]
     noise_evidence = None
     if not args.smoke and not args.dry_run:
         noise_evidence = validate_noise_evidence(
@@ -287,6 +339,12 @@ def main(argv: list[str] | None = None) -> None:
         )
     output = args.output.resolve()
     prepare_output_directory(output)
+    provenance_record = {
+        **provenance,
+        "python": platform.python_version(),
+        "command": [sys.executable, *sys.argv]
+        if argv is None else [sys.executable, *argv],
+    }
     plan = {
         "phase": args.phase,
         "noise_fraction": args.noise_fraction,
@@ -296,13 +354,7 @@ def main(argv: list[str] | None = None) -> None:
         "job_count": len(jobs),
         "jobs": jobs,
         "noise_evidence": noise_evidence,
-        "provenance": {
-            "source_commit": source_commit,
-            "dirty": dirty,
-            "python": platform.python_version(),
-            "command": [sys.executable, *sys.argv]
-            if argv is None else [sys.executable, *argv],
-        },
+        "provenance": provenance_record,
     }
     (output / "job_plan.json").write_text(
         json.dumps(plan, indent=2, ensure_ascii=False) + "\n"
@@ -336,6 +388,7 @@ def main(argv: list[str] | None = None) -> None:
         "n_tafel_fail": sum(row["n_tafel_fail"] for row in rows),
         "source_commit": source_commit,
         "dirty": dirty,
+        "provenance": provenance_record,
         "recovery_summary": summarize_recovery(
             rows,
             parameter_names=tuple(jobs[0]["free_parameters"]) if jobs else (),
