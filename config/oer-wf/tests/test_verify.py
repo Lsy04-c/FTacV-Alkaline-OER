@@ -294,3 +294,60 @@ def test_stage2_cn_recovery_specs(
         "require_nonlegacy_mode": True,
         "legacy_mode": "legacy",
     }
+
+
+def test_a6_optimizer_development_spec_is_frozen() -> None:
+    spec_path = (
+        Path(__file__).resolve().parents[1]
+        / "examples"
+        / "a6_optimizer_development_cn.yaml"
+    )
+    raw = yaml.safe_load(spec_path.read_text())
+    model = TaskSpec.model_validate(raw)
+
+    assert model.task_name == "a6_optimizer_development_cn"
+    assert model.commit == "a5b93f55e540682cc8cddb1fabbe63a7e0e92326"
+    assert model.script == "code/python/scripts/run_optimizer_benchmark.py"
+    assert model.output_dir == "results/a6_optimizer_development_cn"
+    assert model.workers == 8
+    assert model.supports_resume is True
+    assert _arg_value(model.args, "--phase") == "development"
+    assert _arg_value(model.args, "--backend") == "cn"
+    assert _arg_value(model.args, "--budget") == "100"
+    assert _arg_value(model.args, "--noise-evidence") == (
+        "results/formal/identifiability/gate-a6-d9299f8/"
+        "noise_evidence.json"
+    )
+    assert model.smoke.args == ["--smoke"]
+    assert model.smoke.overrides == {"max_jobs": 3}
+    assert model.expected_files == [
+        "benchmark_plan.json",
+        "results.jsonl",
+        "evaluations.jsonl",
+        "summary.json",
+        "selection.json",
+        "STATUS.json",
+    ]
+    assert model.validators == [
+        "schema_check",
+        "finite_check",
+        "provenance",
+        "optimizer_benchmark_gate",
+    ]
+    assert model.validator_config["optimizer_benchmark_gate"] == {
+        "gate_version": 1,
+        "phase": "development",
+        "optimizers": ["tpe", "sobol_pattern", "de_fixed"],
+        "parameter_pairs": [
+            ["k0_2", "k0_3"],
+            ["k0_2", "G_O"],
+            ["k0_3", "G_O"],
+        ],
+        "truth_id": "center",
+        "noise_fraction": 0.0,
+        "seed": 7,
+        "optimization_budget": 100,
+        "max_parameter_error": 0.05,
+        "require_zero_ode_failures": True,
+        "require_zero_boundary_hits": True,
+    }
