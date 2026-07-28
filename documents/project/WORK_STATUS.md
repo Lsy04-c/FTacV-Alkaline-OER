@@ -1272,3 +1272,27 @@ H1-H7压力测试：
   为外部验证；完整结果仍按 Recovery Gate v2 判定。
 - 设计文档：
   `documents/specifications/2026-07-29-a6-fixed-budget-optimizer-benchmark-design.md`。
+
+## 31. Gate A6 固定预算优化器开发门（2026-07-29）
+
+- 实现提交：`a5b93f55e540682cc8cddb1fabbe63a7e0e92326`；任务规格提交：
+  `a235cd1`；spec hash：
+  `sha256:94e1b53827390b5f8b9bac8018c871bb81d79b817edd7bc38d6b70cac38f870d`。
+- Legion 正式任务 15 秒完成：9/9 job、900/900 optimization calls、
+  9 次 post-run truth diagnostic、`n_ode_fail=0`、`STATUS=SUCCESS`。
+- 独立 `wf verify` 重算结构和选择后 PASS，冻结唯一候选
+  `sobol_pattern`：
+  - 最坏参数误差 0.024110；
+  - 中位参数误差 0.001296；
+  - 最大 objective regret 0.484578。
+- `de_fixed` 最坏误差 0.050948，超过 0.05 门；TPE 仅作为基线，不进入
+  确认候选。
+- 首次 smoke 因远端 `$变量` 转义使动态库复制路径退化为 `/code`，
+  按协议 `FAIL_INFRA`；改用完整绝对路径后第二次 smoke 通过。失败结果未
+  进入科学判断。
+- 正式原始归档：
+  `/Users/liushiyu/OER-FTAcV-archive/results/a5b93f5/a6_optimizer_development_cn/20260728_224911`。
+- 完整验收与哈希：
+  `results/formal/identifiability/gate-a6-optimizer-development/acceptance.md`。
+- 下一步只编写并执行一次锁定的 51-study `sobol_pattern` CN 确认集；
+  不直接启动 LSODA、三参数扩展或真实数据正式反演。

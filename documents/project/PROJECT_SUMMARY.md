@@ -387,6 +387,13 @@ smoke 只证明流程可运行，不是正式精度证据；不同模式的 `tot
 15. 下一步保持 100 次 forward-evaluation 预算和 v2 恢复门不变，比较
     不使用 synthetic truth 初始化的全局—局部混合优化算法。只有新算法
     在预注册代表性基准中优于 TPE，才允许重做完整两参数恢复。
+16. 固定预算开发门已完成：9 个 `center/no-noise/seed-7` study、
+    900 次 optimization call 全部通过结构和数值验收；`sobol_pattern`
+    在三个参数对的全部参数上均满足误差 `<=0.05`，冻结为唯一确认候选。
+    `de_fixed` 最坏误差 0.050948，未过门；TPE 保留为基线。
+17. 当前只允许运行排除三个开发案例后的 51-study CN 锁定确认集。开发门
+    PASS 不等于联合可识别；确认集通过的参数组合仍需 LSODA 同配置复核，
+    Gate A6 关闭前真实数据正式反演继续暂停。
 
 ### 纠错与失败路径
 
@@ -629,7 +636,7 @@ Web 可以保留基础开发，但不得先于核心 schema 成为科研主线�
 | 电位分辨锁相 | 核心相位错误已修复 | `code/python/src/oer_aem/signal.py` | 待真实重采样 |
 | 目标函数 | 多模式和分量输出已建立 | `code/python/src/oer_aem/inversion.py` | 待拆分模式 |
 | 网格 | 128 点为候选 | `code/python/scripts/compare_feature_grids.py` | 待扩大验证 |
-| 可识别性 | 单参数可恢复；两参数 TPE 因未找到真值盆地而 FAIL | `results/formal/identifiability/gate-a6-stage2-cn-732bf5d/acceptance.md` | 待同预算算法比较 |
+| 可识别性 | `sobol_pattern` 通过三案例同预算开发门 | `results/formal/identifiability/gate-a6-optimizer-development/acceptance.md` | 待 51-study CN 锁定确认 |
 | M1 重构 | 当前证据拒绝 | `code/python/scripts/compare_reconstruction_model.py` | 已形成否定结果 |
 | API | 基础任务接口存在 | `code/web/backend/main.py` | 非当前主线 |
 | Web | 基础前端存在 | `code/web/frontend/` | 非当前主线 |
@@ -647,15 +654,13 @@ Web 可以保留基础开发，但不得先于核心 schema 成为科研主线�
 
 ## 里程碑 2：同预算优化器诊断
 
-- 在不使用 synthetic truth 初始化的前提下，建立 TPE 与至少一个
-  全局—局部混合算法的 100-forward 配对基准；
-- 冻结代表性 truth/noise/seed、成功门和失败退出条件；
-- 显式记录 truth objective，仅用于区分搜索失败和近等价远端解；
-- 新算法未明显优于 TPE时，不重跑完整 Stage 2。
+- 状态：**已完成**。
+- 三算法均严格使用 100 次调用，truth objective 只作 post-run diagnostic。
+- `sobol_pattern` 是唯一通过三个开发案例的替代算法，已冻结进入确认集。
 
 ## 里程碑 3：重新关闭 Gate A6
 
-- 只有同预算算法基准通过后，才重做三组两参数 CN 恢复；
+- 只用冻结的 `sobol_pattern` 运行排除开发集后的 51-study CN 确认；
 - 至少一个 CN 组合通过 v2 后，才执行同配置 LSODA 确认；
 - CN 与 LSODA 科学结论不一致时，以 LSODA 为准；
 - Gate A6 关闭前继续禁止三参数扩展和真实数据正式 TPE。
