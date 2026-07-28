@@ -205,6 +205,28 @@ def _write_archive(
     return config
 
 
+def test_recomputed_failures_match_reported_metric_order():
+    development = [
+        _row(tuple(pair), "center", 0.0, 7, error=0.06)
+        for pair in GATE_CONFIG["parameter_pairs"]
+    ]
+    confirmation = [
+        _row(pair, truth, noise, seed, error=0.06)
+        for pair, truth, noise, seed in _job_matrix()
+    ]
+
+    gate = optimizer_confirmation_gate._recompute_gate(
+        development,
+        confirmation,
+        GATE_CONFIG,
+    )
+
+    assert gate["pair_results"]["k0_2,k0_3"]["failures"][:2] == [
+        "center/noise-0/k0_2/median_error",
+        "center/noise-0/k0_2/max_error",
+    ]
+
+
 def _failures(checks):
     return [check.name for check in checks if not check.passed]
 

@@ -194,13 +194,13 @@ def _recompute_gate(
                         aggregate["boundary_rate"], boundary_rate
                     )
                     prefix = f"{truth}/noise-{noise:g}/{name}"
-                    if max_error > config["max_normalized_bound_error"]:
-                        failures.append(f"{prefix}/max_error")
                     if (
                         median_error
                         > config["max_median_normalized_bound_error"]
                     ):
                         failures.append(f"{prefix}/median_error")
+                    if max_error > config["max_normalized_bound_error"]:
+                        failures.append(f"{prefix}/max_error")
                     if (
                         dispersion
                         > config[
