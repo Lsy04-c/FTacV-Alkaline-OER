@@ -101,10 +101,15 @@ commit 和归档 snapshot 为准）
 
 ### 未达成与路径规划
 
-1. 为四个真实文件建立固定 schema 快照，检查列数、单位、时间单调性和采样字段。
-2. 对裁剪、排序、插值和扫描方向分别建立回归测试。
-3. 将数据文件哈希、解析参数和排除原因写入正式 manifest。
-4. Gate A1：任一数据缺少关键元数据或坐标不一致时，禁止进入反演。
+1. 四个真实文件的固定 schema、哈希、时间单调性和采样字段已通过正式
+   审计；严格入口禁止静默排序、去重、裁剪和插值。
+2. 独立 validator 已重算文件结构、采样指标、元数据来源和 runner 结果。
+3. Gate A1 当前为 `FAIL_METADATA`：四份数据均缺少三列单位、电位参考和
+   仪器预处理的一手记录。
+4. 获得可追溯的仪器导出说明或实验记录后，只允许更新元数据来源并重跑
+   同一数值门；在此之前禁止真实数据正式反演。
+5. 正式证据：
+   `results/formal/data_contract/gate-a1-a57d42f/acceptance.md`。
 
 ### 纠错与失败路径
 
@@ -627,7 +632,7 @@ Web 可以保留基础开发，但不得先于核心 schema 成为科研主线�
 
 | 模块 | 当前结论 | 主要文件 | 状态 |
 |---|---|---|---|
-| 数据基础诊断 | 四组数据可进入进一步验证 | `results/diagnostics/data_quality/` | 部分完成 |
+| 数据基础诊断 | 结构与采样 PASS，关键元数据 FAIL | `results/formal/data_contract/gate-a1-a57d42f/acceptance.md` | Gate A1 FAIL_METADATA |
 | AEM M0 | Python 正演链已建立 | `code/python/src/oer_aem/physics.py` | 部分完成 |
 | 热力学约束 | 标度关系和参数变换已实现 | `code/python/src/oer_aem/thermodynamics.py` | 已实现 |
 | LSODA | 参考求解器已建立 | `code/python/src/oer_aem/physics.py` | 已实现 |

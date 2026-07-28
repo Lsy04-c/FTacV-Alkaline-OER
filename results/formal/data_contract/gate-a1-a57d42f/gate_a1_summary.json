@@ -1,0 +1,40 @@
+{
+  "dataset_count": 4,
+  "eligible_for_inversion": false,
+  "gate": "FAIL_METADATA",
+  "gate_version": 1,
+  "metadata_passed": false,
+  "missing_metadata": {
+    "FT2": [
+      "current_unit",
+      "instrument_preprocessing",
+      "potential_reference",
+      "potential_unit",
+      "time_unit"
+    ],
+    "FT3": [
+      "current_unit",
+      "instrument_preprocessing",
+      "potential_reference",
+      "potential_unit",
+      "time_unit"
+    ],
+    "FT4": [
+      "current_unit",
+      "instrument_preprocessing",
+      "potential_reference",
+      "potential_unit",
+      "time_unit"
+    ],
+    "FT8": [
+      "current_unit",
+      "instrument_preprocessing",
+      "potential_reference",
+      "potential_unit",
+      "time_unit"
+    ]
+  },
+  "numerical_passed": true,
+  "schema_version": 1,
+  "structure_passed": true
+}

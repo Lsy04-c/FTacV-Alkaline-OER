@@ -1318,3 +1318,23 @@ H1-H7压力测试：
   LSODA、三参数扩展或真实数据正式反演，不增加预算或修改阈值。
 - 完整验收与哈希：
   `results/formal/identifiability/gate-a6-sobol-confirmation/acceptance.md`。
+
+## 33. Gate A1 实验数据与采样契约（2026-07-29）
+
+- 严格解析器拒绝额外列、表头、非有限值、倒序和重复时间；不再静默排序、
+  去重、裁剪或插值。
+- 四份原始文件均为 65,536×3，哈希与冻结注册表一致；文件末行无换行，
+  `wc -l` 的 65,535 不是数据点数。
+- 初版诊断用 `median(dt)` 估计采样率，受十进制时间戳量化影响会把
+  1280 Hz 误估为 1282.05 Hz。正式运行前增加量化时间戳回归测试，改为
+  总时长名义网格；设计与计划同步修订。
+- commit `a57d42f` 的正式本机审计：
+  - 四文件结构 PASS；
+  - 采样数值 PASS；
+  - 独立 validator 重算一致；
+  - 元数据 `FAIL_METADATA`，`eligible_for_inversion=false`。
+- 四份数据均缺少三列单位、电位参考和仪器预处理的一手记录。旧代码中的
+  V/A/s 只保留为 `legacy_assumption`，不能用于关闭 Gate。
+- Gate A1 工程实现完成，但总 Gate 未关闭；真实数据正式反演继续禁止。
+- 完整验收：
+  `results/formal/data_contract/gate-a1-a57d42f/acceptance.md`。
