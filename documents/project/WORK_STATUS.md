@@ -1256,3 +1256,19 @@ H1-H7压力测试：
   代表性小规模基准，通过预注册门后才重做全部恢复。
 - 完整验收、归档路径和 SHA-256：
   `results/formal/identifiability/gate-a6-stage2-cn-732bf5d/acceptance.md`。
+
+## 30. Gate A6 固定预算优化器基准设计（2026-07-29）
+
+- 冻结三种算法：现有 TPE、`sobol_pattern`、`de_fixed`。
+- 每种算法每个 study 恰好 100 次 optimization objective call；额外 truth
+  objective 只作 post-run diagnostic，不反馈给算法。
+- `sobol_pattern` 固定为 64 点 scrambled Sobol + 36 次有界 pattern
+  search；`de_fixed` 固定为 20 个体初始种群 + 4 代
+  `DE/rand/1/bin`，当前版本只接受二维问题。
+- 开发集固定为三个参数组合的 `center/no-noise/seed-7`，共 9 个 study。
+  替代算法必须在三个组合的每个参数上均达到归一化误差 `<=0.05`，否则
+  停止，不运行确认集。
+- 候选冻结后只运行一次剩余 51-study 锁定确认集。该集合不是盲测，不报告
+  为外部验证；完整结果仍按 Recovery Gate v2 判定。
+- 设计文档：
+  `documents/specifications/2026-07-29-a6-fixed-budget-optimizer-benchmark-design.md`。
