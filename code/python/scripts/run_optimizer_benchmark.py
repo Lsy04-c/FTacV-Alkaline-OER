@@ -31,9 +31,11 @@ from oer_aem.inversion import (  # noqa: E402
 from oer_aem.optimizer_benchmark import (  # noqa: E402
     DEVELOPMENT_OPTIMIZERS,
     OPTIMIZATION_BUDGET,
+    build_confirmation_jobs,
     build_development_jobs,
     run_benchmark_job,
     select_development_candidate,
+    summarize_confirmation_gate,
 )
 from scripts.run_synthetic_recovery import (  # noqa: E402
     git_state_full,
@@ -68,10 +70,15 @@ WORKFLOW_OWNED_FILES = {
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase", choices=("development",), required=True)
+    parser.add_argument(
+        "--phase",
+        choices=("development", "confirmation"),
+        required=True,
+    )
     parser.add_argument("--backend", choices=("cn", "lsoda"), required=True)
     parser.add_argument("--budget", type=int, required=True)
     parser.add_argument("--noise-evidence", type=Path)
+    parser.add_argument("--development-evidence", type=Path)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--smoke", action="store_true")
@@ -164,6 +171,72 @@ def _read_noise_evidence(path: Path | None) -> dict[str, Any] | None:
             evidence["selected_noise_fraction"]
         ),
     }
+
+
+def _read_development_evidence(
+    path: Path | None,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    if path is None:
+        raise ValueError(
+            "confirmation requires --development-evidence"
+        )
+    resolved = path.resolve()
+    raw = resolved.read_bytes()
+    try:
+        evidence = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("development evidence is not valid JSON") from exc
+    if not isinstance(evidence, dict):
+        raise ValueError("development evidence must be a JSON object")
+    _assert_finite(evidence, location="development_evidence")
+    if evidence.get("schema_version") != 1:
+        raise ValueError("development evidence schema_version must equal 1")
+    if evidence.get("selected_optimizer") != "sobol_pattern":
+        raise ValueError(
+            "development evidence must select sobol_pattern"
+        )
+    if evidence.get("source_commit") != (
+        "a5b93f55e540682cc8cddb1fabbe63a7e0e92326"
+    ):
+        raise ValueError("development evidence source_commit mismatch")
+    if evidence.get("source_results_sha256") != (
+        "e93ccab24c4a91d9d4d9a2b8e014826b6b1a07b7d0891c6e7dd944b78e17b432"
+    ):
+        raise ValueError("development evidence source hash mismatch")
+    rows = evidence.get("development_rows")
+    if not isinstance(rows, list) or len(rows) != 3:
+        raise ValueError(
+            "development evidence must contain exactly three rows"
+        )
+    expected_pairs = {
+        ("k0_2", "k0_3"),
+        ("k0_2", "G_O"),
+        ("k0_3", "G_O"),
+    }
+    if {
+        tuple(row.get("free_parameters", [])) for row in rows
+    } != expected_pairs:
+        raise ValueError("development evidence pair matrix mismatch")
+    for row in rows:
+        if (
+            row.get("optimizer") != "sobol_pattern"
+            or row.get("truth_id") != "center"
+            or float(row.get("noise_fraction", -1.0)) != 0.0
+            or int(row.get("seed", -1)) != 7
+            or int(row.get("optimization_calls", -1)) != 100
+            or row.get("success") is not True
+        ):
+            raise ValueError("development evidence row contract mismatch")
+    metadata = {
+        "resolved_path": str(resolved),
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "source_commit": evidence["source_commit"],
+        "source_results_sha256": evidence["source_results_sha256"],
+        "source_selection_sha256": evidence[
+            "source_selection_sha256"
+        ],
+    }
+    return metadata, rows
 
 
 def _select_specs(names):
@@ -302,6 +375,7 @@ def _run_contract_from_plan(plan: dict[str, Any]) -> dict[str, Any]:
         "workers": plan["workers"],
         "is_smoke": plan["is_smoke"],
         "noise_evidence": plan["noise_evidence"],
+        "development_evidence": plan.get("development_evidence"),
         "algorithm_contract": plan["algorithm_contract"],
         "jobs": [
             {
@@ -327,6 +401,7 @@ def _prepare_output(output: Path, *, resume: bool) -> None:
         "evaluations.jsonl",
         "summary.json",
         "selection.json",
+        "confirmation_gate.json",
     }
     if not resume and scientific:
         raise FileExistsError("output contains existing scientific artifacts")
@@ -383,7 +458,7 @@ def _iter_rows(
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     if args.backend != "cn" and not args.smoke:
-        raise ValueError("formal development requires backend=cn")
+        raise ValueError("formal optimizer benchmark requires backend=cn")
     if args.budget != OPTIMIZATION_BUDGET:
         raise ValueError("optimizer benchmark requires budget=100")
     if args.workers < 1:
@@ -391,20 +466,54 @@ def main(argv: list[str] | None = None) -> None:
     if args.max_jobs is not None and args.max_jobs < 1:
         raise ValueError("--max-jobs must be positive")
     if args.smoke and args.max_jobs not in (None, 3):
-        raise ValueError("development smoke requires exactly three jobs")
+        raise ValueError("optimizer smoke requires exactly three jobs")
     validate_backend(args.backend)
     noise_evidence = _read_noise_evidence(args.noise_evidence)
-    jobs = build_development_jobs(
-        noise_fraction=(
-            noise_evidence["selected_noise_fraction"]
-            if noise_evidence
-            else None
-        )
+    development_evidence = None
+    development_rows = None
+    selected_noise = (
+        noise_evidence["selected_noise_fraction"]
+        if noise_evidence
+        else None
     )
-    if args.max_jobs is not None:
+    if args.phase == "development":
+        if args.development_evidence is not None:
+            raise ValueError(
+                "development phase does not accept development evidence"
+            )
+        jobs = build_development_jobs(noise_fraction=selected_noise)
+    else:
+        if noise_evidence is None:
+            raise ValueError(
+                "confirmation requires --noise-evidence"
+            )
+        development_evidence, development_rows = (
+            _read_development_evidence(args.development_evidence)
+        )
+        jobs = build_confirmation_jobs(noise_fraction=selected_noise)
+    if args.smoke and args.phase == "confirmation":
+        jobs = [
+            next(
+                job
+                for job in jobs
+                if tuple(job["free_parameters"]) == pair
+            )
+            for pair in (
+                ("k0_2", "k0_3"),
+                ("k0_2", "G_O"),
+                ("k0_3", "G_O"),
+            )
+        ]
+    elif args.max_jobs is not None:
         jobs = jobs[: args.max_jobs]
     if args.smoke and len(jobs) != 3:
-        raise ValueError("development smoke requires exactly three jobs")
+        raise ValueError("optimizer smoke requires exactly three jobs")
+    if (
+        not args.smoke
+        and args.phase == "confirmation"
+        and len(jobs) != 51
+    ):
+        raise ValueError("formal confirmation requires 51 jobs")
 
     for variable in (
         "OMP_NUM_THREADS",
@@ -435,6 +544,7 @@ def main(argv: list[str] | None = None) -> None:
         "workers": args.workers,
         "is_smoke": args.smoke,
         "noise_evidence": noise_evidence,
+        "development_evidence": development_evidence,
         "algorithm_contract": ALGORITHM_CONTRACT,
         "jobs": jobs,
         "provenance": provenance,
@@ -541,16 +651,35 @@ def main(argv: list[str] | None = None) -> None:
         row["success"] for row in ordered_results
     )
     if args.smoke:
-        selection = {
-            "scientific_gate_passed": None,
-            "selected_optimizer": None,
-            "next_action": "RUN_FORMAL_DEVELOPMENT",
-        }
+        if args.phase == "development":
+            gate = {
+                "scientific_gate_passed": None,
+                "selected_optimizer": None,
+                "next_action": "RUN_FORMAL_DEVELOPMENT",
+            }
+        else:
+            gate = {
+                "scientific_gate_passed": None,
+                "eligible_pairs": [],
+                "next_action": "RUN_FORMAL_CONFIRMATION",
+            }
+    elif args.phase == "development":
+        gate = select_development_candidate(ordered_results)
     else:
-        selection = select_development_candidate(ordered_results)
+        assert development_rows is not None
+        gate = summarize_confirmation_gate(
+            development_rows,
+            ordered_results,
+        )
+    if args.phase == "development":
+        gate_path = output / "selection.json"
+        gate_prefix = ".selection."
+    else:
+        gate_path = output / "confirmation_gate.json"
+        gate_prefix = ".confirmation_gate."
     summary = {
         "execution_passed": execution_passed,
-        "scientific_gate_passed": selection["scientific_gate_passed"],
+        "scientific_gate_passed": gate["scientific_gate_passed"],
         "job_count": len(jobs),
         "completed_jobs": len(ordered_results),
         "optimization_calls": sum(
@@ -566,7 +695,7 @@ def main(argv: list[str] | None = None) -> None:
         "is_smoke": args.smoke,
     }
     _atomic_json(output / "summary.json", summary, prefix=".summary.")
-    _atomic_json(output / "selection.json", selection, prefix=".selection.")
+    _atomic_json(gate_path, gate, prefix=gate_prefix)
     print(output)
 
 

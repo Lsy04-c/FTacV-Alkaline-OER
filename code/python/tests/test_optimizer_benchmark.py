@@ -330,6 +330,23 @@ def _fake_successful_row(job):
     }
 
 
+def _fake_confirmation_row(job):
+    row = _confirmation_row(job)
+    return {
+        **row,
+        "evaluations": [
+            {
+                "index": index,
+                "phase": "test",
+                "unit": [0.5, 0.5],
+                "loss": 0.01,
+                "error": None,
+            }
+            for index in range(1, 101)
+        ],
+    }
+
+
 def _read_jsonl(path):
     return [
         json.loads(line)
@@ -350,6 +367,159 @@ def _base_args(output):
         "--output",
         str(output),
     ]
+
+
+def _confirmation_args(output, evidence):
+    return [
+        "--phase",
+        "confirmation",
+        "--backend",
+        "cn",
+        "--budget",
+        "100",
+        "--development-evidence",
+        str(evidence),
+        "--noise-evidence",
+        str(
+            ROOT
+            / "results"
+            / "formal"
+            / "identifiability"
+            / "gate-a6-d9299f8"
+            / "noise_evidence.json"
+        ),
+        "--workers",
+        "1",
+        "--output",
+        str(output),
+    ]
+
+
+def test_confirmation_runner_writes_51_jobs_and_5100_calls(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setattr(
+        benchmark_runner,
+        "validate_backend",
+        lambda backend: None,
+    )
+    monkeypatch.setattr(
+        benchmark_runner,
+        "run_benchmark_job",
+        lambda job, **kwargs: _fake_confirmation_row(job),
+    )
+    evidence = (
+        ROOT
+        / "results"
+        / "formal"
+        / "identifiability"
+        / "gate-a6-optimizer-development"
+        / "development_evidence.json"
+    )
+    output = tmp_path / "confirmation"
+
+    benchmark_runner.main(_confirmation_args(output, evidence))
+
+    results = _read_jsonl(output / "results.jsonl")
+    evaluations = _read_jsonl(output / "evaluations.jsonl")
+    plan = json.loads((output / "benchmark_plan.json").read_text())
+    assert len(results) == 51
+    assert len(evaluations) == 5100
+    assert {row["optimizer"] for row in results} == {"sobol_pattern"}
+    assert plan["development_evidence"]["sha256"]
+    assert (output / "confirmation_gate.json").is_file()
+    assert not (output / "selection.json").exists()
+
+
+def test_confirmation_runner_smoke_covers_all_parameter_pairs(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setattr(
+        benchmark_runner,
+        "validate_backend",
+        lambda backend: None,
+    )
+    monkeypatch.setattr(
+        benchmark_runner,
+        "run_benchmark_job",
+        lambda job, **kwargs: _fake_confirmation_row(job),
+    )
+    evidence = (
+        ROOT
+        / "results"
+        / "formal"
+        / "identifiability"
+        / "gate-a6-optimizer-development"
+        / "development_evidence.json"
+    )
+    output = tmp_path / "confirmation-smoke"
+
+    benchmark_runner.main(
+        [
+            *_confirmation_args(output, evidence),
+            "--smoke",
+            "--max-jobs",
+            "3",
+        ]
+    )
+
+    plan = json.loads((output / "benchmark_plan.json").read_text())
+    gate = json.loads((output / "confirmation_gate.json").read_text())
+    assert {
+        tuple(job["free_parameters"]) for job in plan["jobs"]
+    } == {
+        ("k0_2", "k0_3"),
+        ("k0_2", "G_O"),
+        ("k0_3", "G_O"),
+    }
+    assert {job["budget"] for job in plan["jobs"]} == {100}
+    assert gate == {
+        "scientific_gate_passed": None,
+        "eligible_pairs": [],
+        "next_action": "RUN_FORMAL_CONFIRMATION",
+    }
+
+
+def test_confirmation_runner_resume_rejects_changed_development_evidence(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setattr(
+        benchmark_runner,
+        "validate_backend",
+        lambda backend: None,
+    )
+    monkeypatch.setattr(
+        benchmark_runner,
+        "run_benchmark_job",
+        lambda job, **kwargs: _fake_confirmation_row(job),
+    )
+    source = (
+        ROOT
+        / "results"
+        / "formal"
+        / "identifiability"
+        / "gate-a6-optimizer-development"
+        / "development_evidence.json"
+    )
+    evidence = tmp_path / "development_evidence.json"
+    evidence.write_bytes(source.read_bytes())
+    output = tmp_path / "confirmation-resume"
+    args = _confirmation_args(output, evidence)
+    before = evidence.read_bytes()
+    benchmark_runner.main(args)
+    assert evidence.read_bytes() == before
+    payload = json.loads(evidence.read_text())
+    payload["source_commit"] = "changed"
+    evidence.write_text(json.dumps(payload))
+
+    with pytest.raises(
+        ValueError,
+        match="development evidence|resume_fingerprint",
+    ):
+        benchmark_runner.main([*args, "--resume"])
 
 
 def test_runner_writes_complete_development_artifacts(
