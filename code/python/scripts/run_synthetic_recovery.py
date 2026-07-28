@@ -65,6 +65,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=",".join(name for name, *_ in DEFAULT_PARAM_SPECS),
         help="Comma-separated subset of inversion parameters to optimize",
     )
+    parser.add_argument(
+        "--feature-modes",
+        default=",".join(FEATURE_MODES),
+        help="Comma-separated subset of feature modes to evaluate",
+    )
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--max-jobs", "--max_jobs", type=int, default=None)
@@ -84,6 +89,19 @@ def select_free_specs(value: str):
         raise ValueError("at least one free parameter is required")
     selected = set(names)
     return tuple(spec for spec in DEFAULT_PARAM_SPECS if spec[0] in selected)
+
+
+def select_feature_modes(value: str) -> tuple[str, ...]:
+    modes = [mode.strip() for mode in value.split(",") if mode.strip()]
+    if len(modes) != len(set(modes)):
+        raise ValueError("duplicate feature mode")
+    unknown = sorted(set(modes) - set(FEATURE_MODES))
+    if unknown:
+        raise ValueError(f"unknown feature mode: {', '.join(unknown)}")
+    if not modes:
+        raise ValueError("at least one feature mode is required")
+    selected = set(modes)
+    return tuple(mode for mode in FEATURE_MODES if mode in selected)
 
 
 def build_config(
@@ -120,10 +138,11 @@ def validate_backend(backend: str) -> None:
 def build_jobs(args: argparse.Namespace) -> list[dict]:
     free_specs = select_free_specs(args.free_parameters)
     free_parameters = [name for name, *_ in free_specs]
+    feature_modes = select_feature_modes(args.feature_modes)
     truths = truth_library(DEFAULT_PARAM_SPECS)
     if args.phase == "pilot":
         jobs = build_budget_pilot_jobs(
-            modes=FEATURE_MODES,
+            modes=feature_modes,
             truths=truths,
             noise_fraction=args.noise_fraction,
             seeds=OPTIMIZER_SEEDS,
@@ -133,7 +152,7 @@ def build_jobs(args: argparse.Namespace) -> list[dict]:
         if args.trials is None or args.trials < 1:
             raise ValueError("formal phase requires positive --trials")
         jobs = build_recovery_jobs(
-            modes=FEATURE_MODES,
+            modes=feature_modes,
             truths=truths,
             noise_fractions=(0.0, args.noise_fraction),
             seeds=OPTIMIZER_SEEDS,
@@ -562,6 +581,7 @@ def build_summary(
     )
     summary = {
         "backend": args.backend,
+        "feature_modes": list(select_feature_modes(args.feature_modes)),
         "phase": args.phase,
         "execution_passed": execution_passed,
         "scientific_gate_passed": None,
@@ -616,6 +636,7 @@ def main(argv: list[str] | None = None) -> None:
         job["job_input_hash"] = resume_metadata["job_input_hashes"][job["job_id"]]
     plan = {
         "backend": args.backend,
+        "feature_modes": list(select_feature_modes(args.feature_modes)),
         "phase": args.phase,
         "noise_fraction": args.noise_fraction,
         "workers": args.workers,

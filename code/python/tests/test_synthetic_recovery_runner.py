@@ -165,6 +165,47 @@ def test_pilot_builds_36_budget_jobs(tmp_path):
     assert {job["trials"] for job in jobs} == {20, 50, 100}
 
 
+def test_formal_runner_can_freeze_hybrid_as_the_only_feature_mode(tmp_path):
+    args = parse_args(
+        [
+            "--phase",
+            "formal",
+            "--noise-fraction",
+            "0.0015",
+            "--trials",
+            "100",
+            "--feature-modes",
+            "hybrid",
+            "--output",
+            str(tmp_path / "formal"),
+        ]
+    )
+
+    jobs = build_jobs(args)
+
+    assert len(jobs) == 18
+    assert {job["feature_mode"] for job in jobs} == {"hybrid"}
+
+
+def test_runner_rejects_unknown_or_duplicate_feature_modes(tmp_path):
+    common = [
+        "--phase",
+        "formal",
+        "--noise-fraction",
+        "0.0015",
+        "--trials",
+        "100",
+        "--output",
+        str(tmp_path / "formal"),
+    ]
+
+    with pytest.raises(ValueError, match="unknown feature mode"):
+        build_jobs(parse_args([*common, "--feature-modes", "hybrid,unknown"]))
+
+    with pytest.raises(ValueError, match="duplicate feature mode"):
+        build_jobs(parse_args([*common, "--feature-modes", "hybrid,hybrid"]))
+
+
 def test_reduced_runner_fixes_complement_to_each_synthetic_truth(tmp_path):
     args = parse_args(
         [
@@ -372,7 +413,7 @@ def test_smoke_main_checkpoints_one_completed_job(tmp_path):
     assert (output / "summary.json").is_file()
 
 
-def test_main_writes_backend_at_top_level_in_plan_and_summary(monkeypatch, tmp_path):
+def test_main_writes_backend_and_modes_at_top_level(monkeypatch, tmp_path):
     output = tmp_path / "backend"
     provenance = {
         "source_commit": "deadbeef",
@@ -405,6 +446,8 @@ def test_main_writes_backend_at_top_level_in_plan_and_summary(monkeypatch, tmp_p
             "1",
             "--backend",
             "cn",
+            "--feature-modes",
+            "hybrid",
         ]
     )
 
@@ -413,6 +456,8 @@ def test_main_writes_backend_at_top_level_in_plan_and_summary(monkeypatch, tmp_p
 
     assert plan["backend"] == "cn"
     assert summary["backend"] == "cn"
+    assert plan["feature_modes"] == ["hybrid"]
+    assert summary["feature_modes"] == ["hybrid"]
 
 
 def test_limit_jobs_applies_positive_limit_without_mutating_input():
