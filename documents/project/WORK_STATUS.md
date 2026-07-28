@@ -1153,3 +1153,28 @@ H1-H7压力测试：
 - 验证：57 个 oer-wf 测试通过；项目联合测试共收集 259 项并全部通过；
   CLI help、Python 编译和 `git diff --check` 通过。尚未部署 Legion 或重验旧
   A6 归档；旧归档需显式契约，不能伪造 snapshot。
+
+## 26. Gate A6 Stage 1 CN 单参数恢复（2026-07-29）
+
+- 实现提交：`d0defa7`；配置冻结提交：`8d51342`。
+- 本地验证：60 个工作流测试、210 个 Python 测试和真实 CN smoke 通过。
+- Legion 验证：三个任务的 smoke 均通过。证据只保留在远端：
+  - `/home/lsy/OER-FTAcV/worktrees/d0defa7/a6_recovery_cn_k0_2/results/a6_recovery_cn_k0_2/_smoke_20260728_210854`
+  - `/home/lsy/OER-FTAcV/worktrees/d0defa7/a6_recovery_cn_k0_3/results/a6_recovery_cn_k0_3/_smoke_20260728_210905`
+  - `/home/lsy/OER-FTAcV/worktrees/d0defa7/a6_recovery_cn_G_O/results/a6_recovery_cn_G_O/_smoke_20260728_210916`
+  - smoke 未同步 Mac；下列 Mac 路径只对应正式结果。
+- 正式结果：
+  - `k0_2`：72.7169 s；真值覆盖 12/24；Tafel fail 63。
+  - `k0_3`：71.8919 s；真值覆盖 21/24；Tafel fail 1492。
+  - `G_O`：74.0703 s；真值覆盖 15/24；Tafel fail 491。
+- 三项均有 5 个契约文件、`STATUS=SUCCESS`、72/72 个唯一 job、24 个
+  group、完整 `4 modes × 3 truths × 2 noise × 3 seeds` 组合、
+  `n_ode_fail=0`、boundary violations=0、`dirty=false`。
+- 基础设施与当前数值门 PASS；三项都因真值覆盖不足而 scientific FAIL。
+  Tafel fail 未纳入本轮冻结 gate，保留为独立证据，不改写为数值门失败。
+- 按预注册剪枝规则，所有两参数组合均失去资格；不启动 Stage 2 CN、
+  LSODA 复核或真实数据正式 TPE。
+- Mac 归档：
+  - `/Users/liushiyu/OER-FTAcV-archive/results/d0defa7/a6_recovery_cn_k0_2/20260728_210953`
+  - `/Users/liushiyu/OER-FTAcV-archive/results/d0defa7/a6_recovery_cn_k0_3/20260728_211150`
+  - `/Users/liushiyu/OER-FTAcV-archive/results/d0defa7/a6_recovery_cn_G_O/20260728_211332`
