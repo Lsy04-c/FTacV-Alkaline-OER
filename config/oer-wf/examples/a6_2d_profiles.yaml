@@ -1,7 +1,9 @@
-args: []
+args:
+  - "--grid_points"
+  - "41"
 build:
   required: false
-commit: a21fc952dcea70c82b4293c31da339e49846f51b
+commit: 1d6bf7aa6579b999fdc4f95652903b60219783c7
 description: "Gate A6 selective 2-parameter profiles (lockin_only/hybrid \xD7 6 pairs)"
 env:
   OMP_NUM_THREADS: '1'

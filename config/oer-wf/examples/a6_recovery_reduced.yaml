@@ -1,0 +1,48 @@
+task_name: "a6_recovery_reduced"
+commit: "1d6bf7aa6579b999fdc4f95652903b60219783c7"
+description: "Gate A6 synthetic recovery on reduced free parameter set (k0_2,k0_3,G_O)"
+
+python:
+  source: "main_repo"
+  path: ".venv/bin/python"
+
+worktree_root: "worktrees"
+
+env:
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  PYTHONPATH: "code/python/src"
+
+build:
+  required: false
+
+script: "code/python/scripts/run_synthetic_recovery.py"
+args:
+  - "--phase"
+  - "formal"
+  - "--noise-fraction"
+  - "0.001495726085983469"
+  - "--free-parameters"
+  - "k0_2,k0_3,G_O"
+workers: 4
+output_dir: "results/a6_recovery_reduced"
+
+smoke:
+  enabled: true
+  overrides:
+    max_jobs: 1
+  expected_files:
+    - "summary.json"
+    - "job_plan.json"
+    - "results.jsonl"
+    - "STATUS.json"
+
+expected_files:
+  - "summary.json"
+  - "job_plan.json"
+  - "results.jsonl"
+  - "STATUS.json"
+validators:
+  - schema_check
+  - finite_check
+  - provenance

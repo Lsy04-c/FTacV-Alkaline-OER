@@ -54,7 +54,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--max-jobs", type=int)
+    parser.add_argument("--max-jobs", "--max_jobs", type=int, default=None)
     return parser.parse_args(argv)
 
 

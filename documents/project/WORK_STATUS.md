@@ -1062,3 +1062,41 @@ H1-H7压力测试：
 - `k0_1` 在四模式的 Δ1 宽度为 0.525–1.000，且均有远端近简并区，不再
   作为宽边界自由参数。hybrid/lockin-only 对
   `k0_2,k0_3,G_OH,G_O` 最清晰，下一步只做这四参数的选择性二维 profile。
+
+## 21. Gate A6 二维耦合诊断：CN 加速 + 增量输出（2026-07-28）
+
+- 状态：**正式 2D profile 完成**，12 profiles × 441 点，CN 后端 ~40 min。
+- 配置：commit `1d6bf7a`，21×21 网格，CN backend，8 workers。
+- runner 修复：
+  - 增量 CSV 写入（每个 profile 完成即追加，不再死寂四小时）
+  - Worker 5 分钟进度报告（`[wf:profile] hybrid__G_OH__G_O 328/441 (74%)`）
+  - 主进程 profile 完成日志（`[wf:progress] 8/12 lockin_only__k0_2__G_O (441 points)`）
+  - `--backend cn|lsoda`，默认 CN（~5-10× 加速）
+- 二维耦合诊断结果：
+  - **全部 12 profiles：truth = global minimum** ✅
+  - **G_OH ↔ G_O 强补偿**（r=+0.999，对角谷）——hybrid 和 lockin_only 均确认
+  - **k0_2, k0_3 与其他参数正交**（r≈0）——可独立约束
+  - **Δ1 widths = 0**：损失面极陡，21 点网格无法解析近 truth 区域；需 41 点网格获取定量耦合值
+- 证据：`~/OER-FTAcV-archive/results/1d6bf7a/a6_2d_profiles/20260728_044432/`；
+  5292 行，12 summaries。
+## 22. Gate A6 二维耦合诊断 41 点网格重算（2026-07-28）
+
+- 状态：**完成**，CN + 41×41 grid，12 profiles，20172 rows，0 ODE failures。
+- 配置：commit `1d6bf7a`，spec 注入 `--grid_points 41`，CN backend，8 workers。
+- 结论（L1 工程事实）：
+  - **全部 12 profiles：truth = global minimum** ✅
+  - **G_OH↔G_O 补偿**（r=+0.999，对角谷）—两模式确认
+  - **k0_3↔G_OH 补偿**（r=+1.000，对角谷）—**41 点 grid 新发现**，21 点未探测到此耦合
+  - **k0_2 与其他全部独立**（r≈0，Δ1x=0.025）—可自由
+  - **k0_3↔G_O 独立**（r≈0）—可同时自由
+  - **Δ1 widths 仍集中于 k0_2**（0.025），其他对为 0——损失面极陡，41 点仍不足以完全解析
+- 对 A6 自由参数集的影响：
+  - **不能同时自由**：G_OH↔G_O（标度关系固定比例），k0_3↔G_OH（选择其一）
+  - **可自由**：k0_2（独立），G_O（与 k0_2/k0_3 均不耦合）
+  - **候选最小自由集**：k0_2 + G_O + 一个热力学自由度（固定 G_OH/G_O 比）
+- 证据：`~/OER-FTAcV-archive/results/1d6bf7a/a6_2d_profiles/20260728_064133/`；
+  20172 行。
+- 下一步：
+  1. 按新的耦合约束定义最终自由参数集
+  2. 在缩减参数集上重跑合成恢复（synthetic recovery），完成 Gate A6
+  3. 通过后冻结参数集，启动真实数据 TPE
