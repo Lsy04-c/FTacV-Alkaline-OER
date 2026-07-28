@@ -1230,3 +1230,29 @@ H1-H7压力测试：
   证据。
 - 下一步：完成全量测试并提交 spec；随后按环境文档部署 Legion，只先跑
   三个 `wf smoke`。任一 smoke 基础设施失败则停止 formal。
+
+## 29. Gate A6 Stage 2 两参数 CN 正式结果（2026-07-29）
+
+- 远端 `oer-wf` 更新到 0.6.5，71 项远端测试通过；三个 worktree 均从
+  `732bf5d` 创建，CN Linux 动态库可加载且工作树只显示允许的 `.wf_lock`。
+- 三个 `wf smoke` 均通过：五个契约文件齐全、`STATUS=SUCCESS`、
+  1 job × 5 trials、`n_ode_fail=0`。
+- 为避免 24 workers 争用 16 线程，三项 formal 串行运行，每项 8 workers。
+- 三项均执行与 provenance PASS，但 Recovery Gate v2 scientific FAIL：
+  - `k0_2,k0_3`：21.94 s；最大误差 0.231369；最坏中位误差
+    0.177096；seed 极差 0.251891。
+  - `k0_2,G_O`：22.28 s；最大误差 0.180300；最坏中位误差
+    0.026136；seed 极差 0.202199。
+  - `k0_3,G_O`：21.76 s；最大误差 0.117248；最坏中位误差
+    0.039060；seed 极差 0.147170。
+- 三项均 18/18 jobs、`n_ode_fail=0`、boundary hit rate 0。所有组合停止，
+  不启动三参数任务或 LSODA 复核，不增加 trials，不调整 v2 阈值。
+- 离线 objective 归因：54/54 个 study 中真值 objective 均优于 TPE
+  最优；无噪声真值 objective 为 0，而 TPE 仍有 0.10–0.86 的中位损失。
+  当前主要失败原因是 100-trial TPE 未找到狭窄真值盆地，不能直接解释为
+  参数结构不可识别。
+- 下一步：固定 100 次 forward-evaluation 预算，比较至少一个全局—局部
+  混合优化器与当前 TPE；算法必须不使用 synthetic truth 初始化。先跑
+  代表性小规模基准，通过预注册门后才重做全部恢复。
+- 完整验收、归档路径和 SHA-256：
+  `results/formal/identifiability/gate-a6-stage2-cn-732bf5d/acceptance.md`。

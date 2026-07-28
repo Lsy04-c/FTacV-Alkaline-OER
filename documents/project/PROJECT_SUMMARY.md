@@ -380,6 +380,13 @@ smoke 只证明流程可运行，不是正式精度证据；不同模式的 `tot
 13. 现有归档的 v2 离线复核筛出共同候选 `hybrid`；这只允许进入
     Stage 2 多参数 CN 筛选，不构成联合恢复 PASS。通过后仍需 LSODA
     同配置确认。
+14. Stage 2 三个两参数 `hybrid` CN 任务均 scientific FAIL，停止
+    三参数扩展与 LSODA 复核。54/54 个 study 的真值 objective 都优于
+    TPE 最优，说明当前首要缺口是 100-trial TPE 未找到狭窄真值盆地，
+    不能直接把失败解释为结构不可识别。
+15. 下一步保持 100 次 forward-evaluation 预算和 v2 恢复门不变，比较
+    不使用 synthetic truth 初始化的全局—局部混合优化算法。只有新算法
+    在预注册代表性基准中优于 TPE，才允许重做完整两参数恢复。
 
 ### 纠错与失败路径
 
@@ -622,7 +629,7 @@ Web 可以保留基础开发，但不得先于核心 schema 成为科研主线�
 | 电位分辨锁相 | 核心相位错误已修复 | `code/python/src/oer_aem/signal.py` | 待真实重采样 |
 | 目标函数 | 多模式和分量输出已建立 | `code/python/src/oer_aem/inversion.py` | 待拆分模式 |
 | 网格 | 128 点为候选 | `code/python/scripts/compare_feature_grids.py` | 待扩大验证 |
-| 可识别性 | 单参数 v2 离线候选为 hybrid，联合恢复尚未验证 | `code/python/src/oer_aem/identifiability.py` | Gate A6 进行中 |
+| 可识别性 | 单参数可恢复；两参数 TPE 因未找到真值盆地而 FAIL | `results/formal/identifiability/gate-a6-stage2-cn-732bf5d/acceptance.md` | 待同预算算法比较 |
 | M1 重构 | 当前证据拒绝 | `code/python/scripts/compare_reconstruction_model.py` | 已形成否定结果 |
 | API | 基础任务接口存在 | `code/web/backend/main.py` | 非当前主线 |
 | Web | 基础前端存在 | `code/web/frontend/` | 非当前主线 |
@@ -638,19 +645,20 @@ Web 可以保留基础开发，但不得先于核心 schema 成为科研主线�
 - 冻结共享 `hybrid` mode 和 Stage 2 配置；
 - 提交并推送 v2 实现、测试和科学口径。
 
-## 里程碑 2：Stage 2 多参数快速筛选
+## 里程碑 2：同预算优化器诊断
 
-- 先运行 `k0_2,k0_3`、`k0_2,G_O`、`k0_3,G_O` 的 CN smoke；
-- 只对 smoke 结构和数值通过的任务运行冻结 formal；
-- 使用 v2 原阈值，失败后停止，不增加 trials 或修改边界；
-- 至少一个两参数组合通过后，才讨论三参数任务。
+- 在不使用 synthetic truth 初始化的前提下，建立 TPE 与至少一个
+  全局—局部混合算法的 100-forward 配对基准；
+- 冻结代表性 truth/noise/seed、成功门和失败退出条件；
+- 显式记录 truth objective，仅用于区分搜索失败和近等价远端解；
+- 新算法未明显优于 TPE时，不重跑完整 Stage 2。
 
-## 里程碑 3：LSODA 确认与 Gate A6 冻结
+## 里程碑 3：重新关闭 Gate A6
 
-- 对 CN 候选执行同 truth/noise/seed/trial 配置的 LSODA 确认；
+- 只有同预算算法基准通过后，才重做三组两参数 CN 恢复；
+- 至少一个 CN 组合通过 v2 后，才执行同配置 LSODA 确认；
 - CN 与 LSODA 科学结论不一致时，以 LSODA 为准；
-- 只有 LSODA 通过的最小自由集才能冻结；
-- Gate A6 关闭前继续禁止真实数据正式 TPE。
+- Gate A6 关闭前继续禁止三参数扩展和真实数据正式 TPE。
 
 ---
 
