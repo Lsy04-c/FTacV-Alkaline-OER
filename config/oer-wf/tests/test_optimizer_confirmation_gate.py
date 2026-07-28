@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -35,10 +36,6 @@ GATE_CONFIG = {
     "max_seed_normalized_bound_dispersion": 0.05,
     "max_boundary_hit_rate": 0.0,
 }
-
-
-def _root() -> Path:
-    return Path(__file__).resolve().parents[3]
 
 
 def _job_matrix():
@@ -97,17 +94,36 @@ def _write_archive(
     path: Path,
     *,
     failing_pairs=(),
-) -> None:
+) -> dict:
     path.mkdir(parents=True)
-    evidence_source = (
-        _root()
-        / "results"
-        / "formal"
-        / "identifiability"
-        / "gate-a6-optimizer-development"
-        / "development_evidence.json"
-    )
-    evidence = json.loads(evidence_source.read_text())
+    development = [
+        _row(
+            tuple(pair),
+            "center",
+            0.0,
+            7,
+            error=0.01,
+        )
+        for pair in GATE_CONFIG["parameter_pairs"]
+    ]
+    evidence = {
+        "schema_version": 1,
+        "selected_optimizer": "sobol_pattern",
+        "source_commit": "test-commit",
+        "source_results_sha256": GATE_CONFIG[
+            "development_source_results_sha256"
+        ],
+        "development_rows": development,
+    }
+    evidence_bytes = (
+        json.dumps(evidence, indent=2, allow_nan=False) + "\n"
+    ).encode()
+    config = {
+        **GATE_CONFIG,
+        "development_evidence_sha256": hashlib.sha256(
+            evidence_bytes
+        ).hexdigest(),
+    }
     confirmation = [
         _row(
             pair,
@@ -119,9 +135,9 @@ def _write_archive(
         for pair, truth, noise, seed in _job_matrix()
     ]
     gate = optimizer_confirmation_gate._recompute_gate(
-        evidence["development_rows"],
+        development,
         confirmation,
-        GATE_CONFIG,
+        config,
     )
     evaluations = [
         {
@@ -146,7 +162,7 @@ def _write_archive(
             "sha256": GATE_CONFIG[
                 "development_evidence_sha256"
             ],
-            "source_results_sha256": GATE_CONFIG[
+            "source_results_sha256": config[
                 "development_source_results_sha256"
             ],
         },
@@ -173,9 +189,10 @@ def _write_archive(
         "n_ode_fail": 0,
         "is_smoke": False,
     }
-    (path / "development_evidence.snapshot.json").write_bytes(
-        evidence_source.read_bytes()
-    )
+    plan["development_evidence"]["sha256"] = config[
+        "development_evidence_sha256"
+    ]
+    (path / "development_evidence.snapshot.json").write_bytes(evidence_bytes)
     (path / "benchmark_plan.json").write_text(json.dumps(plan))
     (path / "results.jsonl").write_text(
         "".join(json.dumps(row) + "\n" for row in confirmation)
@@ -185,6 +202,7 @@ def _write_archive(
     )
     (path / "summary.json").write_text(json.dumps(summary))
     (path / "confirmation_gate.json").write_text(json.dumps(gate))
+    return config
 
 
 def _failures(checks):
@@ -193,13 +211,19 @@ def _failures(checks):
 
 def test_confirmation_gate_passes_exact_51_plus_3_archive(
     tmp_path: Path,
+    monkeypatch,
 ) -> None:
     archive = tmp_path / "archive"
-    _write_archive(archive)
+    config = _write_archive(archive)
+    monkeypatch.setattr(
+        optimizer_confirmation_gate,
+        "FROZEN_CONFIG",
+        config,
+    )
 
     checks = optimizer_confirmation_gate.run(
         archive,
-        validator_config=GATE_CONFIG,
+        validator_config=config,
     )
 
     assert _failures(checks) == []
@@ -207,9 +231,15 @@ def test_confirmation_gate_passes_exact_51_plus_3_archive(
 
 def test_confirmation_gate_rejects_99_calls_as_structure(
     tmp_path: Path,
+    monkeypatch,
 ) -> None:
     archive = tmp_path / "archive"
-    _write_archive(archive)
+    config = _write_archive(archive)
+    monkeypatch.setattr(
+        optimizer_confirmation_gate,
+        "FROZEN_CONFIG",
+        config,
+    )
     rows = [
         json.loads(line)
         for line in (archive / "results.jsonl").read_text().splitlines()
@@ -221,7 +251,7 @@ def test_confirmation_gate_rejects_99_calls_as_structure(
 
     checks = optimizer_confirmation_gate.run(
         archive,
-        validator_config=GATE_CONFIG,
+        validator_config=config,
     )
 
     assert "structure:optimizer_confirmation_gate" in _failures(checks)
@@ -229,15 +259,21 @@ def test_confirmation_gate_rejects_99_calls_as_structure(
 
 def test_confirmation_gate_rejects_development_hash_mismatch(
     tmp_path: Path,
+    monkeypatch,
 ) -> None:
     archive = tmp_path / "archive"
-    _write_archive(archive)
+    config = _write_archive(archive)
+    monkeypatch.setattr(
+        optimizer_confirmation_gate,
+        "FROZEN_CONFIG",
+        config,
+    )
     snapshot = archive / "development_evidence.snapshot.json"
     snapshot.write_text(snapshot.read_text() + " ")
 
     checks = optimizer_confirmation_gate.run(
         archive,
-        validator_config=GATE_CONFIG,
+        validator_config=config,
     )
 
     assert "structure:optimizer_confirmation_gate" in _failures(checks)
@@ -245,9 +281,15 @@ def test_confirmation_gate_rejects_development_hash_mismatch(
 
 def test_confirmation_gate_classifies_nan_as_numerical(
     tmp_path: Path,
+    monkeypatch,
 ) -> None:
     archive = tmp_path / "archive"
-    _write_archive(archive)
+    config = _write_archive(archive)
+    monkeypatch.setattr(
+        optimizer_confirmation_gate,
+        "FROZEN_CONFIG",
+        config,
+    )
     raw = (archive / "results.jsonl").read_text()
     (archive / "results.jsonl").write_text(
         raw.replace('"best_objective": 0.01', '"best_objective": NaN', 1)
@@ -255,7 +297,7 @@ def test_confirmation_gate_classifies_nan_as_numerical(
 
     checks = optimizer_confirmation_gate.run(
         archive,
-        validator_config=GATE_CONFIG,
+        validator_config=config,
     )
 
     assert _failures(checks) == [
@@ -265,14 +307,20 @@ def test_confirmation_gate_classifies_nan_as_numerical(
 
 def test_confirmation_gate_all_pairs_fail_scientifically(
     tmp_path: Path,
+    monkeypatch,
 ) -> None:
     archive = tmp_path / "archive"
     pairs = tuple(tuple(pair) for pair in GATE_CONFIG["parameter_pairs"])
-    _write_archive(archive, failing_pairs=pairs)
+    config = _write_archive(archive, failing_pairs=pairs)
+    monkeypatch.setattr(
+        optimizer_confirmation_gate,
+        "FROZEN_CONFIG",
+        config,
+    )
 
     checks = optimizer_confirmation_gate.run(
         archive,
-        validator_config=GATE_CONFIG,
+        validator_config=config,
     )
 
     assert _failures(checks) == [
@@ -282,14 +330,20 @@ def test_confirmation_gate_all_pairs_fail_scientifically(
 
 def test_confirmation_gate_allows_only_passing_pair_to_lsoda(
     tmp_path: Path,
+    monkeypatch,
 ) -> None:
     archive = tmp_path / "archive"
     failing = (("k0_2", "G_O"), ("k0_3", "G_O"))
-    _write_archive(archive, failing_pairs=failing)
+    config = _write_archive(archive, failing_pairs=failing)
+    monkeypatch.setattr(
+        optimizer_confirmation_gate,
+        "FROZEN_CONFIG",
+        config,
+    )
 
     checks = optimizer_confirmation_gate.run(
         archive,
-        validator_config=GATE_CONFIG,
+        validator_config=config,
     )
 
     assert _failures(checks) == []
