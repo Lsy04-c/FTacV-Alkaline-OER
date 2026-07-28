@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 import yaml
 
 from oer_wf.commands.verify import run_verify
@@ -163,3 +164,66 @@ def test_recovery_gate_scientific_failure(tmp_path: Path, monkeypatch) -> None:
     assert resp.status == StatusEnum.FAIL
     assert resp.fail_type.value == "scientific"
     assert any(c.name == "scientific:recovery_gate" for c in resp.checks)
+
+
+def _arg_value(args: list[str], flag: str) -> str:
+    idx = args.index(flag)
+    return args[idx + 1]
+
+
+@pytest.mark.parametrize(
+    ("spec_name", "task_name", "output_dir", "description", "parameter_name"),
+    [
+        (
+            "a6_recovery_cn_k0_2.yaml",
+            "a6_recovery_cn_k0_2",
+            "results/a6_recovery_cn_k0_2",
+            "Gate A6 synthetic recovery: k0_2 (1 free param, CN backend)",
+            "k0_2",
+        ),
+        (
+            "a6_recovery_cn_k0_3.yaml",
+            "a6_recovery_cn_k0_3",
+            "results/a6_recovery_cn_k0_3",
+            "Gate A6 synthetic recovery: k0_3 (1 free param, CN backend)",
+            "k0_3",
+        ),
+        (
+            "a6_recovery_cn_G_O.yaml",
+            "a6_recovery_cn_G_O",
+            "results/a6_recovery_cn_G_O",
+            "Gate A6 synthetic recovery: G_O (1 free param, CN backend)",
+            "G_O",
+        ),
+    ],
+)
+def test_cn_recovery_specs(tmp_path: Path, spec_name: str, task_name: str, output_dir: str, description: str, parameter_name: str) -> None:
+    spec_path = Path(__file__).resolve().parents[1] / "examples" / spec_name
+    spec = yaml.safe_load(spec_path.read_text())
+
+    assert spec["task_name"] == task_name
+    assert spec["commit"] == "60d7a75a2853f6e5d6e975ff6f2531add051aa1b"
+    assert spec["output_dir"] == output_dir
+    assert spec["description"] == description
+    assert spec["workers"] == 8
+    assert _arg_value(spec["args"], "--phase") == "formal"
+    assert _arg_value(spec["args"], "--backend") == "cn"
+    assert _arg_value(spec["args"], "--trials") == "100"
+    assert _arg_value(spec["args"], "--free-parameters") == parameter_name
+    assert _arg_value(spec["args"], "--noise-fraction") == "0.001495726085983469"
+    assert _arg_value(spec["args"], "--noise-evidence") == "results/formal/identifiability/gate-a6-d9299f8/noise_evidence.json"
+    assert spec["smoke"]["overrides"] == {"trials": 5, "max_jobs": 1}
+    assert spec["smoke"]["expected_files"] == [
+        "summary.json",
+        "job_plan.json",
+        "results.jsonl",
+        "STATUS.json",
+    ]
+    assert spec["expected_files"] == [
+        "summary.json",
+        "job_plan.json",
+        "results.jsonl",
+        "STATUS.json",
+    ]
+    assert spec["validators"] == ["schema_check", "finite_check", "provenance", "recovery_gate"]
+    assert spec["validator_config"]["recovery_gate"]["parameter_names"] == [parameter_name]

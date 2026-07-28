@@ -1,0 +1,66 @@
+task_name: "a6_recovery_cn_k0_2"
+commit: "60d7a75a2853f6e5d6e975ff6f2531add051aa1b"
+description: "Gate A6 synthetic recovery: k0_2 (1 free param, CN backend)"
+
+python:
+  source: "main_repo"
+  path: ".venv/bin/python"
+
+worktree_root: "worktrees"
+
+env:
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  PYTHONPATH: "code/python/src"
+
+build:
+  required: false
+
+script: "code/python/scripts/run_synthetic_recovery.py"
+supports_resume: true
+args:
+  - "--phase"
+  - "formal"
+  - "--noise-fraction"
+  - "0.001495726085983469"
+  - "--noise-evidence"
+  - "results/formal/identifiability/gate-a6-d9299f8/noise_evidence.json"
+  - "--free-parameters"
+  - "k0_2"
+  - "--trials"
+  - "100"
+  - "--backend"
+  - "cn"
+workers: 8
+output_dir: "results/a6_recovery_cn_k0_2"
+
+smoke:
+  enabled: true
+  args:
+    - "--smoke"
+  overrides:
+    trials: 5
+    max_jobs: 1
+  expected_files:
+    - "summary.json"
+    - "job_plan.json"
+    - "results.jsonl"
+    - "STATUS.json"
+
+expected_files:
+  - "summary.json"
+  - "job_plan.json"
+  - "results.jsonl"
+  - "STATUS.json"
+validators:
+  - schema_check
+  - finite_check
+  - provenance
+  - recovery_gate
+
+validator_config:
+  recovery_gate:
+    parameter_names: ["k0_2"]
+    require_all_studies_success: true
+    require_truth_covered_by_seed_range: true
+    max_boundary_hit_rate: 0.0
