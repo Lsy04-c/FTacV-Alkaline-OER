@@ -1134,3 +1134,22 @@ H1-H7压力测试：
   `results/formal/identifiability/gate-a6-reduced-recovery-a7bc9e4/`。
 - 独立基础设施缺陷：`wf verify`未加载该任务的expected files，错误使用
   `summary.csv/manifest.json`默认契约；不影响本次人工严格验收结论。
+
+## 25. oer-wf 0.6.5 冻结验收契约与A6科学门（2026-07-29）
+
+- 根因确认：旧 `wf verify` 没有 TaskSpec 上下文，硬编码
+  `summary.csv/manifest.json/STATUS.json`，会把 A6 合法 JSON 结果误报为
+  structure FAIL。
+- `wf run` / `wf smoke` 现在在计算启动前原子写入
+  `task_spec.snapshot.yaml`；写入失败即停止启动。snapshot 只包含白名单任务
+  字段并随结果同步归档。
+- `wf verify` 只读归档 snapshot 获取 expected files、validators 和专用配置；
+  无 snapshot 的旧归档必须显式传完整 `--expected-file` 与 `--validator`，
+  否则报告 `verification contract unavailable`，不再猜测默认契约。
+- 新增 A6 `recovery_gate`，将结构错误、非有限数值和科学恢复失败分别归类为
+  structure / numerical / scientific。
+- A6 summary 拆分为 `execution_passed` 与
+  `scientific_gate_passed=null`；`passed` 仅保留为前者的弃用别名。
+- 验证：57 个 oer-wf 测试通过；项目联合测试共收集 259 项并全部通过；
+  CLI help、Python 编译和 `git diff --check` 通过。尚未部署 Legion 或重验旧
+  A6 归档；旧归档需显式契约，不能伪造 snapshot。

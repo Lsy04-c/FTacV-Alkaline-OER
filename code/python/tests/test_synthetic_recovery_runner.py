@@ -658,6 +658,10 @@ def test_main_writes_consistent_structured_provenance(monkeypatch, tmp_path):
     assert plan["provenance"] == summary["provenance"]
     assert summary["source_commit"] == plan["provenance"]["source_commit"]
     assert summary["dirty"] == plan["provenance"]["dirty"]
+    assert summary["execution_passed"] is True
+    assert summary["scientific_gate_passed"] is None
+    assert summary["passed"] == summary["execution_passed"]
+    assert summary["passed_semantics"] == "deprecated alias of execution_passed"
     assert plan["provenance"]["source_commit"] == "deadbeef"
     assert plan["provenance"]["ignored_workflow_paths"] == [
         ".wf_lock",

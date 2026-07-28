@@ -45,6 +45,7 @@ WORKFLOW_OWNED_FILES = {
     "._status_signal",
     "stdout.log",
     "stderr.log",
+    "task_spec.snapshot.yaml",
 }
 WORKFLOW_UNTRACKED_PATHS = {".wf_lock"}
 WORKFLOW_UNTRACKED_PREFIXES = ("results/",)
@@ -543,9 +544,15 @@ def build_summary(
     reused_jobs: int,
     executed_jobs: int,
 ) -> dict:
+    execution_passed = len(rows) == len(jobs) and all(
+        row["success"] for row in rows
+    )
     summary = {
         "phase": args.phase,
-        "passed": len(rows) == len(jobs) and all(row["success"] for row in rows),
+        "execution_passed": execution_passed,
+        "scientific_gate_passed": None,
+        "passed": execution_passed,
+        "passed_semantics": "deprecated alias of execution_passed",
         "job_count": len(jobs),
         "completed_jobs": len(rows),
         "workers": min(args.workers, len(jobs)),

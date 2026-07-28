@@ -19,6 +19,7 @@ from oer_wf.lock import spec_hash as compute_spec_hash
 from oer_wf.models import CheckResult, FailType, WfResponse
 from oer_wf.response import fail, ok, warning
 from oer_wf.runtime.command import build_command
+from oer_wf.snapshot import SNAPSHOT_FILENAME, snapshot_yaml_text
 from oer_wf.transport import Executor, RealExecutor
 from oer_wf.utils.paths import timestamp_utc
 from oer_wf.utils.systemd import parse_show, render_unit, show_cmd, unit_name
@@ -231,6 +232,24 @@ def run_smoke(
         is_smoke=True,
     )
 
+    snapshot_text = snapshot_yaml_text(spec, is_smoke=True)
+    snapshot_b64 = base64.b64encode(snapshot_text.encode("utf-8")).decode("ascii")
+    snapshot_path = f"{out_abs}/{SNAPSHOT_FILENAME}"
+    snapshot_tmp = f"{snapshot_path}.tmp"
+    r_snapshot = ex.ssh_exec(
+        f"echo {snapshot_b64} | base64 -d > {shlex.quote(snapshot_tmp)} && "
+        f"test -s {shlex.quote(snapshot_tmp)} && "
+        f"mv {shlex.quote(snapshot_tmp)} {shlex.quote(snapshot_path)} && echo OK"
+    )
+    if not r_snapshot.ok or "OK" not in (r_snapshot.stdout or ""):
+        return fail(
+            FailType.TRANSPORT,
+            f"failed to write {SNAPSHOT_FILENAME} before smoke start: "
+            f"{r_snapshot.stderr.strip() or r_snapshot.stdout.strip()}",
+            next_action="check disk space / permissions; do not start without snapshot",
+            data={"snapshot_path": snapshot_path, "stderr": r_snapshot.stderr},
+        )
+
     status_file = f"{out_abs}/STATUS.json"
     wrap_argv = [
         str(plan.python),
@@ -329,8 +348,9 @@ def run_smoke(
 
     # ---- structural acceptance ----
     expected = list(spec.smoke.expected_files)
-    if "STATUS.json" not in expected:
-        expected = expected + ["STATUS.json"]
+    for owned in ("STATUS.json", SNAPSHOT_FILENAME):
+        if owned not in expected:
+            expected.append(owned)
     checks = _structural_checks(ex, out_abs, expected)
     hard_fail = [c for c in checks if not c.passed and c.name.startswith("file:")]
     status_fail = [c for c in checks if c.name == "status_json" and not c.passed]

@@ -107,6 +107,7 @@ class TaskSpec(BaseModel):
             "manifest_hash",
         ]
     )
+    validator_config: Optional[dict[str, Any]] = None
 
     @property
     def commit_short(self) -> str:

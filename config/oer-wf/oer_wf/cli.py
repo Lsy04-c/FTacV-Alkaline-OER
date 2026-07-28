@@ -167,9 +167,24 @@ def verify(
     timestamp: Optional[str] = typer.Option(
         None, "--timestamp", help="Specific archived timestamp (default: latest)"
     ),
+    expected_files: Optional[list[str]] = typer.Option(
+        None,
+        "--expected-file",
+        help="Expected file for a legacy archive; repeat for each file",
+    ),
+    validators: Optional[list[str]] = typer.Option(
+        None,
+        "--validator",
+        help="Validator for a legacy archive; repeat for each validator",
+    ),
 ) -> None:
-    """Run generic validators on Mac-archived results."""
-    resp = run_verify(task_id, timestamp=timestamp)
+    """Verify a Mac archive using its frozen task contract."""
+    resp = run_verify(
+        task_id,
+        timestamp=timestamp,
+        expected_files=expected_files,
+        validators=validators,
+    )
     _emit(resp)
 
 

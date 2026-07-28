@@ -107,6 +107,30 @@ def test_run_starts_with_force(mock_ex: MockExecutor, sample_spec: Path) -> None
     assert resp.data.get("wrapped") is True
 
 
+def test_run_aborts_if_snapshot_write_fails(
+    mock_ex: MockExecutor, sample_spec: Path
+) -> None:
+    mock_ex.when_ssh(".wf_lock").returns(
+        0,
+        '{"task_id":"3f9aad1/solver_equiv_01","task_name":"solver_equiv_01",'
+        '"spec_hash":"sha256:x","commit":"3f9aad1","created_at":"t","worktree_path":"/w"}\n',
+    )
+    mock_ex.when_ssh("systemctl --user show").returns(
+        0,
+        "LoadState=loaded\nActiveState=inactive\nSubState=dead\nMainPID=0\n"
+        "Result=success\nExecMainStatus=0\n",
+    )
+    mock_ex.when_ssh("test -d").returns(0, "yes\n")
+    mock_ex.when_ssh("mkdir -p").returns(0, "OK\n")
+    mock_ex.when_ssh("task_spec.snapshot.yaml").returns(1, "", "disk full")
+
+    resp = run_run(sample_spec, force=True, executor=mock_ex, skip_smoke=True)
+
+    assert resp.status == StatusEnum.FAIL
+    assert resp.fail_type.value == "transport"
+    assert "snapshot" in resp.message
+
+
 def test_run_rejects_resume_for_task_without_support(
     mock_ex: MockExecutor, sample_spec: Path
 ) -> None:

@@ -54,3 +54,11 @@ validators:
   - schema_check
   - finite_check
   - provenance
+  - recovery_gate
+
+validator_config:
+  recovery_gate:
+    parameter_names: ["k0_2", "k0_3", "G_O"]
+    require_all_studies_success: true
+    require_truth_covered_by_seed_range: true
+    max_boundary_hit_rate: 0.0

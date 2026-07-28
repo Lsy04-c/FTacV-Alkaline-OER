@@ -1,6 +1,6 @@
 # oer-wf 可复用计算工作流 — 使用指南
 
-> 版本：0.6.4 | 53 个工作流测试通过 | Legion断点续跑smoke通过 | 2026-07-29
+> 版本：0.6.5 | 57 个工作流测试通过 | 冻结验收契约与A6科学门 | 2026-07-29
 
 ## 1. 这是什么
 
@@ -43,7 +43,7 @@ pip install -e ".[dev]" --trusted-host pypi.org --trusted-host files.pythonhoste
 
 验证：
 ```bash
-wf --version   # 0.6.4
+wf --version   # 0.6.5
 pytest -q      # 49 passed
 ```
 
@@ -145,7 +145,12 @@ wf sync 1becc12/solver_equiv_01
 ```
 
 ### 6.7 `wf verify <task_id>` — 通用验收
-只读本地归档，4 类验收器：schema / finite / provenance / manifest_hash。
+只读本地归档。验收契约来自同目录 `task_spec.snapshot.yaml`，该文件由
+`wf run` / `wf smoke` 在计算启动前写入。没有 snapshot 的旧归档必须显式
+提供全部 `--expected-file` 和 `--validator`；否则以
+`verification contract unavailable` 判为 structure FAIL，不再默认套用 CSV。
+任务可声明 `recovery_gate` 等专用验收器，科学门失败时
+`fail_type=scientific`。
 ```bash
 wf verify 1becc12/solver_equiv_01
 ```
@@ -247,7 +252,7 @@ validators:
 
 ## 9. 工程规则与安全门
 
-### 五个安全门（v0.6.4）
+### 五个安全门（v0.6.5）
 
 | # | 安全门 | 说明 |
 |---|--------|------|

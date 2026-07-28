@@ -15,6 +15,7 @@ from oer_wf.commands.prepare import load_spec
 from oer_wf.models import FailType, WfResponse
 from oer_wf.response import fail, ok, running
 from oer_wf.runtime.command import build_command, make_output_dir
+from oer_wf.snapshot import SNAPSHOT_FILENAME, snapshot_yaml_text
 from oer_wf.transport import Executor, RealExecutor
 from oer_wf.utils.systemd import (
     parse_show,
@@ -205,6 +206,24 @@ def run_run(
         if resume_timestamp is not None
         else None,
     )
+
+    snapshot_text = snapshot_yaml_text(spec, is_smoke=False)
+    snapshot_b64 = base64.b64encode(snapshot_text.encode("utf-8")).decode("ascii")
+    snapshot_path = f"{out_abs}/{SNAPSHOT_FILENAME}"
+    snapshot_tmp = f"{snapshot_path}.tmp"
+    r_snapshot = ex.ssh_exec(
+        f"echo {snapshot_b64} | base64 -d > {shlex.quote(snapshot_tmp)} && "
+        f"test -s {shlex.quote(snapshot_tmp)} && "
+        f"mv {shlex.quote(snapshot_tmp)} {shlex.quote(snapshot_path)} && echo OK"
+    )
+    if not r_snapshot.ok or "OK" not in (r_snapshot.stdout or ""):
+        return fail(
+            FailType.TRANSPORT,
+            f"failed to write {SNAPSHOT_FILENAME} before start: "
+            f"{r_snapshot.stderr.strip() or r_snapshot.stdout.strip()}",
+            next_action="check disk space / permissions; do not start without snapshot",
+            data={"snapshot_path": snapshot_path, "stderr": r_snapshot.stderr},
+        )
 
     # ---- 4. wrap command with universal wrapper ----
     status_file = f"{out_abs}/STATUS.json"
