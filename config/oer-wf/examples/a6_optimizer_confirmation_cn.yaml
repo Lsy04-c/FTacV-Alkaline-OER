@@ -1,5 +1,5 @@
 task_name: "a6_optimizer_confirmation_cn"
-commit: "e7fe80c7b96a149d1dbb929801e5e763016612e6"
+commit: "1015a38364b514f597b2023478cb29659594669e"
 description: "Gate A6 locked Sobol 51-study confirmation (hybrid, CN)"
 
 python:

@@ -363,7 +363,7 @@ def test_a6_optimizer_confirmation_spec_is_frozen() -> None:
     model = TaskSpec.model_validate(raw)
 
     assert model.task_name == "a6_optimizer_confirmation_cn"
-    assert model.commit == "e7fe80c7b96a149d1dbb929801e5e763016612e6"
+    assert model.commit == "1015a38364b514f597b2023478cb29659594669e"
     assert model.script == "code/python/scripts/run_optimizer_benchmark.py"
     assert model.output_dir == "results/a6_optimizer_confirmation_cn"
     assert model.workers == 8
