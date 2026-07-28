@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
+import json
 import numpy as np
+import pytest
 
 from oer_aem.optimizer_benchmark import (
     DEVELOPMENT_OPTIMIZERS,
@@ -12,6 +14,7 @@ from oer_aem.optimizer_benchmark import (
     run_benchmark_job,
     select_development_candidate,
 )
+from scripts import run_optimizer_benchmark as benchmark_runner
 
 
 def _development_rows(
@@ -149,3 +152,161 @@ def test_job_execution_keeps_truth_diagnostic_after_optimization() -> None:
     assert len(row["evaluations"]) == 100
     assert [kind for kind, _ in events[:100]] == ["optimization"] * 100
     assert events[100:] == [("truth", None)]
+
+
+def _fake_successful_row(job):
+    row = _development_rows(
+        sobol_errors=[0.01, 0.01, 0.01],
+        de_errors=[0.02, 0.02, 0.02],
+    )
+    template = next(item for item in row if item["job_id"] == job["job_id"])
+    return {
+        **template,
+        "diagnostic_truth_calls": 1,
+        "evaluations": [
+            {
+                "index": index,
+                "phase": "test",
+                "unit": [0.5, 0.5],
+                "loss": 0.01,
+                "error": None,
+            }
+            for index in range(1, 101)
+        ],
+    }
+
+
+def _read_jsonl(path):
+    return [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+    ]
+
+
+def _base_args(output):
+    return [
+        "--phase",
+        "development",
+        "--backend",
+        "cn",
+        "--budget",
+        "100",
+        "--workers",
+        "1",
+        "--output",
+        str(output),
+    ]
+
+
+def test_runner_writes_complete_development_artifacts(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setattr(
+        benchmark_runner,
+        "validate_backend",
+        lambda backend: None,
+    )
+    monkeypatch.setattr(
+        benchmark_runner,
+        "run_benchmark_job",
+        lambda job, **kwargs: _fake_successful_row(job),
+    )
+    output = tmp_path / "run"
+
+    benchmark_runner.main(_base_args(output))
+
+    assert {path.name for path in output.iterdir()} == {
+        "benchmark_plan.json",
+        "results.jsonl",
+        "evaluations.jsonl",
+        "summary.json",
+        "selection.json",
+    }
+    assert len(_read_jsonl(output / "results.jsonl")) == 9
+    assert len(_read_jsonl(output / "evaluations.jsonl")) == 900
+    summary = json.loads((output / "summary.json").read_text())
+    assert summary["optimization_calls"] == 900
+    assert summary["diagnostic_truth_calls"] == 9
+
+
+def test_smoke_preserves_budget_and_disables_scientific_selection(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setattr(
+        benchmark_runner,
+        "validate_backend",
+        lambda backend: None,
+    )
+    monkeypatch.setattr(
+        benchmark_runner,
+        "run_benchmark_job",
+        lambda job, **kwargs: _fake_successful_row(job),
+    )
+    output = tmp_path / "smoke"
+
+    benchmark_runner.main(
+        [*_base_args(output), "--smoke", "--max-jobs", "3"]
+    )
+
+    plan = json.loads((output / "benchmark_plan.json").read_text())
+    selection = json.loads((output / "selection.json").read_text())
+    assert plan["is_smoke"] is True
+    assert {job["budget"] for job in plan["jobs"]} == {100}
+    assert len(plan["jobs"]) == 3
+    assert selection == {
+        "scientific_gate_passed": None,
+        "selected_optimizer": None,
+        "next_action": "RUN_FORMAL_DEVELOPMENT",
+    }
+
+
+def test_resume_reuses_only_matching_job_hashes(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    calls = []
+    monkeypatch.setattr(
+        benchmark_runner,
+        "validate_backend",
+        lambda backend: None,
+    )
+
+    def fake_run(job, **kwargs):
+        calls.append(job["job_id"])
+        return _fake_successful_row(job)
+
+    monkeypatch.setattr(benchmark_runner, "run_benchmark_job", fake_run)
+    output = tmp_path / "resume"
+    benchmark_runner.main(_base_args(output))
+    calls.clear()
+
+    benchmark_runner.main([*_base_args(output), "--resume"])
+
+    assert calls == []
+
+
+def test_resume_rejects_optimizer_or_budget_drift(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setattr(
+        benchmark_runner,
+        "validate_backend",
+        lambda backend: None,
+    )
+    monkeypatch.setattr(
+        benchmark_runner,
+        "run_benchmark_job",
+        lambda job, **kwargs: _fake_successful_row(job),
+    )
+    output = tmp_path / "resume"
+    benchmark_runner.main(_base_args(output))
+    plan_path = output / "benchmark_plan.json"
+    plan = json.loads(plan_path.read_text())
+    plan["budget"] = 101
+    plan_path.write_text(json.dumps(plan))
+
+    with pytest.raises(ValueError, match="resume_fingerprint mismatch"):
+        benchmark_runner.main([*_base_args(output), "--resume"])

@@ -250,6 +250,16 @@ def run_benchmark_job(
         "n_ode_fail": int(
             getattr(optimization_objective, "n_ode_fail", 0)
         ),
+        "n_tafel_fail": int(
+            getattr(optimization_objective, "n_tafel_fail", 0)
+        ),
+        "n_forward": int(
+            getattr(
+                optimization_objective,
+                "n_forward",
+                result.optimization_calls,
+            )
+        ),
         "parameter_metrics": metrics,
         "termination_reason": result.termination_reason,
         "evaluations": [asdict(record) for record in result.evaluations],
