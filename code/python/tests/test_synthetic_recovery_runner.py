@@ -80,6 +80,42 @@ def test_explicit_cn_backend_is_preserved_in_config_and_jobs(tmp_path):
     assert {job["backend"] for job in jobs} == {"cn"}
 
 
+def test_resume_fingerprint_changes_when_only_backend_changes(tmp_path):
+    common = [
+        "--phase",
+        "pilot",
+        "--noise-fraction",
+        "0.0015",
+        "--output",
+        str(tmp_path / "run"),
+        "--smoke",
+        "--max-jobs",
+        "1",
+    ]
+    lsoda_args = parse_args(common)
+    cn_args = parse_args([*common, "--backend", "cn"])
+
+    lsoda_jobs = build_jobs(lsoda_args)
+    cn_jobs = build_jobs(cn_args)
+
+    lsoda_resume = recovery_runner.build_resume_metadata(
+        lsoda_args,
+        lsoda_jobs,
+        {"source_commit": "deadbeef", "dirty": False},
+        None,
+    )
+    cn_resume = recovery_runner.build_resume_metadata(
+        cn_args,
+        cn_jobs,
+        {"source_commit": "deadbeef", "dirty": False},
+        None,
+    )
+
+    assert lsoda_resume["resume_fingerprint"] != cn_resume["resume_fingerprint"]
+    assert {job["backend"] for job in lsoda_jobs} == {"lsoda"}
+    assert {job["backend"] for job in cn_jobs} == {"cn"}
+
+
 def test_validate_backend_rejects_cn_when_cpp_bridge_unavailable(monkeypatch):
     from oer_aem import cpp_bridge
 
@@ -191,6 +227,34 @@ def test_reduced_runner_does_not_initialize_optimizer_from_truth(tmp_path):
     inverter = recovery_runner.build_inverter(job, config, free_specs)
 
     assert inverter.initial_params is None
+
+
+def test_checkpoint_hash_mismatch_when_backend_changes(tmp_path):
+    args = parse_args(
+        [
+            "--phase",
+            "pilot",
+            "--noise-fraction",
+            "0.0015",
+            "--output",
+            str(tmp_path / "pilot"),
+            "--smoke",
+            "--max-jobs",
+            "1",
+        ]
+    )
+    job = build_jobs(args)[0]
+    lsoda_hash = recovery_runner.job_input_hash(job, smoke=True)
+    row = _checkpoint_row(job, lsoda_hash)
+    path = tmp_path / "results.jsonl"
+    path.write_text(json.dumps(row) + "\n")
+
+    expected = {
+        job["job_id"]: recovery_runner.job_input_hash({**job, "backend": "cn"}, smoke=True)
+    }
+
+    with pytest.raises(ValueError, match="job_input_hash mismatch"):
+        recovery_runner.load_checkpoint_rows(path, expected)
 
 
 def test_formal_builds_72_jobs_at_selected_budget(tmp_path):
@@ -306,6 +370,49 @@ def test_smoke_main_checkpoints_one_completed_job(tmp_path):
 
     assert len((output / "results.jsonl").read_text().splitlines()) == 1
     assert (output / "summary.json").is_file()
+
+
+def test_main_writes_backend_at_top_level_in_plan_and_summary(monkeypatch, tmp_path):
+    output = tmp_path / "backend"
+    provenance = {
+        "source_commit": "deadbeef",
+        "dirty": False,
+        "dirty_paths": [],
+        "ignored_workflow_paths": [],
+    }
+    monkeypatch.setattr(recovery_runner, "git_state_full", lambda: provenance)
+    monkeypatch.setattr(recovery_runner, "validate_backend", lambda backend: None)
+    monkeypatch.setattr(recovery_runner, "summarize_recovery", lambda *a, **k: {})
+    monkeypatch.setattr(recovery_runner, "select_trial_budget", lambda rows: {})
+    monkeypatch.setattr(
+        recovery_runner,
+        "iter_job_results",
+        lambda jobs, **kwargs: iter(
+            [_checkpoint_row(job, job["job_input_hash"]) for job in jobs]
+        ),
+    )
+
+    main(
+        [
+            "--phase",
+            "pilot",
+            "--noise-fraction",
+            "0.0015",
+            "--output",
+            str(output),
+            "--smoke",
+            "--max-jobs",
+            "1",
+            "--backend",
+            "cn",
+        ]
+    )
+
+    plan = json.loads((output / "job_plan.json").read_text())
+    summary = json.loads((output / "summary.json").read_text())
+
+    assert plan["backend"] == "cn"
+    assert summary["backend"] == "cn"
 
 
 def test_limit_jobs_applies_positive_limit_without_mutating_input():

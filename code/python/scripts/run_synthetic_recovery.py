@@ -561,6 +561,7 @@ def build_summary(
         row["success"] for row in rows
     )
     summary = {
+        "backend": args.backend,
         "phase": args.phase,
         "execution_passed": execution_passed,
         "scientific_gate_passed": None,
@@ -614,6 +615,7 @@ def main(argv: list[str] | None = None) -> None:
     for job in jobs:
         job["job_input_hash"] = resume_metadata["job_input_hashes"][job["job_id"]]
     plan = {
+        "backend": args.backend,
         "phase": args.phase,
         "noise_fraction": args.noise_fraction,
         "workers": args.workers,
