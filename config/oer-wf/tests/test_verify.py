@@ -351,3 +351,69 @@ def test_a6_optimizer_development_spec_is_frozen() -> None:
         "require_zero_ode_failures": True,
         "require_zero_boundary_hits": True,
     }
+
+
+def test_a6_optimizer_confirmation_spec_is_frozen() -> None:
+    spec_path = (
+        Path(__file__).resolve().parents[1]
+        / "examples"
+        / "a6_optimizer_confirmation_cn.yaml"
+    )
+    raw = yaml.safe_load(spec_path.read_text())
+    model = TaskSpec.model_validate(raw)
+
+    assert model.task_name == "a6_optimizer_confirmation_cn"
+    assert model.commit == "e7fe80c7b96a149d1dbb929801e5e763016612e6"
+    assert model.script == "code/python/scripts/run_optimizer_benchmark.py"
+    assert model.output_dir == "results/a6_optimizer_confirmation_cn"
+    assert model.workers == 8
+    assert model.supports_resume is True
+    assert _arg_value(model.args, "--phase") == "confirmation"
+    assert _arg_value(model.args, "--backend") == "cn"
+    assert _arg_value(model.args, "--budget") == "100"
+    assert _arg_value(model.args, "--development-evidence") == (
+        "results/formal/identifiability/gate-a6-optimizer-development/"
+        "development_evidence.json"
+    )
+    assert model.smoke.args == ["--smoke"]
+    assert model.smoke.overrides == {"max_jobs": 3}
+    assert model.expected_files == [
+        "benchmark_plan.json",
+        "development_evidence.snapshot.json",
+        "results.jsonl",
+        "evaluations.jsonl",
+        "summary.json",
+        "confirmation_gate.json",
+        "STATUS.json",
+    ]
+    assert model.validators == [
+        "schema_check",
+        "finite_check",
+        "provenance",
+        "optimizer_confirmation_gate",
+    ]
+    assert model.validator_config["optimizer_confirmation_gate"] == {
+        "gate_version": 1,
+        "recovery_gate_version": 2,
+        "optimizer": "sobol_pattern",
+        "parameter_pairs": [
+            ["k0_2", "k0_3"],
+            ["k0_2", "G_O"],
+            ["k0_3", "G_O"],
+        ],
+        "truth_ids": ["center", "mixed_a", "mixed_b"],
+        "noise_fractions": [0.0, 0.001495726085983469],
+        "seeds": [7, 17, 27],
+        "optimization_budget": 100,
+        "development_identity": ["center", 0.0, 7],
+        "development_evidence_sha256": (
+            "116099242f034c133f4895d068429673f0a12be611b76ea00cc3ebf415a83b8a"
+        ),
+        "development_source_results_sha256": (
+            "e93ccab24c4a91d9d4d9a2b8e014826b6b1a07b7d0891c6e7dd944b78e17b432"
+        ),
+        "max_median_normalized_bound_error": 0.025,
+        "max_normalized_bound_error": 0.05,
+        "max_seed_normalized_bound_dispersion": 0.05,
+        "max_boundary_hit_rate": 0.0,
+    }
