@@ -1,5 +1,5 @@
 task_name: "a6_recovery_reduced"
-commit: "224babe2ce36978475e1ed3df58de2e0712ed15a"
+commit: "a7bc9e4dd274013137b714c7d120bddf175565b1"
 description: "Gate A6 synthetic recovery: k0_2,k0_3,G_O (3 free params)"
 
 python:
