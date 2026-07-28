@@ -51,6 +51,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--grid-points", "--grid_points", type=int, default=21)
     p.add_argument("--smoke", action="store_true")
     p.add_argument("--max-profiles", "--max_profiles", type=int, default=None)
+    p.add_argument("--backend", choices=("cn", "lsoda"), default="cn",
+                   help="ODE backend: cn (fast, ~5-10x) or lsoda (reference)")
     return p.parse_args(argv)
 
 
@@ -61,7 +63,7 @@ def build_config(args: argparse.Namespace, *, feature_mode: str) -> InversionCon
         feature_grid_size=128,
         fit_harmonics=(1, 2, 3),
         feature_mode=feature_mode,
-        solver_backend="lsoda",
+        solver_backend=args.backend,
         seed=42,
     )
 
@@ -97,6 +99,7 @@ def build_2d_tasks(args: argparse.Namespace) -> list[dict]:
                 "x_truth": truth_coords[x_param],
                 "y_truth": truth_coords[y_param],
                 "grid_points": int(args.grid_points),
+                "backend": args.backend,
             })
     if args.max_profiles is not None:
         tasks = tasks[:args.max_profiles]
@@ -114,7 +117,7 @@ def run_2d_profile(task: dict, *, smoke: bool = False) -> dict:
         if name not in (task["x_param"], task["y_param"])
     )
     config = replace(
-        build_config(argparse.Namespace(smoke=smoke, workers=1),
+        build_config(argparse.Namespace(smoke=smoke, workers=1, backend=task.get("backend", "cn")),
                      feature_mode=task["feature_mode"]),
         fixed_params=fixed,
     )

@@ -1,7 +1,7 @@
 args: []
 build:
   required: false
-commit: 378c14356cbef19adfdbbcbba508f1b9cc8d08ac
+commit: a21fc952dcea70c82b4293c31da339e49846f51b
 description: "Gate A6 selective 2-parameter profiles (lockin_only/hybrid \xD7 6 pairs)"
 env:
   OMP_NUM_THREADS: '1'
