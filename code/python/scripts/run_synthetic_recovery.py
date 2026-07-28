@@ -236,9 +236,8 @@ def iter_job_results(jobs: list[dict], *, workers: int, smoke: bool):
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     jobs = build_jobs(args)
-    if args.max_jobs is not None:
-        if not args.smoke or args.max_jobs < 1:
-            raise ValueError("--max-jobs is only allowed as a positive smoke limit")
+    if args.max_jobs is not None and args.max_jobs < 1:
+        raise ValueError("--max-jobs must be positive")
         jobs = jobs[: args.max_jobs]
     source_commit, dirty = git_state()
     if dirty and not args.smoke and not args.dry_run:

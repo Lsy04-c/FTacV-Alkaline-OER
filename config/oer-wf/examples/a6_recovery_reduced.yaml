@@ -1,6 +1,6 @@
 task_name: "a6_recovery_reduced"
-commit: "1d6bf7aa6579b999fdc4f95652903b60219783c7"
-description: "Gate A6 synthetic recovery on reduced free parameter set (k0_2,k0_3,G_O)"
+commit: "a737aed472712d4a1e843aa81c66dbbd2863fc33"
+description: "Gate A6 synthetic recovery: k0_2,k0_3,G_O (3 free params)"
 
 python:
   source: "main_repo"
@@ -24,6 +24,8 @@ args:
   - "0.001495726085983469"
   - "--free-parameters"
   - "k0_2,k0_3,G_O"
+  - "--trials"
+  - "100"
 workers: 4
 output_dir: "results/a6_recovery_reduced"
 
