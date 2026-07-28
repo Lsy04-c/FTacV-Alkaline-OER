@@ -16,6 +16,7 @@ class EvaluationRecord:
     """One attempted optimization-objective call."""
 
     index: int
+    phase: str
     unit: tuple[float, ...]
     loss: float | None
     error: str | None
@@ -51,11 +52,17 @@ class BudgetedObjective:
         self.dimension = int(dimension)
         self.budget = int(budget)
         self.calls = 0
+        self.phase = "objective"
         self._evaluations: list[EvaluationRecord] = []
 
     @property
     def evaluations(self) -> tuple[EvaluationRecord, ...]:
         return tuple(self._evaluations)
+
+    def set_phase(self, phase: str) -> None:
+        if not isinstance(phase, str) or not phase.strip():
+            raise ValueError("evaluation phase must be a non-empty string")
+        self.phase = phase.strip()
 
     def __call__(self, unit: Sequence[float]) -> float:
         if self.calls >= self.budget:
@@ -80,6 +87,7 @@ class BudgetedObjective:
             self._evaluations.append(
                 EvaluationRecord(
                     index=self.calls,
+                    phase=self.phase,
                     unit=coordinates,
                     loss=None,
                     error=str(exc),
@@ -90,6 +98,7 @@ class BudgetedObjective:
         self._evaluations.append(
             EvaluationRecord(
                 index=self.calls,
+                phase=self.phase,
                 unit=coordinates,
                 loss=loss,
                 error=None,
@@ -131,6 +140,7 @@ def _run_tpe(
         n_startup_trials=min(10, budget),
     )
     study = optuna.create_study(direction="minimize", sampler=sampler)
+    objective.set_phase("tpe")
 
     def optuna_objective(trial) -> float:
         unit = [
@@ -145,6 +155,99 @@ def _run_tpe(
             f"tpe call-count mismatch: {objective.calls} != {budget}"
         )
     return _result_from_records("tpe", objective)
+
+
+def _run_sobol_pattern(
+    objective: BudgetedObjective,
+    *,
+    dimension: int,
+    budget: int,
+    seed: int,
+) -> OptimizerResult:
+    from scipy.stats import qmc
+
+    if budget != 100:
+        raise ValueError("sobol_pattern requires frozen budget=100")
+
+    sampler = qmc.Sobol(d=dimension, scramble=True, seed=int(seed))
+    global_points = sampler.random_base2(m=6)
+    cache: dict[tuple[float, ...], float] = {}
+    ranked_global: list[tuple[float, int, tuple[float, ...]]] = []
+    objective.set_phase("sobol_global")
+    for index, point in enumerate(global_points):
+        key = tuple(map(float, point))
+        loss = objective(point)
+        cache[key] = loss
+        ranked_global.append((loss, index, key))
+    ranked_global.sort()
+
+    current = np.asarray(ranked_global[0][2], dtype=float)
+    current_loss = float(ranked_global[0][0])
+    restart_index = 1
+    step = 1.0 / 8.0
+
+    while objective.calls < budget:
+        objective.set_phase("pattern_local")
+        candidates: list[tuple[float, np.ndarray]] = []
+        for coordinate in range(dimension):
+            for direction in (-1.0, 1.0):
+                candidate = current.copy()
+                candidate[coordinate] = np.clip(
+                    candidate[coordinate] + direction * step,
+                    0.0,
+                    1.0,
+                )
+                key = tuple(map(float, candidate))
+                if key in cache:
+                    continue
+                loss = objective(candidate)
+                cache[key] = loss
+                candidates.append((loss, candidate))
+                if objective.calls >= budget:
+                    break
+            if objective.calls >= budget:
+                break
+
+        if candidates:
+            candidate_loss, candidate = min(
+                candidates,
+                key=lambda item: item[0],
+            )
+            if candidate_loss < current_loss:
+                current = candidate
+                current_loss = float(candidate_loss)
+            else:
+                step /= 2.0
+        else:
+            step /= 2.0
+
+        if objective.calls >= budget:
+            break
+        if step < 1.0 / 1024.0:
+            if restart_index < len(ranked_global):
+                current = np.asarray(
+                    ranked_global[restart_index][2],
+                    dtype=float,
+                )
+                current_loss = float(ranked_global[restart_index][0])
+                restart_index += 1
+                step = 1.0 / 8.0
+            else:
+                objective.set_phase("sobol_fallback")
+                while objective.calls < budget:
+                    point = sampler.random(1)[0]
+                    key = tuple(map(float, point))
+                    if key in cache:
+                        continue
+                    cache[key] = objective(point)
+                    break
+
+    if objective.calls != budget:
+        raise RuntimeError(
+            "sobol_pattern call-count mismatch: "
+            f"{objective.calls} != {budget}"
+        )
+    return _result_from_records("sobol_pattern", objective)
 
 
 def run_optimizer(
@@ -164,6 +267,13 @@ def run_optimizer(
     )
     if name == "tpe":
         return _run_tpe(
+            wrapped,
+            dimension=wrapped.dimension,
+            budget=wrapped.budget,
+            seed=int(seed),
+        )
+    if name == "sobol_pattern":
+        return _run_sobol_pattern(
             wrapped,
             dimension=wrapped.dimension,
             budget=wrapped.budget,
