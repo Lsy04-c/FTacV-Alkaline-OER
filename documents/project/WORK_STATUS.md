@@ -1108,4 +1108,8 @@ H1-H7压力测试：
 - A6正式配置从4改为8 workers；smoke仍为1 job × 5 trials。
 - 本机完整测试：255 passed。真实smoke首次运行成功，随后以不同workers恢复时
   复用1/1 job、执行0个新job。
-- 尚未完成：Legion远端smoke与部署验证；当前旧commit正式计算不支持热更新或续跑。
+- Legion commit `dc180db` smoke通过：1 job × 5 trials，四个必需文件和
+  `STATUS=SUCCESS`；随后在同一目录恢复，`reused_jobs=1`、
+  `executed_jobs=0`、`passed=true`。
+- 当前旧commit正式计算不支持热更新或续跑；新功能只用于后续由
+  `dc180db`及更新版本启动的任务。
