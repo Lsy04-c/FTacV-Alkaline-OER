@@ -245,7 +245,8 @@ termination reason
 
 ### 9.2 集成测试
 
-- CN smoke：1 pair × 1 algorithm × 1 study × 5 calls；
+- CN smoke：1 pair × 3 algorithms × 1 study × 100 calls，使用缩小的
+  256-point forward grid；smoke 不降低算法预算；
 - 三个输出流可中断后按 job hash 恢复；
 - backend、optimizer、budget 或算法超参数变化时 resume fingerprint 改变；
 - 旧 TPE recovery 结果不能混入 benchmark checkpoint；
