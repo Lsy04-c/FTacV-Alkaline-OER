@@ -1296,3 +1296,25 @@ H1-H7压力测试：
   `results/formal/identifiability/gate-a6-optimizer-development/acceptance.md`。
 - 下一步只编写并执行一次锁定的 51-study `sobol_pattern` CN 确认集；
   不直接启动 LSODA、三参数扩展或真实数据正式反演。
+
+## 32. Gate A6 Sobol 锁定确认集（2026-07-29）
+
+- 冻结实现 commit `1015a38364b514f597b2023478cb29659594669e`；
+  task id `1015a38/a6_optimizer_confirmation_cn`；spec hash
+  `sha256:7f69cd553677456be87eabd49621b751116721ad004dfa80e8c13206ad3a061e`。
+- Legion 三参数对 smoke 通过：3 jobs、每组 100 calls、总计 300
+  evaluations、`n_ode_fail=0`，科学门保持 `null`。
+- 正式确认 54 秒完成：51/51 jobs、5100/5100 optimization calls、
+  51 次 post-run truth diagnostic、`n_ode_fail=0`、
+  `STATUS=SUCCESS`。
+- 独立 validator 从 51 条确认证据与 3 条冻结开发证据重算结构和
+  Recovery Gate v2。首次结构 FAIL 仅由失败标签排序不同造成；修复排序
+  契约后原归档不变即通过结构门。
+- 三参数对全部 scientific FAIL：
+  - `k0_2,k0_3`：max 0.191743；median 0.001545；dispersion 0.192928；
+  - `k0_2,G_O`：max 0.191191；median 0.014780；dispersion 0.192767；
+  - `k0_3,G_O`：max 0.246298；median 0.036859；dispersion 0.270408。
+- eligible pairs 为空。按预注册分支停止 Gate A6 多参数恢复；不启动
+  LSODA、三参数扩展或真实数据正式反演，不增加预算或修改阈值。
+- 完整验收与哈希：
+  `results/formal/identifiability/gate-a6-sobol-confirmation/acceptance.md`。
