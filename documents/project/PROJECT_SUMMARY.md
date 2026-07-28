@@ -368,6 +368,11 @@ smoke 只证明流程可运行，不是正式精度证据；不同模式的 `tot
    A6默认并行度改为8 workers。本机测试、Legion首次smoke和原目录恢复均已通过。
 8. 将参数正式分类为固定、窄先验、自由反演、仅范围或不可识别。
 9. Gate A6：最小自由参数集通过恢复门后，正式真实数据 TPE 才能启动。
+10. commit `a7bc9e4` 的三参数正式合成恢复已完成：基础设施PASS，但科学
+    Gate FAIL。72/72 study成功执行，只有47/72个组—参数组合的seed范围覆盖
+    真值；无噪声也只有24/36覆盖。`k0_2,k0_3,G_O`不能作为当前正式联合
+    自由集，真实数据TPE继续暂停。证据位于
+    `results/formal/identifiability/gate-a6-reduced-recovery-a7bc9e4/`。
 
 ### 纠错与失败路径
 

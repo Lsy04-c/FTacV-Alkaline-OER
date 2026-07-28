@@ -1,0 +1,31 @@
+{
+  "status": "SUCCESS",
+  "exit_code": 0,
+  "pid": 10136,
+  "started_at": "2026-07-28T15:10:11Z",
+  "finished_at": "2026-07-28T19:03:07Z",
+  "commit": "a7bc9e4",
+  "task_id": "a7bc9e4/a6_recovery_reduced",
+  "spec_hash": "sha256:d23d950ac198ee0ded90fd3802da9dd2a037480d9bb9d23e7b88c81a72e77ec4",
+  "command": [
+    "/home/lsy/OER-FTAcV/.venv/bin/python",
+    "/home/lsy/OER-FTAcV/worktrees/a7bc9e4/a6_recovery_reduced/code/python/scripts/run_synthetic_recovery.py",
+    "--phase",
+    "formal",
+    "--noise-fraction",
+    "0.001495726085983469",
+    "--noise-evidence",
+    "results/formal/identifiability/gate-a6-d9299f8/noise_evidence.json",
+    "--free-parameters",
+    "k0_2,k0_3,G_O",
+    "--trials",
+    "100",
+    "--output",
+    "/home/lsy/OER-FTAcV/worktrees/a7bc9e4/a6_recovery_reduced/results/a6_recovery_reduced/20260728_151007",
+    "--workers",
+    "4"
+  ],
+  "output_dir": "/home/lsy/OER-FTAcV/worktrees/a7bc9e4/a6_recovery_reduced/results/a6_recovery_reduced/20260728_151007",
+  "error_msg": null,
+  "extra": {}
+}

@@ -1113,3 +1113,24 @@ H1-H7压力测试：
   `executed_jobs=0`、`passed=true`。
 - 当前旧commit正式计算不支持热更新或续跑；新功能只用于后续由
   `dc180db`及更新版本启动的任务。
+
+## 24. Gate A6 三参数正式合成恢复（2026-07-29）
+
+- commit：`a7bc9e4dd274013137b714c7d120bddf175565b1`
+- 配置：`k0_2,k0_3,G_O`，4 modes × 3 truths × 2 noise levels ×
+  3 seeds = 72 jobs；100 trials/job；LSODA；4 workers。
+- wall time：13974.94 s（约3 h 52 min 55 s）。
+- 基础设施PASS：systemd退出码0，`STATUS=SUCCESS`，72/72完成，
+  72个唯一job，组合齐全，数值有限，commit匹配且`dirty=false`。
+- optimizer执行成功不代表科学恢复成功。科学Gate FAIL：
+  - `k0_2`真值覆盖19/24；
+  - `k0_3`真值覆盖15/24；
+  - `G_O`真值覆盖13/24；
+  - 合计47/72，无噪声24/36，有噪声23/36。
+- 最差组中位归一化边界误差为0.2988，最差单seed误差为0.6479。
+- 决策：不冻结该三参数联合自由集，不启动真实数据正式TPE，不增加trials、
+  不扩大边界、不调整阈值。下一步回到单参数/两参数恢复或实验信息量设计。
+- 正式证据：
+  `results/formal/identifiability/gate-a6-reduced-recovery-a7bc9e4/`。
+- 独立基础设施缺陷：`wf verify`未加载该任务的expected files，错误使用
+  `summary.csv/manifest.json`默认契约；不影响本次人工严格验收结论。
