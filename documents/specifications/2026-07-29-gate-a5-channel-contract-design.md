@@ -53,6 +53,7 @@ requested
 available
 active
 target_weight
+loss_weight
 n_points
 mask_sha256
 exclusion_reason
@@ -92,7 +93,9 @@ insufficient_valid_points
 not_applicable
 ```
 
-活动记录的 `exclusion_reason` 必须为 `null`，非活动记录必须有明确原因。
+`target_weight` 保存目标侧可靠性权重；`loss_weight` 保存应用
+`phase_weight` 后实际进入分子和分母的权重。活动记录的
+`exclusion_reason` 必须为 `null`，非活动记录必须有明确原因。
 
 ## 5. 目标侧冻结规则
 

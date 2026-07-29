@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import hashlib
 import io
+import json
 import warnings
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -108,6 +110,375 @@ class InversionConfig:
         if self.feature_grid_size is not None and self.feature_grid_size > 0:
             return np.linspace(float(tdc_trim[0]), float(tdc_trim[-1]), self.feature_grid_size)
         return np.asarray(tdc_trim, dtype=float)
+
+
+@dataclass(frozen=True)
+class FeatureChannel:
+    """One target-derived observation block in the inversion objective."""
+
+    channel_id: str
+    block: str
+    harmonic: Optional[int]
+    role: str
+    requested: bool
+    available: bool
+    active: bool
+    target_weight: float
+    loss_weight: float
+    n_points: int
+    mask_sha256: Optional[str]
+    exclusion_reason: Optional[str]
+    mask: Optional[np.ndarray] = field(
+        default=None, repr=False, compare=False
+    )
+
+    def __post_init__(self) -> None:
+        if self.mask is not None:
+            values = np.asarray(self.mask, dtype=bool).copy()
+            values.setflags(write=False)
+            object.__setattr__(self, "mask", values)
+
+    def to_evidence(self) -> Dict[str, Any]:
+        return {
+            "channel_id": self.channel_id,
+            "block": self.block,
+            "harmonic": self.harmonic,
+            "role": self.role,
+            "requested": self.requested,
+            "available": self.available,
+            "active": self.active,
+            "target_weight": self.target_weight,
+            "loss_weight": self.loss_weight,
+            "n_points": self.n_points,
+            "mask_sha256": self.mask_sha256,
+            "exclusion_reason": self.exclusion_reason,
+        }
+
+
+@dataclass(frozen=True)
+class FeatureChannelContract:
+    """Immutable target-side channel selection and normalization evidence."""
+
+    feature_mode: str
+    fit_harmonics: Tuple[int, ...]
+    phase_weight: float
+    snr_floor: float
+    channels: Tuple[FeatureChannel, ...]
+    normalization_weight_sum: float
+    sha256: str
+
+    def to_evidence(self) -> Dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "feature_mode": self.feature_mode,
+            "fit_harmonics": list(self.fit_harmonics),
+            "phase_weight": self.phase_weight,
+            "snr_floor": self.snr_floor,
+            "normalization_weight_sum": self.normalization_weight_sum,
+            "channels": [item.to_evidence() for item in self.channels],
+            "sha256": self.sha256,
+        }
+
+
+def _mask_sha256(mask: np.ndarray) -> str:
+    values = np.asarray(mask, dtype=bool).reshape(-1)
+    payload = len(values).to_bytes(8, "big") + np.packbits(values).tobytes()
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _channel_role(harmonic: Optional[int]) -> str:
+    if harmonic is None:
+        return "global"
+    return "common" if harmonic <= 3 else "dataset_specific"
+
+
+def build_feature_channel_contract(
+    target: Mapping[str, Any],
+    config: InversionConfig,
+) -> FeatureChannelContract:
+    """Freeze active observations, weights and masks from target data only."""
+    expected_size = config.resolved_feature_grid_size
+    if "dc" not in target:
+        raise ValueError("DC target is missing")
+    dc = np.asarray(target["dc"], dtype=float).reshape(-1)
+    if dc.size != expected_size:
+        raise ValueError("DC target shape does not match feature grid")
+    if not np.all(np.isfinite(dc)):
+        raise ValueError("DC target must contain only finite values")
+
+    requested = set(int(value) for value in config.fit_harmonics)
+    channels: List[FeatureChannel] = []
+
+    def add(
+        *,
+        channel_id: str,
+        block: str,
+        harmonic: Optional[int],
+        is_requested: bool,
+        available: bool,
+        active: bool,
+        target_weight: float,
+        loss_weight: float,
+        mask: Optional[np.ndarray],
+        reason: Optional[str],
+        role: Optional[str] = None,
+    ) -> None:
+        n_points = int(np.count_nonzero(mask)) if mask is not None else (
+            expected_size if active else 0
+        )
+        channels.append(
+            FeatureChannel(
+                channel_id=channel_id,
+                block=block,
+                harmonic=harmonic,
+                role=role or _channel_role(harmonic),
+                requested=is_requested,
+                available=available,
+                active=active,
+                target_weight=float(target_weight),
+                loss_weight=float(loss_weight),
+                n_points=n_points,
+                mask_sha256=(
+                    _mask_sha256(mask) if mask is not None else None
+                ),
+                exclusion_reason=reason,
+                mask=mask,
+            )
+        )
+
+    full_mask = np.ones(expected_size, dtype=bool)
+    add(
+        channel_id="dc",
+        block="dc",
+        harmonic=None,
+        is_requested=True,
+        available=True,
+        active=True,
+        target_weight=1.0,
+        loss_weight=1.0,
+        mask=full_mask,
+        reason=None,
+    )
+
+    mode = config.feature_mode
+    legacy_enabled = mode == "legacy"
+    complex_enabled = mode in ("complex_snr", "hybrid", "combined")
+    lockin_enabled = mode in ("lockin_only", "hybrid", "combined")
+
+    harmonic_targets = target.get("harm")
+    for harmonic in range(1, 8):
+        is_requested = harmonic in requested
+        reason = None
+        available = False
+        active = False
+        mask = None
+        if not legacy_enabled:
+            reason = "mode_disabled"
+        elif not is_requested:
+            reason = "not_requested"
+        elif not isinstance(harmonic_targets, (list, tuple)):
+            reason = "target_missing"
+        elif len(harmonic_targets) < harmonic:
+            reason = "target_missing"
+        else:
+            values = np.asarray(
+                harmonic_targets[harmonic - 1], dtype=float
+            ).reshape(-1)
+            if values.size != expected_size:
+                reason = "target_shape_mismatch"
+            elif not np.all(np.isfinite(values)):
+                reason = "target_nonfinite"
+            else:
+                available = active = True
+                mask = full_mask
+        add(
+            channel_id=f"legacy_amplitude:H{harmonic}",
+            block="legacy_amplitude",
+            harmonic=harmonic,
+            is_requested=is_requested,
+            available=available,
+            active=active,
+            target_weight=1.0 if active else 0.0,
+            loss_weight=1.0 if active else 0.0,
+            mask=mask,
+            reason=reason,
+        )
+
+    complex_target = target.get("complex_harmonics")
+    for harmonic in range(1, 8):
+        is_requested = harmonic in requested
+        pair_reason = None
+        pair_available = False
+        pair_active = False
+        weight = 0.0
+        if not complex_enabled:
+            pair_reason = "mode_disabled"
+        elif not is_requested:
+            pair_reason = "not_requested"
+        elif not isinstance(complex_target, Mapping):
+            pair_reason = "target_missing"
+        else:
+            arrays = {}
+            missing = False
+            for name in ("amplitude", "phase", "snr"):
+                if name not in complex_target:
+                    missing = True
+                    break
+                arrays[name] = np.asarray(
+                    complex_target[name], dtype=float
+                ).reshape(-1)
+                if arrays[name].size < harmonic:
+                    missing = True
+                    break
+            if missing:
+                pair_reason = "target_missing"
+            elif not all(
+                np.isfinite(arrays[name][harmonic - 1])
+                for name in ("amplitude", "phase", "snr")
+            ):
+                pair_reason = "target_nonfinite"
+            else:
+                pair_available = True
+                weight = float(
+                    snr_weights(
+                        np.array([arrays["snr"][harmonic - 1]]),
+                        floor=config.snr_floor,
+                    )[0]
+                )
+                if weight <= 0.0:
+                    pair_reason = "below_snr_floor"
+                else:
+                    pair_active = True
+        for block, phase_scale in (
+            ("complex_amplitude", 1.0),
+            ("complex_phase", config.phase_weight),
+        ):
+            add(
+                channel_id=f"{block}:H{harmonic}",
+                block=block,
+                harmonic=harmonic,
+                is_requested=is_requested,
+                available=pair_available,
+                active=pair_active,
+                target_weight=weight if pair_active else 0.0,
+                loss_weight=(
+                    weight * phase_scale if pair_active else 0.0
+                ),
+                mask=None,
+                reason=None if pair_active else pair_reason,
+            )
+
+    lockin_target = target.get("lockin")
+    for harmonic in range(1, 8):
+        is_requested = harmonic in requested
+        pair_reason = None
+        pair_available = False
+        pair_active = False
+        mask = None
+        if not lockin_enabled:
+            pair_reason = "mode_disabled"
+        elif not is_requested:
+            pair_reason = "not_requested"
+        elif not isinstance(lockin_target, Mapping):
+            pair_reason = "target_missing"
+        else:
+            amplitudes = lockin_target.get("amplitude")
+            phases = lockin_target.get("phase")
+            if (
+                not isinstance(amplitudes, (list, tuple))
+                or not isinstance(phases, (list, tuple))
+                or len(amplitudes) < harmonic
+                or len(phases) < harmonic
+                or "valid_mask" not in lockin_target
+            ):
+                pair_reason = "target_missing"
+            else:
+                amplitude = np.asarray(
+                    amplitudes[harmonic - 1], dtype=float
+                ).reshape(-1)
+                phase = np.asarray(
+                    phases[harmonic - 1], dtype=float
+                ).reshape(-1)
+                valid = np.asarray(
+                    lockin_target["valid_mask"], dtype=bool
+                ).reshape(-1)
+                if (
+                    amplitude.size != expected_size
+                    or phase.size != expected_size
+                    or valid.size != expected_size
+                ):
+                    pair_reason = "target_shape_mismatch"
+                else:
+                    pair_available = True
+                    mask = valid & np.isfinite(amplitude) & np.isfinite(phase)
+                    if np.count_nonzero(mask) < 2:
+                        pair_reason = "insufficient_valid_points"
+                    else:
+                        pair_active = True
+        for block, phase_scale in (
+            ("lockin_amplitude", 1.0),
+            ("lockin_phase", config.phase_weight),
+        ):
+            add(
+                channel_id=f"{block}:H{harmonic}",
+                block=block,
+                harmonic=harmonic,
+                is_requested=is_requested,
+                available=pair_available,
+                active=pair_active,
+                target_weight=1.0 if pair_active else 0.0,
+                loss_weight=phase_scale if pair_active else 0.0,
+                mask=mask if pair_active else None,
+                reason=None if pair_active else pair_reason,
+            )
+
+    tafel = target.get("tafel")
+    tafel_active = (
+        tafel is not None
+        and np.asarray(tafel).ndim == 0
+        and np.isfinite(float(tafel))
+    )
+    add(
+        channel_id="tafel",
+        block="tafel",
+        harmonic=None,
+        is_requested=True,
+        available=tafel_active,
+        active=tafel_active,
+        target_weight=1.0 if tafel_active else 0.0,
+        loss_weight=1.0 if tafel_active else 0.0,
+        mask=None,
+        reason=None if tafel_active else "not_applicable",
+        role="physical",
+    )
+
+    normalization = float(
+        sum(item.loss_weight for item in channels if item.active)
+    )
+    evidence = {
+        "schema_version": 1,
+        "feature_mode": mode,
+        "fit_harmonics": sorted(requested),
+        "phase_weight": float(config.phase_weight),
+        "snr_floor": float(config.snr_floor),
+        "normalization_weight_sum": normalization,
+        "channels": [item.to_evidence() for item in channels],
+    }
+    encoded = json.dumps(
+        evidence,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode()
+    return FeatureChannelContract(
+        feature_mode=mode,
+        fit_harmonics=tuple(sorted(requested)),
+        phase_weight=float(config.phase_weight),
+        snr_floor=float(config.snr_floor),
+        channels=tuple(channels),
+        normalization_weight_sum=normalization,
+        sha256=hashlib.sha256(encoded).hexdigest(),
+    )
 
 
 def match_experimental_sampling(

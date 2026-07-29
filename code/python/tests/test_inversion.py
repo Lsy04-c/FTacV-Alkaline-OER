@@ -1,5 +1,6 @@
 """测试 TPE 反演正式模块的最小行为。"""
 
+import copy
 import os
 import sys
 
@@ -15,6 +16,7 @@ from oer_aem.inversion import (
     TPEInverter,
     assess_fit_quality,
     assess_harmonic_quality,
+    build_feature_channel_contract,
     decode_vector,
     denormalize_vector,
     encode_params,
@@ -36,6 +38,32 @@ TRUTH = {
     'scaling_OOH_OH': 3.2,
     'gamma': 1e-9,
 }
+
+
+def _channel_contract_target(config):
+    size = config.resolved_feature_grid_size
+    grid = np.linspace(0.0, 1.0, size)
+    return {
+        "dc": grid.copy(),
+        "harm": [grid + 0.01 * index for index in range(7)],
+        "complex_harmonics": {
+            "amplitude": np.array([1.0, 0.5, 0.2, 0.1]),
+            "phase": np.array([0.1, 0.2, 0.3, 0.4]),
+            "snr": np.array([30.0, 10.0, 2.0, 20.0]),
+        },
+        "lockin": {
+            "amplitude": [
+                grid + 0.1 * index for index in range(4)
+            ],
+            "phase": [
+                grid * 0.0 + 0.1 * index for index in range(4)
+            ],
+            "valid_mask": np.array(
+                [False] + [True] * (size - 2) + [False]
+            ),
+        },
+        "tafel": None,
+    }
 
 
 def test_encode_decode_roundtrip():
@@ -115,6 +143,98 @@ def test_assess_harmonic_quality_selects_resolvable_channels():
     assert quality['fit_harmonics'] == [1, 2]
     assert quality['channels'][0]['fit'] is True
     assert quality['channels'][2]['fit'] is False
+
+
+def test_channel_contract_is_deterministic_and_explains_inactive_blocks():
+    config = InversionConfig(
+        n_points=8,
+        points_per_cycle=8,
+        discard_fraction=0.5,
+        feature_grid_size=4,
+        fit_harmonics=(1, 2, 3, 4),
+        feature_mode="hybrid",
+        phase_weight=0.5,
+        snr_floor=3.0,
+    )
+    target = _channel_contract_target(config)
+
+    contract = build_feature_channel_contract(target, config)
+    repeated = build_feature_channel_contract(
+        copy.deepcopy(target), config
+    )
+
+    assert contract.sha256 == repeated.sha256
+    assert contract.normalization_weight_sum > 0.0
+    assert all(
+        channel.exclusion_reason is None
+        for channel in contract.channels
+        if channel.active
+    )
+    by_id = {channel.channel_id: channel for channel in contract.channels}
+    assert by_id["complex_amplitude:H3"].active is False
+    assert (
+        by_id["complex_amplitude:H3"].exclusion_reason
+        == "below_snr_floor"
+    )
+    assert by_id["complex_phase:H3"].active is False
+    assert by_id["legacy_amplitude:H1"].exclusion_reason == "mode_disabled"
+    assert by_id["tafel"].exclusion_reason == "not_applicable"
+
+
+def test_channel_contract_records_missing_nonfinite_and_short_lockin():
+    config = InversionConfig(
+        n_points=8,
+        points_per_cycle=8,
+        discard_fraction=0.5,
+        feature_grid_size=4,
+        fit_harmonics=(1, 2, 3, 4),
+        feature_mode="hybrid",
+    )
+    target = _channel_contract_target(config)
+    target["complex_harmonics"]["phase"] = np.array([0.1, np.nan, 0.3])
+    target["lockin"]["amplitude"] = target["lockin"]["amplitude"][:3]
+    target["lockin"]["amplitude"][2] = np.array(
+        [np.nan, 1.0, np.nan, np.nan]
+    )
+
+    contract = build_feature_channel_contract(target, config)
+    by_id = {channel.channel_id: channel for channel in contract.channels}
+
+    assert (
+        by_id["complex_phase:H2"].exclusion_reason == "target_nonfinite"
+    )
+    assert by_id["complex_amplitude:H4"].exclusion_reason == "target_missing"
+    assert (
+        by_id["lockin_amplitude:H3"].exclusion_reason
+        == "insufficient_valid_points"
+    )
+    assert by_id["lockin_phase:H4"].exclusion_reason == "target_missing"
+
+
+@pytest.mark.parametrize(
+    "dc",
+    [
+        None,
+        np.array([1.0, 2.0]),
+        np.array([0.0, 1.0, np.nan, 3.0]),
+    ],
+)
+def test_channel_contract_rejects_invalid_dc(dc):
+    config = InversionConfig(
+        n_points=8,
+        points_per_cycle=8,
+        discard_fraction=0.5,
+        feature_grid_size=4,
+        feature_mode="legacy",
+    )
+    target = _channel_contract_target(config)
+    if dc is None:
+        target.pop("dc")
+    else:
+        target["dc"] = dc
+
+    with pytest.raises(ValueError, match="DC target"):
+        build_feature_channel_contract(target, config)
 
 
 def test_objective_uses_selected_harmonics_only():
