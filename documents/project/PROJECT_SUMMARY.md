@@ -139,6 +139,11 @@ commit 和归档 snapshot 为准）
 - M0 与最小重构 M1 已做初步对照，M1 未通过多数数据门：
   - `code/python/scripts/compare_reconstruction_model.py`
   - `results/formal/architecture_validation/reconstruction_model_comparison.csv`
+- 五步速率已由固定化学计量矩阵生成，参数域、稳态、电流三分量和完整 M0
+  回退已有独立测试。
+- Gate A2 正式归档：
+  - `results/formal/physics_invariants/gate-a2-6486d69/acceptance.md`
+  - 结论：`FAIL_NUMERICAL`
 
 ### 文件总结
 
@@ -146,11 +151,14 @@ commit 和归档 snapshot 为准）
 
 ### 未达成与路径规划
 
-1. 补齐完整轨迹上的覆盖度范围与总和守恒测试。
-2. 对电荷守恒、单位和关键参数单调性建立独立测试。
-3. 验证关闭任何候选扩展时严格恢复 M0。
-4. 建立参数来源表：实测、文献、可反演、耦合或不可识别。
-5. Gate A2：所有物理不变量、参数变换和 M0 回退测试通过后，才允许新增机理。
+1. 正式门已证明电流闭合、热力学闭合、冻结行为和 M0 回退通过。
+2. Gate 未关闭：11 个完成轨迹均触发边界投影，且多个案例覆盖度越界或
+   总和误差超过 `1e-8`。
+3. `thermo-edge` 稳态通过但瞬态 LSODA 收敛失败；先定位刚性来源，不以
+   改阈值或删案例处置。
+4. 下一步设计守恒的边界/状态参数化候选，以本次失败归档作为固定对照，
+   通过新协议和新 commit 再运行 Gate。
+5. Gate A2 PASS 前不得新增机理或启动真实数据正式反演。
 
 ### 纠错与失败路径
 
@@ -633,7 +641,7 @@ Web 可以保留基础开发，但不得先于核心 schema 成为科研主线�
 | 模块 | 当前结论 | 主要文件 | 状态 |
 |---|---|---|---|
 | 数据基础诊断 | 结构与采样 PASS，关键元数据 FAIL | `results/formal/data_contract/gate-a1-a57d42f/acceptance.md` | Gate A1 FAIL_METADATA |
-| AEM M0 | Python 正演链已建立 | `code/python/src/oer_aem/physics.py` | 部分完成 |
+| AEM M0 | 电流/热力学/M0回退通过；覆盖度边界与极端案例失败 | `results/formal/physics_invariants/gate-a2-6486d69/acceptance.md` | Gate A2 FAIL_NUMERICAL |
 | 热力学约束 | 标度关系和参数变换已实现 | `code/python/src/oer_aem/thermodynamics.py` | 已实现 |
 | LSODA | 参考求解器已建立 | `code/python/src/oer_aem/physics.py` | 已实现 |
 | C++ CN | 正式等价性门 FAIL，仅作快速筛选且须 LSODA 确认 | `code/cpp/src/oer_cn_solver.cpp` | 实验后端 |

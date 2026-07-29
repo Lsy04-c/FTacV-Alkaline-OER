@@ -1,0 +1,14 @@
+{
+  "artifacts": {
+    "baseline_comparison.json": "b73b85b36f4e52b5b29d52ead2bbfb477b262f135a4f39767075660c7569d00c",
+    "gate_a2_summary.json": "968ed1662c0db8a1a6ef080d48e95512eceab2ee33dcaff2cdc98e31c76f6435",
+    "physics_contract.json": "67883a827c1cbfdeac57e4aa4d3cfa333b0b39e6776d1df3e58455546a71b064",
+    "trajectory_metrics.jsonl": "df7ff9c588429e396fb9d5dd28fc0e10d1810f333b454ac9cae27750aee88cce"
+  },
+  "baseline_path": "/Users/liushiyu/OER-FTAcV/results/formal/physics_invariants/gate-a2-baseline-727ed64/physics_baseline.json",
+  "baseline_sha256": "35741fff1f5bf2e40b5523e9248774a29d49c2ec01722739647d1060eb94105a",
+  "created_utc": "2026-07-29T00:14:02.818536+00:00",
+  "schema_version": 1,
+  "source_commit": "6486d6958ef1894301d5d4862cd65832b42a7cb7",
+  "source_tree": "?? results/formal/physics_invariants/gate-a2-6486d69/"
+}

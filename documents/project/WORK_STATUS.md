@@ -1338,3 +1338,24 @@ H1-H7压力测试：
 - Gate A1 工程实现完成，但总 Gate 未关闭；真实数据正式反演继续禁止。
 - 完整验收：
   `results/formal/data_contract/gate-a1-a57d42f/acceptance.md`。
+
+## 34. Gate A2 物理不变量正式门（2026-07-29）
+
+- 正式执行 commit `6486d6958ef1894301d5d4862cd65832b42a7cb7`；
+  12 个冻结合成案例，LSODA，32 cycles，128 points/cycle。
+- 独立 validator 重算结论：`FAIL_NUMERICAL`，禁止进入下一 Gate。
+- 通过项：
+  - 72 点冻结 RHS 基线最大相对误差 `1.66e-16`；
+  - M0 回退状态和电流误差均为 0；
+  - 12/12 稳态通过，热力学闭合误差均为 0；
+  - 11 个完成轨迹的电流闭合误差均低于 `5.05e-16`。
+- 失败项：
+  - `thermo-edge` 瞬态 LSODA repeated convergence failures，最终
+    `Unexpected istate`；
+  - 其余 11 个轨迹的边界投影触发次数均非零，范围 68–1042；
+  - 最坏覆盖度最小值 `-4.43e-7`，最坏覆盖度和误差 `1.43e-7`，
+    均超过冻结 `1e-8` 门。
+- 不调整案例、阈值或求解容差，不删除失败轨迹。下一步仅诊断边界投影破坏
+  守恒和 `thermo-edge` 刚性来源；真实数据正式反演继续禁止。
+- 完整验收：
+  `results/formal/physics_invariants/gate-a2-6486d69/acceptance.md`。
