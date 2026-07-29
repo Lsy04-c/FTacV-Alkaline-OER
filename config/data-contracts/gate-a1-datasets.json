@@ -12,23 +12,23 @@
       "metadata": {
         "potential_unit": {
           "value": "V",
-          "source_kind": "legacy_assumption",
-          "source_note": "Used by historical project code; no primary experiment record is tracked"
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with V"
         },
         "potential_reference": {
-          "value": null,
-          "source_kind": "unresolved",
-          "source_note": "No primary experiment record is tracked"
+          "value": "RHE",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29 that potential was already corrected to RHE; declarant was not the original experiment operator"
         },
         "current_unit": {
           "value": "A",
-          "source_kind": "legacy_assumption",
-          "source_note": "Used by historical project code; no primary experiment record is tracked"
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with A"
         },
         "time_unit": {
           "value": "s",
-          "source_kind": "legacy_assumption",
-          "source_note": "Used by historical project code; no primary experiment record is tracked"
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator"
         },
         "frequency_hz": {
           "value": null,
@@ -58,7 +58,7 @@
         "instrument_preprocessing": {
           "value": null,
           "source_kind": "unresolved",
-          "source_note": "No instrument method or primary experiment record is tracked"
+          "source_note": "No processing other than RHE correction was reported; existing files cannot independently verify filtering, smoothing, averaging, downsampling, cropping, background subtraction or iR compensation"
         }
       }
     },
@@ -72,23 +72,23 @@
       "metadata": {
         "potential_unit": {
           "value": "V",
-          "source_kind": "legacy_assumption",
-          "source_note": "Used by historical project code; no primary experiment record is tracked"
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with V"
         },
         "potential_reference": {
-          "value": null,
-          "source_kind": "unresolved",
-          "source_note": "No primary experiment record is tracked"
+          "value": "RHE",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29 that potential was already corrected to RHE; declarant was not the original experiment operator"
         },
         "current_unit": {
           "value": "A",
-          "source_kind": "legacy_assumption",
-          "source_note": "Used by historical project code; no primary experiment record is tracked"
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with A"
         },
         "time_unit": {
           "value": "s",
-          "source_kind": "legacy_assumption",
-          "source_note": "Used by historical project code; no primary experiment record is tracked"
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator"
         },
         "frequency_hz": {
           "value": null,
@@ -118,7 +118,7 @@
         "instrument_preprocessing": {
           "value": null,
           "source_kind": "unresolved",
-          "source_note": "No instrument method or primary experiment record is tracked"
+          "source_note": "No processing other than RHE correction was reported; existing files cannot independently verify filtering, smoothing, averaging, downsampling, cropping, background subtraction or iR compensation"
         }
       }
     },
@@ -132,23 +132,23 @@
       "metadata": {
         "potential_unit": {
           "value": "V",
-          "source_kind": "legacy_assumption",
-          "source_note": "Used by historical project code; no primary experiment record is tracked"
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with V"
         },
         "potential_reference": {
-          "value": null,
-          "source_kind": "unresolved",
-          "source_note": "No primary experiment record is tracked"
+          "value": "RHE",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29 that potential was already corrected to RHE; declarant was not the original experiment operator"
         },
         "current_unit": {
           "value": "A",
-          "source_kind": "legacy_assumption",
-          "source_note": "Used by historical project code; no primary experiment record is tracked"
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with A"
         },
         "time_unit": {
           "value": "s",
-          "source_kind": "legacy_assumption",
-          "source_note": "Used by historical project code; no primary experiment record is tracked"
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator"
         },
         "frequency_hz": {
           "value": null,
@@ -178,7 +178,7 @@
         "instrument_preprocessing": {
           "value": null,
           "source_kind": "unresolved",
-          "source_note": "No instrument method or primary experiment record is tracked"
+          "source_note": "No processing other than RHE correction was reported; existing files cannot independently verify filtering, smoothing, averaging, downsampling, cropping, background subtraction or iR compensation"
         }
       }
     },
@@ -192,23 +192,23 @@
       "metadata": {
         "potential_unit": {
           "value": "V",
-          "source_kind": "legacy_assumption",
-          "source_note": "Used by historical project code; no primary experiment record is tracked"
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with V"
         },
         "potential_reference": {
-          "value": null,
-          "source_kind": "unresolved",
-          "source_note": "No primary experiment record is tracked"
+          "value": "RHE",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29 that potential was already corrected to RHE; declarant was not the original experiment operator"
         },
         "current_unit": {
           "value": "A",
-          "source_kind": "legacy_assumption",
-          "source_note": "Used by historical project code; no primary experiment record is tracked"
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with A"
         },
         "time_unit": {
           "value": "s",
-          "source_kind": "legacy_assumption",
-          "source_note": "Used by historical project code; no primary experiment record is tracked"
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator"
         },
         "frequency_hz": {
           "value": null,
@@ -238,7 +238,7 @@
         "instrument_preprocessing": {
           "value": null,
           "source_kind": "unresolved",
-          "source_note": "No instrument method or primary experiment record is tracked"
+          "source_note": "No processing other than RHE correction was reported; existing files cannot independently verify filtering, smoothing, averaging, downsampling, cropping, background subtraction or iR compensation"
         }
       }
     }

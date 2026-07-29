@@ -58,6 +58,40 @@ def test_gate_a1_registry_freezes_four_datasets_and_sources():
         )
 
 
+def test_gate_a1_registry_records_user_declaration_without_resolving_preprocessing():
+    registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+    declared = {
+        "potential_unit": "V",
+        "potential_reference": "RHE",
+        "current_unit": "A",
+        "time_unit": "s",
+    }
+
+    for dataset in registry["datasets"]:
+        metadata = dataset["metadata"]
+        for field_name, expected_value in declared.items():
+            field = metadata[field_name]
+            assert field["value"] == expected_value
+            assert field["source_kind"] == "externally_declared"
+            assert "Project lead declaration" in field["source_note"]
+            assert (
+                "not the original experiment operator"
+                in field["source_note"]
+            )
+
+        preprocessing = metadata["instrument_preprocessing"]
+        assert preprocessing["value"] is None
+        assert preprocessing["source_kind"] == "unresolved"
+        assert (
+            "No processing other than RHE correction was reported"
+            in preprocessing["source_note"]
+        )
+        assert (
+            "cannot independently verify"
+            in preprocessing["source_note"]
+        )
+
+
 def _load_script():
     spec = importlib.util.spec_from_file_location(
         "audit_experimental_contracts", SCRIPT
@@ -84,8 +118,11 @@ def test_runner_classifies_current_real_data_as_metadata_failure():
         assert dataset["file_facts"]["n_rows"] == 65536
         assert dataset["checks"]["structure_passed"] is True
         assert dataset["checks"]["numerical_passed"] is True
-        assert "potential_reference" in dataset["missing_metadata"]
-        assert "instrument_preprocessing" in dataset["missing_metadata"]
+        assert dataset["missing_metadata"] == ["instrument_preprocessing"]
+        assert (
+            dataset["metadata"]["potential_reference"]["resolved_value"]
+            == "RHE"
+        )
 
 
 def test_runner_rejects_hash_mismatch_as_structure_failure():
