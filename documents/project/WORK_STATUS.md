@@ -1359,3 +1359,26 @@ H1-H7压力测试：
   守恒和 `thermo-edge` 刚性来源；真实数据正式反演继续禁止。
 - 完整验收：
   `results/formal/physics_invariants/gate-a2-6486d69/acceptance.md`。
+
+## 35. Gate A2-R 守恒积分修复门（2026-07-29）
+
+- 设计与实现提交：
+  - `87ddd0f`：冻结 A2-R 设计与计划；
+  - `f8b00b0`：删除破坏化学计量守恒的逐分量边界投影；
+  - `20b7297`：加入分量绝对容差和显式 LSODA→BDF 回退；
+  - `6e600dc`：加入正式 runner；
+  - `496a701`：加入独立 validator。
+- 正式结论：`PASS`；独立 validator 重算一致。
+- 12/12 案例完成：
+  - 11 个常规案例保持 LSODA，无回退；
+  - `thermo-edge` 保存 LSODA `Unexpected istate` 后，从原始初值用 BDF
+    完整重启。
+- 最坏覆盖度最小值 `-5.70e-9`；最坏覆盖度和误差 `3.75e-12`；
+  最坏电流闭合误差 `4.99e-16`。
+- BDF–Radau 交叉验证通过：覆盖度最大差 `2.42e-6`、表面电位最大差
+  `1.07e-5 V`、电流 NRMSE `8.93e-7`。
+- 冻结 RHS 基线和 M0 回退均通过；旧 A2 FAIL 归档未修改。
+- Gate A2 的数值修复路径据此关闭，可以继续下一底层架构 Gate；但 A1
+  仍为 `FAIL_METADATA`，真实数据正式反演继续禁止。
+- 完整验收：
+  `results/formal/physics_invariants/gate-a2r-496a701/acceptance.md`。

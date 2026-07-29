@@ -1,0 +1,31 @@
+{
+  "case_count": 12,
+  "eligible_for_next_gate": true,
+  "expected_case_count": 12,
+  "fallback_cases": [
+    "thermo-edge"
+  ],
+  "gate": "PASS",
+  "m0_fallback": {
+    "backend_used": "LSODA",
+    "current_max_abs_error": 0.0,
+    "passed": true,
+    "schema_version": 1,
+    "state_max_abs_error": 0.0
+  },
+  "schema_version": 1,
+  "thresholds": {
+    "baseline_relative_error": 1e-12,
+    "coverage_max": 1.00000001,
+    "coverage_min": -1e-08,
+    "coverage_sum_max_error": 1e-08,
+    "current_closure_relative_error": 1e-10,
+    "implicit_coverage_max_abs_error": 1e-05,
+    "implicit_current_max_scaled_error": 0.0001,
+    "implicit_current_nrmse": 1e-05,
+    "implicit_surface_potential_max_abs_error": 0.0001,
+    "projection_trigger_count": 0,
+    "steady_state_rhs_inf_norm": 1e-08,
+    "thermodynamic_sum_error": 1e-12
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "case_ids": [
+    "default",
+    "rates-low",
+    "rates-high",
+    "ru-low",
+    "ru-high",
+    "cdl-low",
+    "cdl-high",
+    "gamma-low",
+    "gamma-high",
+    "alpha-low",
+    "alpha-high",
+    "thermo-edge"
+  ],
+  "cycles": 32,
+  "gate": "A2-R",
+  "historical_failed_archive": "gate-a2-6486d69",
+  "points_per_cycle": 128,
+  "schema_version": 1,
+  "solver_policy": {
+    "dynamic_atol": [
+      3e-11,
+      3e-11,
+      3e-11,
+      3e-11,
+      3e-11,
+      1e-08
+    ],
+    "lsoda_first_step": 1e-08,
+    "order": [
+      "LSODA",
+      "BDF"
+    ],
+    "rtol": 1e-06
+  },
+  "stoichiometric_matrix": [
+    [
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      1.0,
+      -1.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    [
+      0.0,
+      1.0,
+      -1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0
+    ]
+  ],
+  "thresholds": {
+    "baseline_relative_error": 1e-12,
+    "coverage_max": 1.00000001,
+    "coverage_min": -1e-08,
+    "coverage_sum_max_error": 1e-08,
+    "current_closure_relative_error": 1e-10,
+    "implicit_coverage_max_abs_error": 1e-05,
+    "implicit_current_max_scaled_error": 0.0001,
+    "implicit_current_nrmse": 1e-05,
+    "implicit_surface_potential_max_abs_error": 0.0001,
+    "projection_trigger_count": 0,
+    "steady_state_rhs_inf_norm": 1e-08,
+    "thermodynamic_sum_error": 1e-12
+  },
+  "unit_ledger": {
+    "area": "cm^2",
+    "capacitance_areal": "F cm^-2",
+    "coverage": "1",
+    "current": "A",
+    "free_energy": "eV per electron",
+    "potential": "V",
+    "rate": "s^-1",
+    "resistance": "ohm",
+    "site_density": "mol cm^-2"
+  }
+}

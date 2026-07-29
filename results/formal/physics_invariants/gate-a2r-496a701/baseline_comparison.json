@@ -1,0 +1,8 @@
+{
+  "baseline_sha256": "35741fff1f5bf2e40b5523e9248774a29d49c2ec01722739647d1060eb94105a",
+  "max_relative_error": 1.6555221185962127e-16,
+  "passed": true,
+  "payload_contract_valid": true,
+  "record_count": 72,
+  "schema_version": 1
+}

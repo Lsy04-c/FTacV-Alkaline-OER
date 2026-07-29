@@ -1,0 +1,12 @@
+{"attempts": [{"backend": "LSODA", "message": "The solver successfully reached the end of the integration interval.", "nfev": 19842, "returned_points": 4096, "success": true}], "case_id": "default"}
+{"attempts": [{"backend": "LSODA", "message": "The solver successfully reached the end of the integration interval.", "nfev": 19050, "returned_points": 4096, "success": true}], "case_id": "rates-low"}
+{"attempts": [{"backend": "LSODA", "message": "The solver successfully reached the end of the integration interval.", "nfev": 24503, "returned_points": 4096, "success": true}], "case_id": "rates-high"}
+{"attempts": [{"backend": "LSODA", "message": "The solver successfully reached the end of the integration interval.", "nfev": 49487, "returned_points": 4096, "success": true}], "case_id": "ru-low"}
+{"attempts": [{"backend": "LSODA", "message": "The solver successfully reached the end of the integration interval.", "nfev": 10684, "returned_points": 4096, "success": true}], "case_id": "ru-high"}
+{"attempts": [{"backend": "LSODA", "message": "The solver successfully reached the end of the integration interval.", "nfev": 19907, "returned_points": 4096, "success": true}], "case_id": "cdl-low"}
+{"attempts": [{"backend": "LSODA", "message": "The solver successfully reached the end of the integration interval.", "nfev": 19780, "returned_points": 4096, "success": true}], "case_id": "cdl-high"}
+{"attempts": [{"backend": "LSODA", "message": "The solver successfully reached the end of the integration interval.", "nfev": 52672, "returned_points": 4096, "success": true}], "case_id": "gamma-low"}
+{"attempts": [{"backend": "LSODA", "message": "The solver successfully reached the end of the integration interval.", "nfev": 16456, "returned_points": 4096, "success": true}], "case_id": "gamma-high"}
+{"attempts": [{"backend": "LSODA", "message": "The solver successfully reached the end of the integration interval.", "nfev": 20874, "returned_points": 4096, "success": true}], "case_id": "alpha-low"}
+{"attempts": [{"backend": "LSODA", "message": "The solver successfully reached the end of the integration interval.", "nfev": 22065, "returned_points": 4096, "success": true}], "case_id": "alpha-high"}
+{"attempts": [{"backend": "LSODA", "message": "Unexpected istate in LSODA.", "nfev": 23, "returned_points": 1, "success": false}, {"backend": "BDF", "message": "The solver successfully reached the end of the integration interval.", "nfev": 12889, "returned_points": 4096, "success": true}], "case_id": "thermo-edge"}

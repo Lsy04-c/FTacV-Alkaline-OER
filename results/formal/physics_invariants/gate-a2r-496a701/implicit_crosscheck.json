@@ -1,0 +1,12 @@
+{
+  "bdf_message": "The solver successfully reached the end of the integration interval.",
+  "bdf_success": true,
+  "coverage_max_abs_error": 2.418484533472931e-06,
+  "current_max_scaled_error": 1.8187449072822423e-05,
+  "current_nrmse": 8.928013139874965e-07,
+  "passed": true,
+  "radau_message": "The solver successfully reached the end of the integration interval.",
+  "radau_success": true,
+  "schema_version": 1,
+  "surface_potential_max_abs_error": 1.0664489386469356e-05
+}
