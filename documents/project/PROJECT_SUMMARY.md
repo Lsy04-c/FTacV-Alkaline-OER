@@ -417,6 +417,15 @@ sample 20 的 DC NRMSE 为 2.61%，超过 1% 门。正式 CSV 因两个参考
 17. 当前只允许运行排除三个开发案例后的 51-study CN 锁定确认集。开发门
     PASS 不等于联合可识别；确认集通过的参数组合仍需 LSODA 同配置复核，
     Gate A6 关闭前真实数据正式反演继续暂停。
+18. 51-study 锁定确认集三个参数对均未通过 Recovery Gate v2，eligible
+    pairs 为空；按预注册路线停止 LSODA 复核、三参数扩展和真实数据 TPE。
+19. 参数角色已由 commit `75e25ed` 冻结并独立复验：`fixed=8`、
+    `diagnostic_only=5`、`free=0`、`narrow_prior=0`，
+    `eligible_for_real_inversion=false`。正式验收位于
+    `results/formal/identifiability/gate-a6-closure-75e25ed/acceptance.md`。
+20. Gate A6 当前科学状态为 `FAIL_RECOVERY`。关闭归档的 validator
+    `PASS` 只证明角色和证据链自洽，不表示参数恢复通过；`fixed` 不表示
+    已知准确，`diagnostic_only` 不表示数学结构不可识别。
 
 ### 纠错与失败路径
 
@@ -659,7 +668,7 @@ Web 可以保留基础开发，但不得先于核心 schema 成为科研主线�
 | 电位分辨锁相 | 核心相位错误已修复 | `code/python/src/oer_aem/signal.py` | 待真实重采样 |
 | 目标函数 | 通道、权重、掩码和分母已冻结并独立验收 | `results/formal/feature_channel_contract/gate-a5-13adcb1/acceptance.md` | Gate A5 PASS |
 | 网格 | 正式固定参数库门冻结 128 点 | `results/formal/feature_grid_convergence/gate-a5-grid-44a020e/` | PASS |
-| 可识别性 | 51-study CN 锁定确认三参数对全部 FAIL | `results/formal/identifiability/gate-a6-sobol-confirmation/acceptance.md` | Gate A6 多参数恢复停止 |
+| 可识别性 | 角色已冻结：8 fixed、5 diagnostic-only、无自由参数 | `results/formal/identifiability/gate-a6-closure-75e25ed/acceptance.md` | Gate A6 FAIL_RECOVERY，真实反演禁止 |
 | M1 重构 | 当前证据拒绝 | `code/python/scripts/compare_reconstruction_model.py` | 已形成否定结果 |
 | API | 基础任务接口存在 | `code/web/backend/main.py` | 非当前主线 |
 | Web | 基础前端存在 | `code/web/frontend/` | 非当前主线 |
@@ -683,12 +692,14 @@ Web 可以保留基础开发，但不得先于核心 schema 成为科研主线�
 
 ## 里程碑 3：重新关闭 Gate A6
 
-- 状态：**已完成，结论为 FAIL**。
+- 状态：**已完成，科学结论为 `FAIL_RECOVERY`**。
 - 冻结的 `sobol_pattern` 已运行排除开发集后的 51-study CN 确认；
   三个参数对均未通过 v2，eligible pairs 为空。
 - 按预注册分支不执行 LSODA 确认，并停止三参数扩展和真实数据正式 TPE。
 - 后续若重启 Gate A6，必须作为新的研究假设和新协议立项，不得事后修改
   本次预算、算法、数据划分或阈值。
+- 13 参数机器可读角色登记表和独立关闭归档已完成；当前无参数具备正式
+  真实数据反演资格。
 
 ---
 

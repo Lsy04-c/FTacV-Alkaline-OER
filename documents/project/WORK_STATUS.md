@@ -1404,3 +1404,21 @@ H1-H7压力测试：
   `FAIL_METADATA`，真实数据正式反演继续禁止。
 - 完整验收：
   `results/formal/feature_channel_contract/gate-a5-13adcb1/acceptance.md`。
+
+## 37. Gate A6 参数角色失败关闭（2026-07-29）
+
+- 实现提交：
+  - `48e4f51`：新增 13 参数登记表、独立 validator、篡改与口径测试；
+  - `75e25ed`：修复 CLI 项目相对 registry 路径并增加回归测试。
+- 正式关闭归档绑定干净 commit
+  `75e25edab82dc9db980a77c381f6baf1961024eb`；生成和独立归档复验均
+  `PASS`，专项测试 22 项通过。
+- 科学状态保持 `FAIL_RECOVERY`：
+  `eligible_for_real_inversion=false`、自由参数/窄先验/eligible pairs
+  全部为空。
+- 角色冻结为 8 个 `fixed` 和 5 个 `diagnostic_only`。前者只表示运行时
+  固定，后者禁止报告可信点估计；两者均不支持“数学结构不可识别”的声明。
+- 本阶段没有运行数值求解或优化。当前 Gate A6 路线关闭，真实数据正式
+  反演继续禁止。
+- 完整验收：
+  `results/formal/identifiability/gate-a6-closure-75e25ed/acceptance.md`。

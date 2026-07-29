@@ -71,13 +71,13 @@
 
 ### Task 5：正式运行与 Gate A6 决策
 
-- [ ] 读取 `/Users/liushiyu/gpt/本机环境配置.md`，通过既有 SSH 别名同步精确 commit。
-- [ ] 使用 `systemd-run --user` 在 Legion 运行，输出到唯一 commit 目录。
-- [ ] 验收所有模式、真值、噪声、seed、参数和状态均齐全且有限；区分 infrastructure FAIL 与 scientific FAIL。
-- [ ] 按证据将参数标为 `fixed`、`narrow_prior`、`free` 或 `diagnostic_only`，并记录每项来源。
-- [ ] 若合成恢复失败或参数持续命中边界，参数不得进入自由集合，也不得扩大边界制造 PASS。
-- [ ] 更新项目状态和纠错文档，运行完整测试。
-- [ ] 仅提交 A6 代码、测试、正式证据和项目文档，推送 `codex/reclassify-project`。
+- [x] 读取 `/Users/liushiyu/gpt/本机环境配置.md`，通过既有 SSH 别名同步精确 commit。
+- [x] 使用 `systemd-run --user` 在 Legion 运行，输出到唯一 commit 目录。
+- [x] 验收所有模式、真值、噪声、seed、参数和状态均齐全且有限；区分 infrastructure FAIL 与 scientific FAIL。
+- [x] 按证据将参数标为 `fixed`、`narrow_prior`、`free` 或 `diagnostic_only`，并记录每项来源。
+- [x] 若合成恢复失败或参数持续命中边界，参数不得进入自由集合，也不得扩大边界制造 PASS。
+- [x] 更新项目状态和纠错文档，运行完整测试。
+- [x] 仅提交 A6 代码、测试、正式证据和项目文档，推送 `codex/reclassify-project`。
 
 ## 压力测试结论
 

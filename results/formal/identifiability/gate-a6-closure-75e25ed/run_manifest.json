@@ -1,0 +1,22 @@
+{
+  "artifact_sha256": {
+    "parameter_roles.snapshot.json": "17b0ee54a1c73c546bb681f530594d0e30e8cc5bd7a245f6b865964d35c6b509",
+    "validation_report.json": "c4aa91308f847abb0352a6a8b8c4c13acca0b84f6c0e6f6b6446f902b3ca5c52"
+  },
+  "command": [
+    "code/python/scripts/validate_gate_a6_parameter_roles.py",
+    "--registry",
+    "config/parameter-roles/gate-a6-parameter-roles.json",
+    "--output",
+    "results/formal/identifiability/gate-a6-closure-75e25ed"
+  ],
+  "commit": "75e25edab82dc9db980a77c381f6baf1961024eb",
+  "dirty": false,
+  "dirty_paths": [],
+  "gate_version": "A6-roles",
+  "python_version": "3.13.3",
+  "registry_path": "config/parameter-roles/gate-a6-parameter-roles.json",
+  "registry_sha256": "ebb4c22604b0b19ba16508e3880ddeeda9a03cf62f8b8bdfa86a258a734867e3",
+  "runs_numerical_calculation": false,
+  "schema_version": 1
+}

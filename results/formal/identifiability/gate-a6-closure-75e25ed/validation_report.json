@@ -1,0 +1,15 @@
+{
+  "gate": "PASS",
+  "gate_version": "A6-roles",
+  "numerical_errors": [],
+  "parameter_count": 13,
+  "role_contract_errors": [],
+  "role_counts": {
+    "diagnostic_only": 5,
+    "fixed": 8,
+    "free": 0,
+    "narrow_prior": 0
+  },
+  "schema_version": 1,
+  "structure_errors": []
+}
