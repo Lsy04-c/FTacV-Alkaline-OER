@@ -507,15 +507,22 @@ def _build_manifest(
     argv: list[str],
 ) -> dict[str, Any]:
     status = _git_value(project_root, "status", "--porcelain=v1")
+    absolute_registry = (
+        registry_path
+        if registry_path.is_absolute()
+        else project_root / registry_path
+    )
     return {
         "schema_version": 1,
         "gate_version": "A6-roles",
         "commit": _git_value(project_root, "rev-parse", "HEAD"),
         "dirty": bool(status),
         "dirty_paths": status.splitlines(),
-        "registry_path": registry_path.relative_to(project_root).as_posix(),
+        "registry_path": absolute_registry.relative_to(
+            project_root
+        ).as_posix(),
         "registry_sha256": hashlib.sha256(
-            registry_path.read_bytes()
+            absolute_registry.read_bytes()
         ).hexdigest(),
         "python_version": platform.python_version(),
         "command": argv,

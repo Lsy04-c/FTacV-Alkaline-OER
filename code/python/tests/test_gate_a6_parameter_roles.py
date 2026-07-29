@@ -407,3 +407,25 @@ def test_real_registry_rejects_missing_required_evidence():
     report = module.validate_registry(ROOT, registry)
 
     assert report["gate"] == "FAIL_ROLE_CONTRACT"
+
+
+def test_manifest_accepts_project_relative_registry_path(monkeypatch):
+    module = _load_script()
+    monkeypatch.setattr(
+        module,
+        "_git_value",
+        lambda project_root, *args: (
+            "" if args[:2] == ("status", "--porcelain=v1") else "1" * 40
+        ),
+    )
+
+    manifest = module._build_manifest(
+        ROOT,
+        Path("config/parameter-roles/gate-a6-parameter-roles.json"),
+        ["validator"],
+    )
+
+    assert (
+        manifest["registry_path"]
+        == "config/parameter-roles/gate-a6-parameter-roles.json"
+    )
