@@ -174,10 +174,11 @@ git commit -m "fix(objective): keep feature observations candidate invariant"
 
 - [ ] **Step 1: Write failing summary tests**
 
-Require exactly 16 dataset/mode contracts, unique hashes, positive finite
-weights, explicit exclusion reasons and candidate invariance. Mutate each
-condition separately and require `FAIL_CONTRACT`; malformed sets require
-`FAIL_STRUCTURE`.
+Require exactly 16 unique dataset/mode records, non-empty independently
+recomputable contract hashes, positive finite weights, explicit exclusion
+reasons and candidate invariance. Contract hashes may repeat when two records
+have the same channel structure. Mutate each condition separately and require
+`FAIL_CONTRACT`; malformed sets require `FAIL_STRUCTURE`.
 
 - [ ] **Step 2: Verify RED**
 
