@@ -63,6 +63,7 @@ class InversionConfig:
     sigma_harm: float = 0.05
     sigma_tafel: float = 0.05
     ode_penalty: float = 1e9
+    feature_fail_penalty: float = 1e9
     tafel_fail_resid: float = 10.0
     seed: int = 42
     param_specs: Tuple[ParamSpec, ...] = DEFAULT_PARAM_SPECS
@@ -133,6 +134,15 @@ class FeatureChannel:
     )
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "harmonic", (
+            None if self.harmonic is None else int(self.harmonic)
+        ))
+        object.__setattr__(self, "requested", bool(self.requested))
+        object.__setattr__(self, "available", bool(self.available))
+        object.__setattr__(self, "active", bool(self.active))
+        object.__setattr__(self, "target_weight", float(self.target_weight))
+        object.__setattr__(self, "loss_weight", float(self.loss_weight))
+        object.__setattr__(self, "n_points", int(self.n_points))
         if self.mask is not None:
             values = np.asarray(self.mask, dtype=bool).copy()
             values.setflags(write=False)
@@ -507,9 +517,13 @@ class InversionResult:
     history: List[Dict[str, Any]] = field(default_factory=list)
     n_calls: int = 0
     n_ode_fail: int = 0
+    n_feature_fail: int = 0
     n_tafel_fail: int = 0
     fit_quality: Dict[str, Any] = field(default_factory=dict)
     loss_components: Dict[str, float] = field(default_factory=dict)
+    channel_contract: Dict[str, Any] = field(default_factory=dict)
+    channel_contract_sha256: str = ""
+    normalization_weight_sum: float = 0.0
 
 
 def assess_fit_quality(
@@ -969,6 +983,7 @@ class InversionObjective:
         self.n_calls = 0
         self.n_forward = 0
         self.n_ode_fail = 0
+        self.n_feature_fail = 0
         self.n_tafel_fail = 0
         self.best_value = np.inf
         self.best_x: Optional[np.ndarray] = None
@@ -989,163 +1004,278 @@ class InversionObjective:
         invalid = [h for h in self.fit_harmonics if h < 1 or h > 7]
         if invalid:
             raise ValueError(f"fit_harmonics must be between 1 and 7, got {invalid}")
+        self.channel_contract = build_feature_channel_contract(
+            self.target, self.config
+        )
+
+    @staticmethod
+    def _empty_components() -> Dict[str, float]:
+        return {
+            "dc": 0.0,
+            "common_harmonics": 0.0,
+            "dataset_specific_harmonics": 0.0,
+            "phase": 0.0,
+            "lockin_common_amplitude": 0.0,
+            "lockin_dataset_specific_amplitude": 0.0,
+            "lockin_common_phase": 0.0,
+            "lockin_dataset_specific_phase": 0.0,
+            "physical": 0.0,
+            "feature_failure": 0.0,
+        }
+
+    def _active_channels(self, block: str) -> List[FeatureChannel]:
+        return [
+            item
+            for item in self.channel_contract.channels
+            if item.active and item.block == block
+        ]
+
+    def _candidate_features_valid(self, features: Mapping[str, Any]) -> bool:
+        expected_size = self.config.resolved_feature_grid_size
+        try:
+            dc = np.asarray(features["dc"], dtype=float).reshape(-1)
+            if dc.size != expected_size or not np.all(np.isfinite(dc)):
+                return False
+            harmonics = features.get("harm")
+            for channel in self._active_channels("legacy_amplitude"):
+                index = int(channel.harmonic) - 1
+                if not isinstance(harmonics, (list, tuple)):
+                    return False
+                if len(harmonics) <= index:
+                    return False
+                values = np.asarray(harmonics[index], dtype=float).reshape(-1)
+                if (
+                    values.size != expected_size
+                    or not np.all(np.isfinite(values))
+                ):
+                    return False
+            complex_values = features.get("complex_harmonics")
+            for block in ("complex_amplitude", "complex_phase"):
+                name = "amplitude" if block.endswith("amplitude") else "phase"
+                for channel in self._active_channels(block):
+                    index = int(channel.harmonic) - 1
+                    if (
+                        not isinstance(complex_values, Mapping)
+                        or name not in complex_values
+                    ):
+                        return False
+                    values = np.asarray(
+                        complex_values[name], dtype=float
+                    ).reshape(-1)
+                    if values.size <= index or not np.isfinite(values[index]):
+                        return False
+            lockin = features.get("lockin")
+            active_lockin = self._active_channels("lockin_amplitude")
+            active_lockin += self._active_channels("lockin_phase")
+            if active_lockin:
+                if not isinstance(lockin, Mapping):
+                    return False
+                candidate_valid = np.asarray(
+                    lockin.get("valid_mask"), dtype=bool
+                ).reshape(-1)
+                if candidate_valid.size != expected_size:
+                    return False
+            for channel in active_lockin:
+                index = int(channel.harmonic) - 1
+                name = (
+                    "amplitude"
+                    if channel.block.endswith("amplitude")
+                    else "phase"
+                )
+                arrays = lockin.get(name)
+                if not isinstance(arrays, (list, tuple)) or len(arrays) <= index:
+                    return False
+                values = np.asarray(arrays[index], dtype=float).reshape(-1)
+                mask = np.asarray(channel.mask, dtype=bool)
+                if (
+                    values.size != expected_size
+                    or not np.all(candidate_valid[mask])
+                    or not np.all(np.isfinite(values[mask]))
+                ):
+                    return False
+        except (KeyError, TypeError, ValueError):
+            return False
+        return True
 
     def _evaluate(self, x: np.ndarray) -> float:
         self.n_forward += 1
         current = forward_current(x, self.config, self.specs)
         if current is None:
             self.n_ode_fail += 1
-            self.last_components = {
-                "dc": 0.0,
-                "common_harmonics": 0.0,
-                "dataset_specific_harmonics": 0.0,
-                "phase": 0.0,
-                "lockin_common_amplitude": 0.0,
-                "lockin_dataset_specific_amplitude": 0.0,
-                "lockin_common_phase": 0.0,
-                "lockin_dataset_specific_phase": 0.0,
-                "physical": float(self.config.ode_penalty),
-            }
+            self.last_components = self._empty_components()
+            self.last_components["physical"] = float(
+                self.config.ode_penalty
+            )
             return float(self.config.ode_penalty)
 
         features = extract_features(current, self.config)
-        dc_loss = float(
-            np.mean(
+        if not self._candidate_features_valid(features):
+            self.n_feature_fail += 1
+            self.last_components = self._empty_components()
+            self.last_components["feature_failure"] = float(
+                self.config.feature_fail_penalty
+            )
+            return float(self.config.feature_fail_penalty)
+
+        components = self._empty_components()
+        dc_channel = self._active_channels("dc")[0]
+        components["dc"] = float(
+            dc_channel.loss_weight
+            * np.mean(
                 (
-                    (features["dc"] - self.target["dc"])
+                    (
+                        np.asarray(features["dc"])
+                        - np.asarray(self.target["dc"])
+                    )
                     / self.config.sigma_dc
                 )
                 ** 2
             )
         )
-        common_harmonic_loss = 0.0
-        dataset_specific_harmonic_loss = 0.0
-        phase_loss = 0.0
-        if self.config.feature_mode == "legacy":
-            for harmonic in self.fit_harmonics:
-                idx = harmonic - 1
-                channel_loss = float(
-                    np.mean(
+
+        for channel in self._active_channels("legacy_amplitude"):
+            index = int(channel.harmonic) - 1
+            loss = float(
+                channel.loss_weight
+                * np.mean(
+                    (
                         (
-                            (
-                                features["harm"][idx]
-                                - self.target["harm"][idx]
-                            )
-                            / self.config.sigma_harm
+                            np.asarray(features["harm"][index])
+                            - np.asarray(self.target["harm"][index])
                         )
-                        ** 2
+                        / self.config.sigma_harm
                     )
+                    ** 2
                 )
-                if harmonic <= 3:
-                    common_harmonic_loss += channel_loss
-                else:
-                    dataset_specific_harmonic_loss += channel_loss
-        elif self.config.feature_mode in ("complex_snr", "hybrid", "combined"):
-            selected = np.asarray(self.fit_harmonics, dtype=int) - 1
-            simulated = features["complex_harmonics"]
-            experimental = self.target["complex_harmonics"]
-            weights = snr_weights(
-                np.asarray(experimental["snr"])[selected],
-                floor=self.config.snr_floor,
             )
-            target_amplitude = np.asarray(experimental["amplitude"])[selected]
-            simulated_amplitude = np.asarray(simulated["amplitude"])[selected]
+            key = (
+                "common_harmonics"
+                if channel.role == "common"
+                else "dataset_specific_harmonics"
+            )
+            components[key] += loss
+
+        complex_amplitude_channels = self._active_channels(
+            "complex_amplitude"
+        )
+        if complex_amplitude_channels:
+            target_amplitudes = np.asarray(
+                self.target["complex_harmonics"]["amplitude"], dtype=float
+            )
             amplitude_scale = max(
-                float(np.max(np.abs(target_amplitude))),
+                max(
+                    abs(target_amplitudes[int(item.harmonic) - 1])
+                    for item in complex_amplitude_channels
+                ),
                 np.finfo(float).eps,
             )
-            amplitude_residual = (
-                (simulated_amplitude - target_amplitude)
-                / amplitude_scale
-                / self.config.sigma_harm
+            simulated_amplitudes = np.asarray(
+                features["complex_harmonics"]["amplitude"], dtype=float
             )
-            channel_losses = weights * amplitude_residual**2
-            common_mask = np.asarray(self.fit_harmonics) <= 3
-            common_harmonic_loss = float(np.sum(channel_losses[common_mask]))
-            dataset_specific_harmonic_loss = float(
-                np.sum(channel_losses[~common_mask])
-            )
-            phase_residual = wrapped_phase_difference(
-                np.asarray(simulated["phase"])[selected],
-                np.asarray(experimental["phase"])[selected],
-            )
-            phase_loss = float(
-                self.config.phase_weight
-                * np.sum(weights * phase_residual**2)
-            )
-
-        # --- lockin potential-resolved loss (lockin_only / hybrid) ---
-        lockin_common_amplitude_loss = 0.0
-        lockin_dataset_specific_amplitude_loss = 0.0
-        lockin_common_phase_loss = 0.0
-        lockin_dataset_specific_phase_loss = 0.0
-        if self.config.feature_mode in ("lockin_only", "hybrid", "combined"):
-            if "lockin" in features and "lockin" in self.target:
-                sim_li = features["lockin"]
-                exp_li = self.target["lockin"]
-                n_h = min(len(sim_li["amplitude"]), len(exp_li["amplitude"]))
-                for harmonic in self.fit_harmonics:
-                    idx = harmonic - 1
-                    if idx >= n_h:
-                        continue
-                    sim_amp = np.asarray(sim_li["amplitude"][idx])
-                    exp_amp = np.asarray(exp_li["amplitude"][idx])
-                    sim_ph = np.asarray(sim_li["phase"][idx])
-                    exp_ph = np.asarray(exp_li["phase"][idx])
-                    common_valid = (
-                        np.asarray(sim_li["valid_mask"], dtype=bool)
-                        & np.asarray(exp_li["valid_mask"], dtype=bool)
-                        & np.isfinite(sim_amp)
-                        & np.isfinite(exp_amp)
-                        & np.isfinite(sim_ph)
-                        & np.isfinite(exp_ph)
-                    )
-                    if not np.any(common_valid):
-                        continue
-                    sim_amp = sim_amp[common_valid]
-                    exp_amp = exp_amp[common_valid]
-                    sim_ph = sim_ph[common_valid]
-                    exp_ph = exp_ph[common_valid]
-                    amp_scale = max(float(np.max(np.abs(exp_amp))), np.finfo(float).eps)
-                    amplitude_loss = float(np.mean(
-                        ((sim_amp - exp_amp) / amp_scale / self.config.sigma_harm) ** 2
-                    ))
-                    ph_diff = wrapped_phase_difference(sim_ph, exp_ph)
-                    phase_channel_loss = float(np.mean(ph_diff ** 2))
-                    if harmonic <= 3:
-                        lockin_common_amplitude_loss += amplitude_loss
-                        lockin_common_phase_loss += phase_channel_loss
-                    else:
-                        lockin_dataset_specific_amplitude_loss += amplitude_loss
-                        lockin_dataset_specific_phase_loss += phase_channel_loss
-
-        physical_loss = 0.0
-        target_tafel = self.target.get("tafel")
-        if target_tafel is not None:
-            if features["tafel"] is None:
-                self.n_tafel_fail += 1
-                physical_loss += self.config.tafel_fail_resid**2
-            else:
-                physical_loss += float(
+            for channel in complex_amplitude_channels:
+                index = int(channel.harmonic) - 1
+                residual = (
                     (
-                        (features["tafel"] - float(target_tafel))
+                        simulated_amplitudes[index]
+                        - target_amplitudes[index]
+                    )
+                    / amplitude_scale
+                    / self.config.sigma_harm
+                )
+                key = (
+                    "common_harmonics"
+                    if channel.role == "common"
+                    else "dataset_specific_harmonics"
+                )
+                components[key] += float(
+                    channel.loss_weight * residual**2
+                )
+
+        for channel in self._active_channels("complex_phase"):
+            index = int(channel.harmonic) - 1
+            residual = wrapped_phase_difference(
+                np.asarray(
+                    features["complex_harmonics"]["phase"], dtype=float
+                )[index],
+                np.asarray(
+                    self.target["complex_harmonics"]["phase"], dtype=float
+                )[index],
+            )
+            components["phase"] += float(
+                channel.loss_weight * residual**2
+            )
+
+        for block, component_common, component_specific in (
+            (
+                "lockin_amplitude",
+                "lockin_common_amplitude",
+                "lockin_dataset_specific_amplitude",
+            ),
+            (
+                "lockin_phase",
+                "lockin_common_phase",
+                "lockin_dataset_specific_phase",
+            ),
+        ):
+            name = "amplitude" if block.endswith("amplitude") else "phase"
+            for channel in self._active_channels(block):
+                index = int(channel.harmonic) - 1
+                mask = np.asarray(channel.mask, dtype=bool)
+                simulated = np.asarray(
+                    features["lockin"][name][index], dtype=float
+                )[mask]
+                experimental = np.asarray(
+                    self.target["lockin"][name][index], dtype=float
+                )[mask]
+                if name == "amplitude":
+                    scale = max(
+                        float(np.max(np.abs(experimental))),
+                        np.finfo(float).eps,
+                    )
+                    residual = (
+                        (simulated - experimental)
+                        / scale
+                        / self.config.sigma_harm
+                    )
+                else:
+                    residual = wrapped_phase_difference(
+                        simulated, experimental
+                    )
+                key = (
+                    component_common
+                    if channel.role == "common"
+                    else component_specific
+                )
+                components[key] += float(
+                    channel.loss_weight * np.mean(residual**2)
+                )
+
+        tafel_channels = self._active_channels("tafel")
+        if tafel_channels:
+            channel = tafel_channels[0]
+            if features.get("tafel") is None:
+                self.n_tafel_fail += 1
+                components["physical"] += float(
+                    channel.loss_weight * self.config.tafel_fail_resid**2
+                )
+            else:
+                components["physical"] += float(
+                    channel.loss_weight
+                    * (
+                        (
+                            float(features["tafel"])
+                            - float(self.target["tafel"])
+                        )
                         / self.config.sigma_tafel
                     )
                     ** 2
                 )
-        self.last_components = {
-            "dc": dc_loss,
-            "common_harmonics": common_harmonic_loss,
-            "dataset_specific_harmonics": dataset_specific_harmonic_loss,
-            "phase": phase_loss,
-            "lockin_common_amplitude": lockin_common_amplitude_loss,
-            "lockin_dataset_specific_amplitude": lockin_dataset_specific_amplitude_loss,
-            "lockin_common_phase": lockin_common_phase_loss,
-            "lockin_dataset_specific_phase": lockin_dataset_specific_phase_loss,
-            "physical": physical_loss,
-        }
-        total = sum(self.last_components.values())
-        return total / float(2 + len(self.fit_harmonics))
+
+        self.last_components = components
+        return float(
+            sum(components.values())
+            / self.channel_contract.normalization_weight_sum
+        )
 
     def __call__(self, x: Sequence[float]) -> float:
         arr = np.asarray(x, dtype=float).reshape(-1)
@@ -1235,6 +1365,7 @@ class TPEInverter:
             history=history,
             n_calls=int(objective.n_calls),
             n_ode_fail=int(objective.n_ode_fail),
+            n_feature_fail=int(objective.n_feature_fail),
             n_tafel_fail=int(objective.n_tafel_fail),
             fit_quality=assess_fit_quality(
                 float(study.best_value),
@@ -1242,4 +1373,9 @@ class TPEInverter:
                 self.config.fit_harmonics,
             ),
             loss_components=dict(objective.best_components),
+            channel_contract=objective.channel_contract.to_evidence(),
+            channel_contract_sha256=objective.channel_contract.sha256,
+            normalization_weight_sum=float(
+                objective.channel_contract.normalization_weight_sum
+            ),
         )

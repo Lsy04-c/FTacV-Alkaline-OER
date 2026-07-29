@@ -237,6 +237,110 @@ def test_channel_contract_rejects_invalid_dc(dc):
         build_feature_channel_contract(target, config)
 
 
+def test_objective_keeps_channel_hash_and_normalization_candidate_invariant(
+    monkeypatch,
+):
+    config = InversionConfig(
+        n_points=8,
+        points_per_cycle=8,
+        discard_fraction=0.5,
+        feature_grid_size=4,
+        fit_harmonics=(1, 2, 3),
+        feature_mode="hybrid",
+        phase_weight=0.5,
+    )
+    target = _channel_contract_target(config)
+    candidates = [copy.deepcopy(target), copy.deepcopy(target)]
+    candidates[1]["dc"] = np.asarray(candidates[1]["dc"]) + 0.2
+    monkeypatch.setattr(
+        "oer_aem.inversion.forward_current",
+        lambda *args, **kwargs: np.zeros(config.n_points),
+    )
+    monkeypatch.setattr(
+        "oer_aem.inversion.extract_features",
+        lambda *args, **kwargs: candidates.pop(0),
+    )
+    objective = InversionObjective(target, config=config)
+    frozen_hash = objective.channel_contract.sha256
+    frozen_normalization = (
+        objective.channel_contract.normalization_weight_sum
+    )
+
+    objective(encode_params(TRUTH))
+    objective(encode_params(TRUTH))
+
+    assert objective.channel_contract.sha256 == frozen_hash
+    assert (
+        objective.channel_contract.normalization_weight_sum
+        == frozen_normalization
+    )
+    assert frozen_normalization == pytest.approx(
+        sum(
+            channel.loss_weight
+            for channel in objective.channel_contract.channels
+            if channel.active
+        )
+    )
+
+
+def test_candidate_missing_frozen_lockin_point_fails_closed(monkeypatch):
+    config = InversionConfig(
+        n_points=8,
+        points_per_cycle=8,
+        discard_fraction=0.5,
+        feature_grid_size=4,
+        fit_harmonics=(1, 2),
+        feature_mode="lockin_only",
+        feature_fail_penalty=12345.0,
+    )
+    target = _channel_contract_target(config)
+    candidate = copy.deepcopy(target)
+    candidate["lockin"]["amplitude"][0][1] = np.nan
+    monkeypatch.setattr(
+        "oer_aem.inversion.forward_current",
+        lambda *args, **kwargs: np.zeros(config.n_points),
+    )
+    monkeypatch.setattr(
+        "oer_aem.inversion.extract_features",
+        lambda *args, **kwargs: candidate,
+    )
+    objective = InversionObjective(target, config=config)
+
+    value = objective(encode_params(TRUTH))
+
+    assert value == config.feature_fail_penalty
+    assert objective.n_feature_fail == 1
+    assert (
+        objective.last_components["feature_failure"]
+        == config.feature_fail_penalty
+    )
+
+
+def test_zero_snr_channel_is_absent_from_normalization():
+    config = InversionConfig(
+        n_points=8,
+        points_per_cycle=8,
+        discard_fraction=0.5,
+        feature_grid_size=4,
+        fit_harmonics=(1, 2, 3),
+        feature_mode="complex_snr",
+        phase_weight=0.5,
+    )
+    target = _channel_contract_target(config)
+    contract = build_feature_channel_contract(target, config)
+    by_id = {channel.channel_id: channel for channel in contract.channels}
+
+    assert by_id["complex_amplitude:H3"].loss_weight == 0.0
+    assert by_id["complex_phase:H3"].loss_weight == 0.0
+    assert contract.normalization_weight_sum == pytest.approx(
+        sum(
+            channel.loss_weight
+            for channel in contract.channels
+            if channel.active
+        )
+    )
+
+
 def test_objective_uses_selected_harmonics_only():
     config = InversionConfig(n_points=256, points_per_cycle=32, feature_grid_size=32, fit_harmonics=(1, 2, 3))
     target = make_synthetic_target(TRUTH, config=config, noise_fraction=0.0)
@@ -292,6 +396,12 @@ def test_tpe_inverter_runs_small_budget():
     assert len(result.best_x) == len(DEFAULT_PARAM_SPECS)
     assert result.n_trials == 3
     assert result.n_forward >= 1
+    assert result.n_feature_fail >= 0
+    assert result.channel_contract_sha256
+    assert result.channel_contract["sha256"] == result.channel_contract_sha256
+    assert result.normalization_weight_sum == pytest.approx(
+        result.channel_contract["normalization_weight_sum"]
+    )
     assert result.fit_quality['level'] in {'excellent', 'acceptable', 'rough', 'poor'}
     assert 'message' in result.fit_quality
 
