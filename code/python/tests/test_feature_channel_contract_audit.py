@@ -250,6 +250,16 @@ def test_real_runner_builds_and_writes_finite_16_record_archive(tmp_path):
         assert text.endswith("\n")
         assert "NaN" not in text
         assert "Infinity" not in text
+    written_manifest = json.loads(
+        (output / "run_manifest.json").read_text(encoding="utf-8")
+    )
+    assert set(written_manifest["artifact_sha256"]) == {
+        "channel_contracts.jsonl",
+        "candidate_invariance.jsonl",
+        "gate_a5_summary.json",
+    }
+    for name, digest in written_manifest["artifact_sha256"].items():
+        assert digest == hashlib.sha256((output / name).read_bytes()).hexdigest()
     with pytest.raises(FileExistsError, match="new or empty"):
         module.write_audit_outputs(
             output,

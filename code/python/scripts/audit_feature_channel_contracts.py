@@ -398,25 +398,20 @@ def _atomic_write(path: Path, payload: bytes) -> None:
             temporary.unlink()
 
 
-def _write_json(path: Path, value: Any) -> None:
-    _atomic_write(
-        path,
-        (
-            json.dumps(value, indent=2, sort_keys=True, allow_nan=False)
-            + "\n"
-        ).encode(),
-    )
+def _json_bytes(value: Any) -> bytes:
+    return (
+        json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    ).encode()
 
 
-def _write_jsonl(path: Path, records: list[dict[str, Any]]) -> None:
-    payload = "".join(
+def _jsonl_bytes(records: list[dict[str, Any]]) -> bytes:
+    return "".join(
         json.dumps(
             record, sort_keys=True, separators=(",", ":"), allow_nan=False
         )
         + "\n"
         for record in records
     ).encode()
-    _atomic_write(path, payload)
 
 
 def write_audit_outputs(
@@ -430,10 +425,21 @@ def write_audit_outputs(
     if output.exists() and any(output.iterdir()):
         raise FileExistsError("output directory must be new or empty")
     output.mkdir(parents=True, exist_ok=True)
-    _write_jsonl(output / "channel_contracts.jsonl", contracts)
-    _write_jsonl(output / "candidate_invariance.jsonl", invariance)
-    _write_json(output / "gate_a5_summary.json", summary)
-    _write_json(output / "run_manifest.json", manifest)
+    artifacts = {
+        "channel_contracts.jsonl": _jsonl_bytes(contracts),
+        "candidate_invariance.jsonl": _jsonl_bytes(invariance),
+        "gate_a5_summary.json": _json_bytes(summary),
+    }
+    written_manifest = dict(manifest)
+    written_manifest["artifact_sha256"] = {
+        name: hashlib.sha256(payload).hexdigest()
+        for name, payload in artifacts.items()
+    }
+    for name, payload in artifacts.items():
+        _atomic_write(output / name, payload)
+    _atomic_write(
+        output / "run_manifest.json", _json_bytes(written_manifest)
+    )
 
 
 def _git_value(project_root: Path, *args: str) -> str:
