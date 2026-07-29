@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "gate": "A6",
+  "status": "FAIL_RECOVERY",
+  "eligible_for_real_inversion": false,
+  "free_parameters": [],
+  "narrow_prior_parameters": [],
+  "eligible_pairs": [],
+  "evidence": [
+    {
+      "id": "sensitivity_legacy",
+      "path": "results/formal/identifiability/gate-a6-sensitivity-cf33eba/legacy/run_manifest.json",
+      "sha256": "858d3bae451c4b36e0292760c720304e2e245bf4ec5418018e86f697ac77b9b7"
+    },
+    {
+      "id": "sensitivity_complex",
+      "path": "results/formal/identifiability/gate-a6-sensitivity-cf33eba/complex_snr/run_manifest.json",
+      "sha256": "a7b6fe385480413ee65871cd76412ffff1fd58b66e55b525497fe9ae8adfd8e2"
+    },
+    {
+      "id": "sensitivity_lockin",
+      "path": "results/formal/identifiability/gate-a6-sensitivity-cf33eba/lockin_only/run_manifest.json",
+      "sha256": "dbbe3ef21a08489cbeeb2a504ca0e3f419dd86b324322f454378d4e67cf38bcf"
+    },
+    {
+      "id": "sensitivity_hybrid",
+      "path": "results/formal/identifiability/gate-a6-sensitivity-cf33eba/hybrid/run_manifest.json",
+      "sha256": "656518ab1a425fad55416ec6a8ff7df48cfc265bbf26bb3f3b4754e9775d3962"
+    },
+    {
+      "id": "single_profiles",
+      "path": "results/formal/identifiability/gate-a6-profile-3f9aad1/profile_analysis.md",
+      "sha256": "58753d4670a752427a09e00128099479fd48d85c5cd760633452cf3418b0d45b"
+    },
+    {
+      "id": "reduced_recovery",
+      "path": "results/formal/identifiability/gate-a6-reduced-recovery-a7bc9e4/acceptance.md",
+      "sha256": "c8988372a3e521e30d6775be6a7a7234f20c5e00f437d0ae2505cd390446cb3d"
+    },
+    {
+      "id": "stage2_recovery",
+      "path": "results/formal/identifiability/gate-a6-stage2-cn-732bf5d/acceptance.md",
+      "sha256": "49835e20294ff6ea0044d7df82230eb486839b1093a1cc6fd0fd8cfd9ec2c258"
+    },
+    {
+      "id": "optimizer_development",
+      "path": "results/formal/identifiability/gate-a6-optimizer-development/acceptance.md",
+      "sha256": "574c3bcc8bfb76e6d228572b9abe2c0cab2c2c0ab444baf32f22ff10a0f942de"
+    },
+    {
+      "id": "sobol_confirmation",
+      "path": "results/formal/identifiability/gate-a6-sobol-confirmation/acceptance.md",
+      "sha256": "f00a5510639156cedf60a50c6caf29ff35098cb3e55e2ba0347eee99bd8ee8a0"
+    }
+  ],
+  "parameters": [
+    {
+      "name": "A",
+      "role": "fixed",
+      "fixing_basis": "external_input",
+      "evidence_ids": ["sensitivity_legacy", "sensitivity_complex", "sensitivity_lockin", "sensitivity_hybrid"],
+      "fixed_value_known_accurate": false,
+      "inversion_point_estimate_reportable": false,
+      "structurally_unidentifiable": false,
+      "allowed_use": ["forward_input", "fixed_parameter_stress_test"],
+      "prohibited_claims": ["fixed_value_is_known_accurate", "fixed_value_has_no_uncertainty", "credible_inversion_point_estimate"],
+      "reason": "Electrode area is an external runtime input; fixing it does not establish accuracy or eliminate uncertainty."
+    },
+    {
+      "name": "Cdl",
+      "role": "fixed",
+      "fixing_basis": "calibrated_input",
+      "evidence_ids": ["sensitivity_legacy", "sensitivity_complex", "sensitivity_lockin", "sensitivity_hybrid"],
+      "fixed_value_known_accurate": false,
+      "inversion_point_estimate_reportable": false,
+      "structurally_unidentifiable": false,
+      "allowed_use": ["forward_input", "fixed_parameter_stress_test"],
+      "prohibited_claims": ["fixed_value_is_known_accurate", "fixed_value_has_no_uncertainty", "credible_inversion_point_estimate"],
+      "reason": "Cdl remains a calibrated runtime input because the frozen recovery route did not qualify it for inversion."
+    },
+    {
+      "name": "Ru",
+      "role": "fixed",
+      "fixing_basis": "calibrated_input",
+      "evidence_ids": ["sensitivity_legacy", "sensitivity_complex", "sensitivity_lockin", "sensitivity_hybrid"],
+      "fixed_value_known_accurate": false,
+      "inversion_point_estimate_reportable": false,
+      "structurally_unidentifiable": false,
+      "allowed_use": ["forward_input", "fixed_parameter_stress_test"],
+      "prohibited_claims": ["fixed_value_is_known_accurate", "fixed_value_has_no_uncertainty", "credible_inversion_point_estimate"],
+      "reason": "Ru remains a calibrated runtime input and must be stress-tested rather than treated as exactly known."
+    },
+    {
+      "name": "E0_pre",
+      "role": "fixed",
+      "fixing_basis": "calibrated_input",
+      "evidence_ids": ["sensitivity_legacy", "sensitivity_complex", "sensitivity_lockin", "sensitivity_hybrid"],
+      "fixed_value_known_accurate": false,
+      "inversion_point_estimate_reportable": false,
+      "structurally_unidentifiable": false,
+      "allowed_use": ["forward_input", "fixed_parameter_stress_test"],
+      "prohibited_claims": ["fixed_value_is_known_accurate", "fixed_value_has_no_uncertainty", "credible_inversion_point_estimate"],
+      "reason": "E0_pre is retained as a calibrated runtime input without claiming its fixed value is exact."
+    },
+    {
+      "name": "k0_pre",
+      "role": "fixed",
+      "fixing_basis": "calibrated_input",
+      "evidence_ids": ["sensitivity_legacy", "sensitivity_complex", "sensitivity_lockin", "sensitivity_hybrid"],
+      "fixed_value_known_accurate": false,
+      "inversion_point_estimate_reportable": false,
+      "structurally_unidentifiable": false,
+      "allowed_use": ["forward_input", "fixed_parameter_stress_test"],
+      "prohibited_claims": ["fixed_value_is_known_accurate", "fixed_value_has_no_uncertainty", "credible_inversion_point_estimate"],
+      "reason": "k0_pre is retained as a calibrated runtime input without a credible inversion estimate."
+    },
+    {
+      "name": "gamma",
+      "role": "fixed",
+      "fixing_basis": "coupling_control",
+      "evidence_ids": ["sensitivity_legacy", "sensitivity_complex", "sensitivity_lockin", "sensitivity_hybrid"],
+      "fixed_value_known_accurate": false,
+      "inversion_point_estimate_reportable": false,
+      "structurally_unidentifiable": false,
+      "allowed_use": ["forward_input", "fixed_parameter_stress_test"],
+      "prohibited_claims": ["fixed_value_is_known_accurate", "fixed_value_has_no_uncertainty", "credible_inversion_point_estimate"],
+      "reason": "gamma is fixed to control parameter coupling in the failed recovery route, not because its value is known accurately."
+    },
+    {
+      "name": "k0_4",
+      "role": "fixed",
+      "fixing_basis": "low_sensitivity",
+      "evidence_ids": ["sensitivity_legacy", "sensitivity_complex", "sensitivity_lockin", "sensitivity_hybrid"],
+      "fixed_value_known_accurate": false,
+      "inversion_point_estimate_reportable": false,
+      "structurally_unidentifiable": false,
+      "allowed_use": ["forward_input", "fixed_parameter_stress_test"],
+      "prohibited_claims": ["fixed_value_is_known_accurate", "fixed_value_has_no_uncertainty", "credible_inversion_point_estimate"],
+      "reason": "k0_4 is fixed operationally because the frozen sensitivity evidence does not support estimating it."
+    },
+    {
+      "name": "scaling_OOH_OH",
+      "role": "fixed",
+      "fixing_basis": "coupling_control",
+      "evidence_ids": ["sensitivity_legacy", "sensitivity_complex", "sensitivity_lockin", "sensitivity_hybrid"],
+      "fixed_value_known_accurate": false,
+      "inversion_point_estimate_reportable": false,
+      "structurally_unidentifiable": false,
+      "allowed_use": ["forward_input", "fixed_parameter_stress_test"],
+      "prohibited_claims": ["fixed_value_is_known_accurate", "fixed_value_has_no_uncertainty", "credible_inversion_point_estimate"],
+      "reason": "scaling_OOH_OH is fixed to control coupling and remains subject to uncertainty stress tests."
+    },
+    {
+      "name": "k0_1",
+      "role": "diagnostic_only",
+      "fixing_basis": null,
+      "evidence_ids": ["single_profiles", "reduced_recovery"],
+      "fixed_value_known_accurate": false,
+      "inversion_point_estimate_reportable": false,
+      "structurally_unidentifiable": false,
+      "allowed_use": ["profile", "sensitivity", "experimental_design"],
+      "prohibited_claims": ["credible_inversion_point_estimate", "mathematically_structurally_unidentifiable"],
+      "reason": "k0_1 remains useful diagnostically, but the frozen recovery evidence does not justify a credible point estimate."
+    },
+    {
+      "name": "k0_2",
+      "role": "diagnostic_only",
+      "fixing_basis": null,
+      "evidence_ids": ["stage2_recovery", "optimizer_development", "sobol_confirmation"],
+      "fixed_value_known_accurate": false,
+      "inversion_point_estimate_reportable": false,
+      "structurally_unidentifiable": false,
+      "allowed_use": ["profile", "sensitivity", "experimental_design"],
+      "prohibited_claims": ["credible_inversion_point_estimate", "mathematically_structurally_unidentifiable"],
+      "reason": "k0_2 failed the preregistered multi-parameter recovery route and is retained for diagnosis and experiment design."
+    },
+    {
+      "name": "k0_3",
+      "role": "diagnostic_only",
+      "fixing_basis": null,
+      "evidence_ids": ["stage2_recovery", "optimizer_development", "sobol_confirmation"],
+      "fixed_value_known_accurate": false,
+      "inversion_point_estimate_reportable": false,
+      "structurally_unidentifiable": false,
+      "allowed_use": ["profile", "sensitivity", "experimental_design"],
+      "prohibited_claims": ["credible_inversion_point_estimate", "mathematically_structurally_unidentifiable"],
+      "reason": "k0_3 failed the preregistered multi-parameter recovery route and cannot support a credible point estimate."
+    },
+    {
+      "name": "G_OH",
+      "role": "diagnostic_only",
+      "fixing_basis": null,
+      "evidence_ids": ["single_profiles", "reduced_recovery"],
+      "fixed_value_known_accurate": false,
+      "inversion_point_estimate_reportable": false,
+      "structurally_unidentifiable": false,
+      "allowed_use": ["profile", "sensitivity", "experimental_design"],
+      "prohibited_claims": ["credible_inversion_point_estimate", "mathematically_structurally_unidentifiable"],
+      "reason": "G_OH remains diagnostic because the frozen single-profile and reduced-recovery evidence did not qualify it for inversion."
+    },
+    {
+      "name": "G_O",
+      "role": "diagnostic_only",
+      "fixing_basis": null,
+      "evidence_ids": ["stage2_recovery", "optimizer_development", "sobol_confirmation"],
+      "fixed_value_known_accurate": false,
+      "inversion_point_estimate_reportable": false,
+      "structurally_unidentifiable": false,
+      "allowed_use": ["profile", "sensitivity", "experimental_design"],
+      "prohibited_claims": ["credible_inversion_point_estimate", "mathematically_structurally_unidentifiable"],
+      "reason": "G_O failed the preregistered multi-parameter recovery route and is restricted to diagnostic use."
+    }
+  ]
+}
