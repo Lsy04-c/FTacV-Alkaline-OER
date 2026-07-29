@@ -1,0 +1,24 @@
+{
+  "dataset_count": 4,
+  "eligible_for_inversion": false,
+  "gate": "FAIL_METADATA",
+  "gate_version": 1,
+  "metadata_passed": false,
+  "missing_metadata": {
+    "FT2": [
+      "instrument_preprocessing"
+    ],
+    "FT3": [
+      "instrument_preprocessing"
+    ],
+    "FT4": [
+      "instrument_preprocessing"
+    ],
+    "FT8": [
+      "instrument_preprocessing"
+    ]
+  },
+  "numerical_passed": true,
+  "schema_version": 1,
+  "structure_passed": true
+}

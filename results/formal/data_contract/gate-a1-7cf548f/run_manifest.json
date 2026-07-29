@@ -1,0 +1,19 @@
+{
+  "command": [
+    "code/python/scripts/audit_experimental_contracts.py",
+    "--registry",
+    "config/data-contracts/gate-a1-datasets.json",
+    "--output",
+    "results/formal/data_contract/gate-a1-7cf548f"
+  ],
+  "commit": "7cf548f32c07652b4bc1c8339bfc926f963c8fd7",
+  "dirty": false,
+  "dirty_paths": [],
+  "finished_at": "2026-07-29T09:42:44.838001+00:00",
+  "numpy_version": "2.4.6",
+  "python_version": "3.13.3",
+  "registry_path": "config/data-contracts/gate-a1-datasets.json",
+  "registry_sha256": "96aebc642d00d1f90696cd8060ec088eff4a9d22c9a3eba02a2d5bfa83ac4b62",
+  "schema_version": 1,
+  "started_at": "2026-07-29T09:42:44.593391+00:00"
+}

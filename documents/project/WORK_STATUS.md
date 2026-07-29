@@ -1443,3 +1443,25 @@ H1-H7压力测试：
   文档 README 和 `PROJECT_WORKFLOW.md` 已指向新入口。
 - 本次不修改代码、数据、配置和正式结果，不改变 A1 `FAIL_METADATA`、
   A3 `FAIL` 或 A6 `FAIL_RECOVERY`。
+
+## 39. V1 用户声明元数据补录（2026-07-29）
+
+- 实现提交：
+  `7cf548f32c07652b4bc1c8339bfc926f963c8fd7`。
+- FT2、FT3、FT4、FT8 均登记为电位、电流、时间三列，单位和标尺为
+  `V vs RHE`、`A`、`s`；来源等级为 `externally_declared`。
+- 来源说明明确负责人不是原实验执行者；配套 CHI CV 文件头只作为
+  `V` 和 `A` 的辅助一致性证据。
+- `instrument_preprocessing.value=null` 且
+  `source_kind=unresolved`；未把“除 RHE 校正外未报告处理”改写成
+  “确认无预处理”。
+- 四个原始文件 SHA-256 均未变化；专项测试 11 项、全量测试 374 项通过。
+- 正式 runner 与独立 validator 均给出：
+  - 结构 PASS；
+  - 采样数值 PASS；
+  - 唯一缺失字段为 `instrument_preprocessing`；
+  - Gate A1 `FAIL_METADATA`；
+  - `eligible_for_inversion=false`。
+- 完整验收：
+  `results/formal/data_contract/gate-a1-7cf548f/acceptance.md`。
+- 下一步：V2 条件模型可达性；不启动正式真实数据反演。

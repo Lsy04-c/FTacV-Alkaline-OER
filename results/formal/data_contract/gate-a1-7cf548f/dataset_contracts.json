@@ -1,0 +1,440 @@
+{
+  "datasets": [
+    {
+      "checks": {
+        "metadata_passed": false,
+        "numerical_passed": true,
+        "structure_passed": true
+      },
+      "dataset_id": "FT2",
+      "diagnostics": {
+        "amplitude_v": 0.15999999648654697,
+        "complete_cycles": 255,
+        "cycle_remainder": 0.99609375,
+        "dt_max_s": 0.0007900000000020668,
+        "dt_median_s": 0.0007799999999988927,
+        "dt_min_s": 0.000779,
+        "dt_nominal_s": 0.0007812500190737773,
+        "duration_s": 51.19922,
+        "frequency_hz": 4.999999877927828,
+        "max_gap_ratio": 1.0111999753147696,
+        "max_relative_jitter": 0.012820512824600427,
+        "max_timestamp_residual_samples": 0.006399902186010071,
+        "points_per_cycle": 256.0,
+        "sampling_rate_hz": 1279.999968749524,
+        "scan_rate_v_s": 0.009765774087259066,
+        "time_end": 51.19922,
+        "time_start": 0.0
+      },
+      "errors": {
+        "metadata": [
+          "instrument_preprocessing source is unresolved"
+        ],
+        "numerical": [],
+        "structure": []
+      },
+      "file_facts": {
+        "byte_count": 1679678,
+        "n_columns": 3,
+        "n_rows": 65536,
+        "sha256": "979fdd7e132f8dffbe32671a9f3476eac4dcdcd79bc6ab8b29578af2401b0091"
+      },
+      "metadata": {
+        "amplitude_v": {
+          "declared_value": null,
+          "resolved_value": 0.15999999648654697,
+          "source_kind": "derived",
+          "source_note": "Derived from applied-potential harmonic regression"
+        },
+        "continuous_forward_scan": {
+          "declared_value": true,
+          "resolved_value": true,
+          "source_kind": "derived",
+          "source_note": "Derived from monotonic time and positive DC trend"
+        },
+        "current_unit": {
+          "declared_value": "A",
+          "resolved_value": "A",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with A"
+        },
+        "frequency_hz": {
+          "declared_value": null,
+          "resolved_value": 4.999999877927828,
+          "source_kind": "derived",
+          "source_note": "Derived from detrended applied potential"
+        },
+        "instrument_preprocessing": {
+          "declared_value": null,
+          "resolved_value": null,
+          "source_kind": "unresolved",
+          "source_note": "No processing other than RHE correction was reported; existing files cannot independently verify filtering, smoothing, averaging, downsampling, cropping, background subtraction or iR compensation"
+        },
+        "potential_reference": {
+          "declared_value": "RHE",
+          "resolved_value": "RHE",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29 that potential was already corrected to RHE; declarant was not the original experiment operator"
+        },
+        "potential_unit": {
+          "declared_value": "V",
+          "resolved_value": "V",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with V"
+        },
+        "scan_direction": {
+          "declared_value": "forward",
+          "resolved_value": "forward",
+          "source_kind": "derived",
+          "source_note": "Derived from positive fitted DC slope"
+        },
+        "scan_rate_v_s": {
+          "declared_value": null,
+          "resolved_value": 0.009765774087259066,
+          "source_kind": "derived",
+          "source_note": "Derived from joint ramp and harmonic regression"
+        },
+        "time_unit": {
+          "declared_value": "s",
+          "resolved_value": "s",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator"
+        }
+      },
+      "missing_metadata": [
+        "instrument_preprocessing"
+      ],
+      "path": "data/raw/ftacv2-ref-5hz.txt"
+    },
+    {
+      "checks": {
+        "metadata_passed": false,
+        "numerical_passed": true,
+        "structure_passed": true
+      },
+      "dataset_id": "FT3",
+      "diagnostics": {
+        "amplitude_v": 0.1599999938804489,
+        "complete_cycles": 255,
+        "cycle_remainder": 0.99609375,
+        "dt_max_s": 0.0007900000000020668,
+        "dt_median_s": 0.0007799999999988927,
+        "dt_min_s": 0.000779,
+        "dt_nominal_s": 0.0007812500190737773,
+        "duration_s": 51.19922,
+        "frequency_hz": 4.999999877927828,
+        "max_gap_ratio": 1.0111999753147696,
+        "max_relative_jitter": 0.012820512824600427,
+        "max_timestamp_residual_samples": 0.006399902186010071,
+        "points_per_cycle": 256.0,
+        "sampling_rate_hz": 1279.999968749524,
+        "scan_rate_v_s": 0.01953154814363928,
+        "time_end": 51.19922,
+        "time_start": 0.0
+      },
+      "errors": {
+        "metadata": [
+          "instrument_preprocessing source is unresolved"
+        ],
+        "numerical": [],
+        "structure": []
+      },
+      "file_facts": {
+        "byte_count": 1647261,
+        "n_columns": 3,
+        "n_rows": 65536,
+        "sha256": "72af2050d2b8400d68520df7aba5c08c74420b1b711c0e8f229fa64cdfaa468c"
+      },
+      "metadata": {
+        "amplitude_v": {
+          "declared_value": null,
+          "resolved_value": 0.1599999938804489,
+          "source_kind": "derived",
+          "source_note": "Derived from applied-potential harmonic regression"
+        },
+        "continuous_forward_scan": {
+          "declared_value": true,
+          "resolved_value": true,
+          "source_kind": "derived",
+          "source_note": "Derived from monotonic time and positive DC trend"
+        },
+        "current_unit": {
+          "declared_value": "A",
+          "resolved_value": "A",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with A"
+        },
+        "frequency_hz": {
+          "declared_value": null,
+          "resolved_value": 4.999999877927828,
+          "source_kind": "derived",
+          "source_note": "Derived from detrended applied potential"
+        },
+        "instrument_preprocessing": {
+          "declared_value": null,
+          "resolved_value": null,
+          "source_kind": "unresolved",
+          "source_note": "No processing other than RHE correction was reported; existing files cannot independently verify filtering, smoothing, averaging, downsampling, cropping, background subtraction or iR compensation"
+        },
+        "potential_reference": {
+          "declared_value": "RHE",
+          "resolved_value": "RHE",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29 that potential was already corrected to RHE; declarant was not the original experiment operator"
+        },
+        "potential_unit": {
+          "declared_value": "V",
+          "resolved_value": "V",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with V"
+        },
+        "scan_direction": {
+          "declared_value": "forward",
+          "resolved_value": "forward",
+          "source_kind": "derived",
+          "source_note": "Derived from positive fitted DC slope"
+        },
+        "scan_rate_v_s": {
+          "declared_value": null,
+          "resolved_value": 0.01953154814363928,
+          "source_kind": "derived",
+          "source_note": "Derived from joint ramp and harmonic regression"
+        },
+        "time_unit": {
+          "declared_value": "s",
+          "resolved_value": "s",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator"
+        }
+      },
+      "missing_metadata": [
+        "instrument_preprocessing"
+      ],
+      "path": "data/raw/ftacv3-ref-5Hz.txt"
+    },
+    {
+      "checks": {
+        "metadata_passed": false,
+        "numerical_passed": true,
+        "structure_passed": true
+      },
+      "dataset_id": "FT4",
+      "diagnostics": {
+        "amplitude_v": 0.15999999764087314,
+        "complete_cycles": 255,
+        "cycle_remainder": 0.99609375,
+        "dt_max_s": 0.003910000000004743,
+        "dt_median_s": 0.003909999999990532,
+        "dt_min_s": 0.003899999999998016,
+        "dt_nominal_s": 0.003906249942778668,
+        "duration_s": 255.99609,
+        "frequency_hz": 1.0000000146486612,
+        "max_gap_ratio": 1.0009600146639381,
+        "max_relative_jitter": 0.0025575447551253734,
+        "max_timestamp_residual_samples": 0.002239956080372911,
+        "points_per_cycle": 256.0,
+        "sampling_rate_hz": 256.00000375005726,
+        "scan_rate_v_s": 0.003906309640236317,
+        "time_end": 255.99609,
+        "time_start": 0.0
+      },
+      "errors": {
+        "metadata": [
+          "instrument_preprocessing source is unresolved"
+        ],
+        "numerical": [],
+        "structure": []
+      },
+      "file_facts": {
+        "byte_count": 1669789,
+        "n_columns": 3,
+        "n_rows": 65536,
+        "sha256": "f9b6b8448dc27ed7a78147beb9b6b05aa2cba105d195cb6aaa30e473ffcb3a21"
+      },
+      "metadata": {
+        "amplitude_v": {
+          "declared_value": null,
+          "resolved_value": 0.15999999764087314,
+          "source_kind": "derived",
+          "source_note": "Derived from applied-potential harmonic regression"
+        },
+        "continuous_forward_scan": {
+          "declared_value": true,
+          "resolved_value": true,
+          "source_kind": "derived",
+          "source_note": "Derived from monotonic time and positive DC trend"
+        },
+        "current_unit": {
+          "declared_value": "A",
+          "resolved_value": "A",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with A"
+        },
+        "frequency_hz": {
+          "declared_value": null,
+          "resolved_value": 1.0000000146486612,
+          "source_kind": "derived",
+          "source_note": "Derived from detrended applied potential"
+        },
+        "instrument_preprocessing": {
+          "declared_value": null,
+          "resolved_value": null,
+          "source_kind": "unresolved",
+          "source_note": "No processing other than RHE correction was reported; existing files cannot independently verify filtering, smoothing, averaging, downsampling, cropping, background subtraction or iR compensation"
+        },
+        "potential_reference": {
+          "declared_value": "RHE",
+          "resolved_value": "RHE",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29 that potential was already corrected to RHE; declarant was not the original experiment operator"
+        },
+        "potential_unit": {
+          "declared_value": "V",
+          "resolved_value": "V",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with V"
+        },
+        "scan_direction": {
+          "declared_value": "forward",
+          "resolved_value": "forward",
+          "source_kind": "derived",
+          "source_note": "Derived from positive fitted DC slope"
+        },
+        "scan_rate_v_s": {
+          "declared_value": null,
+          "resolved_value": 0.003906309640236317,
+          "source_kind": "derived",
+          "source_note": "Derived from joint ramp and harmonic regression"
+        },
+        "time_unit": {
+          "declared_value": "s",
+          "resolved_value": "s",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator"
+        }
+      },
+      "missing_metadata": [
+        "instrument_preprocessing"
+      ],
+      "path": "data/raw/ftacv4-ref-1hz.txt"
+    },
+    {
+      "checks": {
+        "metadata_passed": false,
+        "numerical_passed": true,
+        "structure_passed": true
+      },
+      "dataset_id": "FT8",
+      "diagnostics": {
+        "amplitude_v": 0.15999999925539507,
+        "complete_cycles": 255,
+        "cycle_remainder": 0.99609375,
+        "dt_max_s": 0.0007900000000020668,
+        "dt_median_s": 0.0007799999999988927,
+        "dt_min_s": 0.000779,
+        "dt_nominal_s": 0.0007812500190737773,
+        "duration_s": 51.19922,
+        "frequency_hz": 4.999999877927828,
+        "max_gap_ratio": 1.0111999753147696,
+        "max_relative_jitter": 0.012820512824600427,
+        "max_timestamp_residual_samples": 0.006399902186010071,
+        "points_per_cycle": 256.0,
+        "sampling_rate_hz": 1279.999968749524,
+        "scan_rate_v_s": 0.01757839328793587,
+        "time_end": 51.19922,
+        "time_start": 0.0
+      },
+      "errors": {
+        "metadata": [
+          "instrument_preprocessing source is unresolved"
+        ],
+        "numerical": [],
+        "structure": []
+      },
+      "file_facts": {
+        "byte_count": 1674683,
+        "n_columns": 3,
+        "n_rows": 65536,
+        "sha256": "943d2406370be468c4a112a337c55d53ef16c43482b610915ca552723ae9be0d"
+      },
+      "metadata": {
+        "amplitude_v": {
+          "declared_value": null,
+          "resolved_value": 0.15999999925539507,
+          "source_kind": "derived",
+          "source_note": "Derived from applied-potential harmonic regression"
+        },
+        "continuous_forward_scan": {
+          "declared_value": true,
+          "resolved_value": true,
+          "source_kind": "derived",
+          "source_note": "Derived from monotonic time and positive DC trend"
+        },
+        "current_unit": {
+          "declared_value": "A",
+          "resolved_value": "A",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with A"
+        },
+        "frequency_hz": {
+          "declared_value": null,
+          "resolved_value": 4.999999877927828,
+          "source_kind": "derived",
+          "source_note": "Derived from detrended applied potential"
+        },
+        "instrument_preprocessing": {
+          "declared_value": null,
+          "resolved_value": null,
+          "source_kind": "unresolved",
+          "source_note": "No processing other than RHE correction was reported; existing files cannot independently verify filtering, smoothing, averaging, downsampling, cropping, background subtraction or iR compensation"
+        },
+        "potential_reference": {
+          "declared_value": "RHE",
+          "resolved_value": "RHE",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29 that potential was already corrected to RHE; declarant was not the original experiment operator"
+        },
+        "potential_unit": {
+          "declared_value": "V",
+          "resolved_value": "V",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator; companion CHI CV headers are consistent with V"
+        },
+        "scan_direction": {
+          "declared_value": "forward",
+          "resolved_value": "forward",
+          "source_kind": "derived",
+          "source_note": "Derived from positive fitted DC slope"
+        },
+        "scan_rate_v_s": {
+          "declared_value": null,
+          "resolved_value": 0.01757839328793587,
+          "source_kind": "derived",
+          "source_note": "Derived from joint ramp and harmonic regression"
+        },
+        "time_unit": {
+          "declared_value": "s",
+          "resolved_value": "s",
+          "source_kind": "externally_declared",
+          "source_note": "Project lead declaration dated 2026-07-29; declarant was not the original experiment operator"
+        }
+      },
+      "missing_metadata": [
+        "instrument_preprocessing"
+      ],
+      "path": "data/raw/ftacv8-ref-5Hz.txt"
+    }
+  ],
+  "gate_version": 1,
+  "schema_version": 1,
+  "thresholds": {
+    "expected_rows": 65536,
+    "max_amplitude_relative_error": 0.005,
+    "max_frequency_relative_error": 0.001,
+    "max_gap_ratio": 1.05,
+    "max_scan_rate_relative_error": 0.0005,
+    "max_timestamp_residual_samples": 0.01,
+    "min_complete_cycles": 20,
+    "min_points_per_cycle": 64.0
+  }
+}
