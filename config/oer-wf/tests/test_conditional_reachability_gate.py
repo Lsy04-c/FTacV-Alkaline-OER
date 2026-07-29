@@ -199,7 +199,7 @@ def test_v2_workflow_example_freezes_runtime_contract() -> None:
         yaml.safe_load(path.read_text(encoding="utf-8"))
     )
 
-    assert model.commit == "UNFROZEN"
+    assert model.commit == "fbda4cff248f498b29e1c054aaab2fcaab24e40f"
     assert model.supports_resume is True
     assert model.resume_required_files == [
         "task_spec.json",

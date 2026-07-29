@@ -262,8 +262,8 @@ validators:
 - `supports_resume: true` 时，`resume_required_files` 声明恢复前必须存在
   的 runner 文件；默认保持 `job_plan.json`，没有该文件的 runner 必须
   显式改为自己的冻结文件
-- 示例中的 `commit: UNFROZEN` 只用于本机集成测试；执行 `prepare` 前必须
-  换成通过本地验收的干净 commit
+- V2 示例已冻结到 compute commit `fbda4cff248f`；变更科学代码后必须
+  重新冻结 commit、重跑 smoke，不能沿用旧 spec hash
 
 ---
 

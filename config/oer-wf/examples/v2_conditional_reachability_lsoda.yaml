@@ -1,5 +1,5 @@
 task_name: "v2_conditional_reachability_lsoda"
-commit: "UNFROZEN"
+commit: "fbda4cff248f498b29e1c054aaab2fcaab24e40f"
 description: "V2 conditional M0 reachability for FT2/FT3/FT4/FT8 (LSODA)"
 
 python:

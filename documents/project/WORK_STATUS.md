@@ -1554,3 +1554,5 @@ H1-H7压力测试：
   结果报告，不改阈值。
 - 回归：oer-wf 93 项、Python 408 项、Web 3 项通过；Web 仅有既有
   Starlette 弃用警告，Markdown/布局审计和 `git diff --check` 通过。
+- compute commit：`fbda4cff248f498b29e1c054aaab2fcaab24e40f`；V2
+  TaskSpec 已绑定该提交，下一步为推送、Legion 部署和远端 smoke。

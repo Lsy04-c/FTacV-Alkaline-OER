@@ -340,8 +340,8 @@ RHS `1e-8`、覆盖度和守恒门不变。新 4×8 LSODA smoke 为 32/32 成功
 回退、98.45 s；snapshot 驱动的 `wf verify` 13 项检查全部通过。证据：
 `results/smoke/conditional_reachability/v2-oer-wf-local-smoke-3/`。
 
-当前边界：TaskSpec 的 commit 仍为 `UNFROZEN`。冻结干净计算 commit、
-部署 Legion、运行正式 512 基础候选和 512 stress job、同步及正式
+compute commit 已冻结为 `fbda4cff248f`，TaskSpec 已绑定该提交。部署
+Legion、运行正式 512 基础候选和 512 stress job、同步及正式
 `wf verify --rerun-best` 尚未完成，因此 V2 仍无科学分类。
 
 正式前压力测试已关闭两个工作流阻断点：V2 resume 现在声明
