@@ -316,21 +316,29 @@ sample 20 的 DC NRMSE 为 2.61%，超过 1% 门。正式 CSV 因两个参考
 - 锁相损失已拆成 common/dataset-specific 的 amplitude/phase 四个分量。
 - 1-trial Legion smoke 为 60 行，四模式调度一致且损失字段有限：
   - `results/smoke/architecture_validation/feature_mode_separation/`。
+- Gate A5 通道契约正式门已通过：
+  - 目标侧一次性冻结活动通道、SNR 权重、锁相掩码和损失分母；
+  - 候选侧缺失、形状错误或冻结点非有限时整次评价返回固定特征失败惩罚；
+  - ODE 失败与特征失败分别计数；
+  - 16 个数据集/模式记录及独立 validator 全部通过；
+  - `results/formal/feature_channel_contract/gate-a5-13adcb1/acceptance.md`。
 
 ### 文件总结
 
-`lockin_only` 与 `hybrid` 的代码语义现在可独立归因。现有 1-trial/3-trial
-smoke 只证明流程可运行，不是正式精度证据；不同模式的 `total_loss` 也
-不能直接横向排名。
+`lockin_only` 与 `hybrid` 的代码语义现在可独立归因。Gate A5 已证明
+候选不会改变观测集合、权重、掩码或分母；它仍不是正式精度证据，不同
+模式的 `total_loss` 不能直接横向排名。
 
 ### 未达成与路径规划
 
 1. 模式拆分和独立损失分量已完成。
-2. 下一步补齐有效通道、权重和缺失通道原因的正式证据字段。
+2. 有效通道、权重、锁相掩码、分母和缺失原因的正式证据已完成，
+   Gate A5 为 `PASS`。
 3. 固定参数库的 64/128/256/full-grid 特征与损失收敛已 PASS。
 4. 正式反演统一使用 128 点；优化随机性比较转入层级 B，不再重复用 TPE
    证明纯数值网格。
-5. Gate A5：模式可独立归因、损失口径冻结、网格收敛通过后，才能进入层级 B。
+5. Gate A5 已关闭，但 Gate A1 仍为 `FAIL_METADATA`，且 A6 多参数恢复
+   仍未关闭，因此不能进入真实数据正式反演或层级 B 精度结论。
 
 ### 纠错与失败路径
 
@@ -649,8 +657,8 @@ Web 可以保留基础开发，但不得先于核心 schema 成为科研主线�
 | C++ CN | 正式等价性门 FAIL，仅作快速筛选且须 LSODA 确认 | `code/cpp/src/oer_cn_solver.cpp` | 实验后端 |
 | 全局谐波 | 幅值和复数特征已实现 | `code/python/src/oer_aem/signal.py` | 已实现 |
 | 电位分辨锁相 | 核心相位错误已修复 | `code/python/src/oer_aem/signal.py` | 待真实重采样 |
-| 目标函数 | 多模式和分量输出已建立 | `code/python/src/oer_aem/inversion.py` | 待拆分模式 |
-| 网格 | 128 点为候选 | `code/python/scripts/compare_feature_grids.py` | 待扩大验证 |
+| 目标函数 | 通道、权重、掩码和分母已冻结并独立验收 | `results/formal/feature_channel_contract/gate-a5-13adcb1/acceptance.md` | Gate A5 PASS |
+| 网格 | 正式固定参数库门冻结 128 点 | `results/formal/feature_grid_convergence/gate-a5-grid-44a020e/` | PASS |
 | 可识别性 | 51-study CN 锁定确认三参数对全部 FAIL | `results/formal/identifiability/gate-a6-sobol-confirmation/acceptance.md` | Gate A6 多参数恢复停止 |
 | M1 重构 | 当前证据拒绝 | `code/python/scripts/compare_reconstruction_model.py` | 已形成否定结果 |
 | API | 基础任务接口存在 | `code/web/backend/main.py` | 非当前主线 |

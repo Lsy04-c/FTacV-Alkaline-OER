@@ -1,0 +1,22 @@
+{
+  "artifact_sha256": {
+    "candidate_invariance.jsonl": "4220976a20185efa1c9e45876bc3dedc32ff6d17255ae093e60724065071dc82",
+    "channel_contracts.jsonl": "a72e8699a0aa413e46893f96342590225cfb6284dc149b694f0fb225a9335564",
+    "gate_a5_summary.json": "9ee2d7547cae480cdd650b532f6cc44342562315e79f5a8542974096fb23123d"
+  },
+  "command": [
+    "code/python/scripts/audit_feature_channel_contracts.py",
+    "--output",
+    "results/formal/feature_channel_contract/gate-a5-13adcb1"
+  ],
+  "commit": "13adcb1ffa6f38feaee7b3951b0303489ac131ad",
+  "dirty": false,
+  "dirty_paths": [],
+  "gate_version": "A5",
+  "numpy_version": "2.4.6",
+  "python_version": "3.13.3",
+  "registry_path": "config/data-contracts/gate-a1-datasets.json",
+  "registry_sha256": "66029e4e227c8572658ede9497e055a0190edbce701c44264e49d31257572e05",
+  "runs_tpe": false,
+  "schema_version": 1
+}

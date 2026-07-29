@@ -1,0 +1,12 @@
+{
+  "contract_errors": {},
+  "contract_passed": true,
+  "eligible_for_tpe": false,
+  "gate": "PASS",
+  "gate_version": "A5",
+  "record_count": 16,
+  "schema_version": 1,
+  "structure_errors": [],
+  "structure_passed": true,
+  "unique_contract_hash_count": 10
+}

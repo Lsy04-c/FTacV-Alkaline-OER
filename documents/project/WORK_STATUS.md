@@ -1382,3 +1382,25 @@ H1-H7压力测试：
   仍为 `FAIL_METADATA`，真实数据正式反演继续禁止。
 - 完整验收：
   `results/formal/physics_invariants/gate-a2r-496a701/acceptance.md`。
+
+## 36. Gate A5 特征通道契约正式门（2026-07-29）
+
+- 实现提交：
+  - `1f6f18b`：构建目标侧不可变通道契约；
+  - `d5bce51`：候选按冻结通道评价，缺失值固定失败；
+  - `86704e6`：加入四数据集 × 四模式正式 runner；
+  - `13adcb1`：加入产物哈希和独立 validator。
+- 正式执行 commit：
+  `13adcb1ffa6f38feaee7b3951b0303489ac131ad`。
+- runner 与不导入 runner/反演模块的独立 validator 均为 `PASS`。
+- 16/16 个 `(dataset_id, feature_mode)` 记录完整；10 个唯一结构哈希。
+  legacy 和 lock-in-only 跨数据集结构相同时允许共享哈希。
+- 所有活动权重有限且严格正，所有非活动块具有合法排除原因，分母等于
+  活动损失权重和。
+- 16/16 个候选缺失注入均返回固定 `1e9` 惩罚，特征失败计数增加 1。
+- FT4、FT8 的 complex H3 因低于冻结 SNR 门而明确排除；这不等于实验中
+  不存在 H3。
+- 本门未运行 TPE，只关闭候选不变的观测/损失契约。A1 仍为
+  `FAIL_METADATA`，真实数据正式反演继续禁止。
+- 完整验收：
+  `results/formal/feature_channel_contract/gate-a5-13adcb1/acceptance.md`。
