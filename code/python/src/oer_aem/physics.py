@@ -415,14 +415,7 @@ def _oer_model_rhs(t: float, y: np.ndarray, params: Dict[str, Any]) -> np.ndarra
     # M0 uses fixed gamma. M1 is enabled only by beta_recon > 0.
     dphi_s = _surface_potential_derivative(rates, phi_s, params)
 
-    dydt = np.concatenate([dtheta, [dphi_s]])
-
-    # 非负约束：若某覆盖度接近 0 且导数为负，则阻止其继续减小
-    for i in range(5):
-        if y[i] <= 0 and dydt[i] < 0:
-            dydt[i] = 0.0
-
-    return dydt
+    return np.concatenate([dtheta, [dphi_s]])
 
 
 class OERPhysics:

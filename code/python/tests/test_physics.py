@@ -399,5 +399,26 @@ def test_full_m0_output_ignores_disabled_reconstruction_parameters():
         assert expected == pytest.approx(actual, rel=0.0, abs=0.0)
 
 
+def test_boundary_rhs_remains_stoichiometric():
+    params = initialize_oer_parameters()
+    time = 0.0726711360848602
+    state = np.array(
+        [
+            9.99999999e-01,
+            -1.75163948e-09,
+            2.92345112e-09,
+            -3.64983402e-16,
+            -5.85799201e-18,
+            7.58001327e-01,
+        ]
+    )
+    rates = elementary_rates(time, state, params)
+    expected = STOICHIOMETRIC_MATRIX @ rates.net
+    actual = OERPhysics.oer_model(time, state, params)
+
+    assert actual[:5] == pytest.approx(expected, rel=0.0, abs=0.0)
+    assert np.sum(actual[:5]) == pytest.approx(0.0, abs=1e-12)
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
