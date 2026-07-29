@@ -104,7 +104,7 @@ def initialize_oer_parameters() -> dict:
     params['beta_recon_range'] = [0.0, 5.0]
     params['E_recon_range'] = [1.40, 1.70]
     params['w_recon_range'] = [0.02, 0.15]
-    params['Ru_range'] = [0, 200]
+    params['Ru_range'] = [0.1, 500.0]
 
     # ==================== 衍生参数计算 ====================
     params['omega'] = 2 * np.pi * params['f']

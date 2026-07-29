@@ -16,7 +16,13 @@ from oer_aem import (
     OERObjective,
     initialize_oer_parameters,
 )
-from oer_aem.physics import effective_gamma
+from oer_aem.physics import (
+    STOICHIOMETRIC_MATRIX,
+    coverage_derivatives,
+    effective_gamma,
+    elementary_rates,
+    validate_physics_parameters,
+)
 
 
 def test_aem_thermodynamics():
@@ -213,6 +219,97 @@ def test_forward_current_is_stable_to_output_grid_refinement():
     )
 
     assert normalized_rmse < 0.05
+
+
+def test_stoichiometric_matrix_conserves_every_elementary_step():
+    assert STOICHIOMETRIC_MATRIX.shape == (5, 5)
+    assert np.sum(STOICHIOMETRIC_MATRIX, axis=0) == pytest.approx(
+        np.zeros(5), abs=0.0
+    )
+
+
+def test_coverage_derivatives_are_generated_by_stoichiometry():
+    params = initialize_oer_parameters()
+    state = np.array([0.15, 0.25, 0.20, 0.18, 0.22, 1.45])
+
+    rates = elementary_rates(0.17, state, params)
+    actual = coverage_derivatives(rates.net)
+
+    assert actual == pytest.approx(
+        STOICHIOMETRIC_MATRIX @ rates.net,
+        rel=0.0,
+        abs=0.0,
+    )
+    assert np.sum(actual) == pytest.approx(0.0, abs=1e-12)
+
+
+def test_elementary_rate_is_linear_only_in_its_own_k0():
+    params = initialize_oer_parameters()
+    state = np.array([0.15, 0.25, 0.20, 0.18, 0.22, 1.45])
+    reference = elementary_rates(0.17, state, params)
+    changed = dict(params)
+    changed["k0_2"] *= 10.0
+
+    candidate = elementary_rates(0.17, state, changed)
+
+    assert candidate.net[2] == pytest.approx(10.0 * reference.net[2])
+    assert np.delete(candidate.net, 2) == pytest.approx(
+        np.delete(reference.net, 2)
+    )
+
+
+def test_forward_reverse_ratio_increases_with_overpotential():
+    params = initialize_oer_parameters()
+    low_state = np.array([0.15, 0.25, 0.20, 0.18, 0.22, 1.40])
+    high_state = low_state.copy()
+    high_state[5] += 0.01
+
+    low = elementary_rates(0.17, low_state, params)
+    high = elementary_rates(0.17, high_state, params)
+
+    assert (
+        high.forward_constants / high.reverse_constants
+        > low.forward_constants / low.reverse_constants
+    ).all()
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("Ru", 0.0),
+        ("Cdl", 0.0),
+        ("A", -1.0),
+        ("gamma", -1e-9),
+        ("T", 0.0),
+        ("k0_3", -1.0),
+        ("a", -0.01),
+        ("a", 1.01),
+    ],
+)
+def test_parameter_domain_rejects_unsupported_values(name, value):
+    params = initialize_oer_parameters()
+    params[name] = value
+
+    with pytest.raises(ValueError, match=name):
+        validate_physics_parameters(params)
+
+
+def test_time_grid_contract_rejects_duplicate_or_out_of_range_points():
+    params = initialize_oer_parameters()
+    params["t_span"] = np.array([0.0, 0.5, 0.5, 1.0])
+    params["total_time"] = 1.0
+    with pytest.raises(ValueError, match="t_span"):
+        validate_physics_parameters(params, require_time_grid=True)
+
+    params["t_span"] = np.array([0.0, 0.5, 1.1])
+    with pytest.raises(ValueError, match="t_span"):
+        validate_physics_parameters(params, require_time_grid=True)
+
+
+def test_default_ru_range_excludes_singular_zero_resistance():
+    params = initialize_oer_parameters()
+
+    assert params["Ru_range"] == [0.1, 500.0]
 
 
 if __name__ == '__main__':

@@ -14,6 +14,7 @@
 """
 
 import warnings
+from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Dict, Any, Tuple, List
 
@@ -21,6 +22,18 @@ import numpy as np
 from scipy.integrate import solve_ivp
 
 from .thermodynamics import apply_alkaline_aem
+
+
+STOICHIOMETRIC_MATRIX = np.array(
+    [
+        [-1.0, 0.0, 0.0, 0.0, 0.0],
+        [1.0, -1.0, 0.0, 0.0, 1.0],
+        [0.0, 1.0, -1.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, -1.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0, -1.0],
+    ],
+    dtype=float,
+)
 
 
 def get_state_indices(N: int = 2) -> SimpleNamespace:
@@ -48,6 +61,83 @@ def get_param_list() -> List[str]:
         'gammaF_Cdl',                          # 22
         'n_points', 'total_time', 'N'          # 23-25
     ]
+
+
+def validate_physics_parameters(
+    params: Dict[str, Any],
+    *,
+    require_time_grid: bool = False,
+) -> None:
+    """Reject values outside the numerical domain of the current ODE model."""
+    strictly_positive = (
+        "Ru",
+        "Cdl",
+        "A",
+        "gamma",
+        "F",
+        "R",
+        "T",
+        "f",
+    )
+    nonnegative = (
+        "k0_pre",
+        "k0_1",
+        "k0_2",
+        "k0_3",
+        "k0_4",
+        "dE",
+    )
+    finite_fields = (
+        "E_start",
+        "v",
+        "E0_pre",
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+    )
+    for name in strictly_positive:
+        value = float(params[name])
+        if not np.isfinite(value) or value <= 0.0:
+            raise ValueError(f"{name} must be finite and strictly positive")
+    for name in nonnegative:
+        value = float(params[name])
+        if not np.isfinite(value) or value < 0.0:
+            raise ValueError(f"{name} must be finite and nonnegative")
+    for name in finite_fields:
+        if not np.isfinite(float(params[name])):
+            raise ValueError(f"{name} must be finite")
+    transfer = float(params.get("a", 0.5))
+    if not np.isfinite(transfer) or not 0.0 <= transfer <= 1.0:
+        raise ValueError("a must be finite and within [0, 1]")
+    beta = float(params.get("beta_recon", 0.0))
+    if not np.isfinite(beta) or beta < 0.0:
+        raise ValueError("beta_recon must be finite and nonnegative")
+    if beta > 0.0:
+        width = float(params.get("w_recon", np.nan))
+        if not np.isfinite(width) or width <= 0.0:
+            raise ValueError(
+                "w_recon must be finite and positive when beta_recon > 0"
+            )
+    if require_time_grid:
+        total_time = float(params["total_time"])
+        if not np.isfinite(total_time) or total_time <= 0.0:
+            raise ValueError(
+                "total_time must be finite and strictly positive"
+            )
+        grid = np.asarray(params["t_span"], dtype=float)
+        if (
+            grid.ndim != 1
+            or len(grid) < 2
+            or not np.all(np.isfinite(grid))
+            or np.any(np.diff(grid) <= 0.0)
+            or grid[0] < 0.0
+            or grid[-1] > total_time
+        ):
+            raise ValueError(
+                "t_span must be finite, strictly increasing, and within "
+                "[0, total_time]"
+            )
 
 
 def pack_parameters(params: Dict[str, Any]) -> np.ndarray:
@@ -87,6 +177,8 @@ def initialize_system(params: Dict[str, Any]) -> Dict[str, Any]:
     params.setdefault('R', 8.314)
     params.setdefault('T', 298.15)
 
+    validate_physics_parameters(params)
+
     # 衍生常数
     params['RTF'] = params['F'] / (params['R'] * params['T'])
     params['invRC'] = 1.0 / (params['Ru'] * params['Cdl'] * params['A'])
@@ -116,88 +208,132 @@ def effective_gamma(E, params):
     return gamma * (1.0 + beta / (1.0 + np.exp(-scaled)))
 
 
+@dataclass(frozen=True)
+class ElementaryRates:
+    """One instantaneous evaluation of the five elementary net rates."""
+
+    applied_potential: float
+    overpotentials: np.ndarray
+    forward_constants: np.ndarray
+    reverse_constants: np.ndarray
+    net: np.ndarray
+    normalized_coverages: np.ndarray
+    original_coverage_sum: float
+
+
+def elementary_rates(
+    t: float,
+    y: np.ndarray,
+    params: Dict[str, Any],
+    *,
+    validate: bool = True,
+) -> ElementaryRates:
+    """Evaluate the existing five-step BV kinetics without state derivatives."""
+    if validate:
+        validate_physics_parameters(params)
+    state = np.asarray(y, dtype=float)
+    if state.shape != (6,):
+        raise ValueError("physics state must contain six values")
+    coverage = state[:5].copy()
+    coverage_sum = float(np.sum(coverage))
+    if coverage_sum > 1e-12:
+        coverage /= coverage_sum
+    theta_star, theta_ox, theta_OH, theta_O, theta_OOH = coverage
+    phi_s = float(state[5])
+
+    E_dc = params["E_start"] + params["v"] * t
+    E_app = E_dc + params["dE"] * np.sin(params["omega"] * t)
+    overpotentials = np.array(
+        [
+            phi_s - params["E0_pre"],
+            phi_s - params["E01"],
+            phi_s - params["E02"],
+            phi_s - params["E03"],
+            phi_s - params["E04"],
+        ],
+        dtype=float,
+    )
+    RTF = params["RTF"]
+    a = params["a"]
+    b = 1.0 - a
+    k0 = np.array(
+        [
+            params["k0_pre"],
+            params["k0_1"],
+            params["k0_2"],
+            params["k0_3"],
+            params["k0_4"],
+        ],
+        dtype=float,
+    )
+    forward_exponents = b * RTF * overpotentials
+    reverse_exponents = -a * RTF * overpotentials
+    forward = np.array(
+        [
+            min(k0[index] * _safe_exp(value), 1e100)
+            if value < 600
+            else 1e100
+            for index, value in enumerate(forward_exponents)
+        ],
+        dtype=float,
+    )
+    reverse = np.array(
+        [
+            min(k0[index] * _safe_exp(value), 1e100)
+            if value < 600
+            else 1e100
+            for index, value in enumerate(reverse_exponents)
+        ],
+        dtype=float,
+    )
+    net = np.array(
+        [
+            forward[0] * theta_star - reverse[0] * theta_ox,
+            forward[1] * theta_ox - reverse[1] * theta_OH,
+            forward[2] * theta_OH - reverse[2] * theta_O,
+            forward[3] * theta_O - reverse[3] * theta_OOH,
+            forward[4] * theta_OOH - reverse[4] * theta_ox,
+        ],
+        dtype=float,
+    )
+    return ElementaryRates(
+        applied_potential=float(E_app),
+        overpotentials=overpotentials,
+        forward_constants=forward,
+        reverse_constants=reverse,
+        net=net,
+        normalized_coverages=coverage,
+        original_coverage_sum=coverage_sum,
+    )
+
+
+def coverage_derivatives(net_rates: np.ndarray) -> np.ndarray:
+    """Map five elementary rates to five coverage derivatives."""
+    rates = np.asarray(net_rates, dtype=float)
+    if rates.shape != (5,):
+        raise ValueError("net rates must contain five values")
+    return STOICHIOMETRIC_MATRIX @ rates
+
+
 def _oer_model_rhs(t: float, y: np.ndarray, params: Dict[str, Any]) -> np.ndarray:
     """ODE 右端函数（内部实现）。"""
     y = np.asarray(y, dtype=float)
-    theta_star = y[0]
-    theta_ox = y[1]
-    theta_OH = y[2]
-    theta_O = y[3]
-    theta_OOH = y[4]
     phi_s = y[5]
-
-    # 归一化覆盖度
-    theta_sum = theta_star + theta_ox + theta_OH + theta_O + theta_OOH
-    if theta_sum > 1e-12:
-        theta_star /= theta_sum
-        theta_ox /= theta_sum
-        theta_OH /= theta_sum
-        theta_O /= theta_sum
-        theta_OOH /= theta_sum
-
-    # 施加电位
-    E_dc = params['E_start'] + params['v'] * t
-    E_app = E_dc + params['dE'] * np.sin(params['omega'] * t)
-
-    # 模型假设：碱性微纳体系
-    a_OH = 1.0
-    a_H2O = 1.0
-
-    RTF = params['RTF']
-    a = params['a']
-    b = 1.0 - a
-
-    # 各步过电位
-    eta_pre = phi_s - params['E0_pre']
-    eta_1 = phi_s - params['E01']
-    eta_2 = phi_s - params['E02']
-    eta_3 = phi_s - params['E03']
-    eta_4 = phi_s - params['E04']
-
-    # BV 速率常数（safe_exp + 积截断，防止 k0·exp 双溢出）
-    _pre_fwd =  b * RTF * eta_pre; _pre_rev = -a * RTF * eta_pre
-    k_fwd_pre = min(params['k0_pre'] * _safe_exp(_pre_fwd), 1e100) if _pre_fwd < 600 else 1e100
-    k_rev_pre = min(params['k0_pre'] * _safe_exp(_pre_rev), 1e100) if _pre_rev < 600 else 1e100
-
-    _1_fwd =  b * RTF * eta_1; _1_rev = -a * RTF * eta_1
-    k_fwd_1 = min(params['k0_1'] * _safe_exp(_1_fwd), 1e100) if _1_fwd < 600 else 1e100
-    k_rev_1 = min(params['k0_1'] * _safe_exp(_1_rev), 1e100) if _1_rev < 600 else 1e100
-
-    _2_fwd =  b * RTF * eta_2; _2_rev = -a * RTF * eta_2
-    k_fwd_2 = min(params['k0_2'] * _safe_exp(_2_fwd), 1e100) if _2_fwd < 600 else 1e100
-    k_rev_2 = min(params['k0_2'] * _safe_exp(_2_rev), 1e100) if _2_rev < 600 else 1e100
-
-    _3_fwd =  b * RTF * eta_3; _3_rev = -a * RTF * eta_3
-    k_fwd_3 = min(params['k0_3'] * _safe_exp(_3_fwd), 1e100) if _3_fwd < 600 else 1e100
-    k_rev_3 = min(params['k0_3'] * _safe_exp(_3_rev), 1e100) if _3_rev < 600 else 1e100
-
-    _4_fwd =  b * RTF * eta_4; _4_rev = -a * RTF * eta_4
-    k_fwd_4 = min(params['k0_4'] * _safe_exp(_4_fwd), 1e100) if _4_fwd < 600 else 1e100
-    k_rev_4 = min(params['k0_4'] * _safe_exp(_4_rev), 1e100) if _4_rev < 600 else 1e100
-
-    # 各步速率（正向 - 反向）
-    r_pre = k_fwd_pre * theta_star * a_OH - k_rev_pre * theta_ox * a_H2O
-    r_1 = k_fwd_1 * theta_ox * a_OH - k_rev_1 * theta_OH
-    r_2 = k_fwd_2 * theta_OH * a_OH - k_rev_2 * theta_O * a_H2O
-    r_3 = k_fwd_3 * theta_O * a_OH - k_rev_3 * theta_OOH
-    r_4 = k_fwd_4 * theta_OOH * a_OH - k_rev_4 * theta_ox * a_H2O
-
-    # 覆盖度演化
-    dtheta_star = -r_pre
-    dtheta_ox = r_pre - r_1 + r_4
-    dtheta_OH = r_1 - r_2
-    dtheta_O = r_2 - r_3
-    dtheta_OOH = r_3 - r_4
+    rates = elementary_rates(t, y, params, validate=False)
+    dtheta = coverage_derivatives(rates.net)
 
     # 表面电位演化
     # M0 uses the canonical fixed gamma. M1 is enabled only by beta_recon > 0.
-    gamma_eff = float(effective_gamma(E_app, params))
+    gamma_eff = float(effective_gamma(rates.applied_potential, params))
     gammaF_Cdl_eff = gamma_eff * params['F'] / params['Cdl']
 
-    r_elec_sum = r_pre + r_1 + r_2 + r_3 + r_4
-    dphi_s = (E_app - phi_s) * params['invRC'] - gammaF_Cdl_eff * r_elec_sum
+    r_elec_sum = float(np.sum(rates.net))
+    dphi_s = (
+        (rates.applied_potential - phi_s) * params["invRC"]
+        - gammaF_Cdl_eff * r_elec_sum
+    )
 
-    dydt = np.array([dtheta_star, dtheta_ox, dtheta_OH, dtheta_O, dtheta_OOH, dphi_s])
+    dydt = np.concatenate([dtheta, [dphi_s]])
 
     # 非负约束：若某覆盖度接近 0 且导数为负，则阻止其继续减小
     for i in range(5):
@@ -235,6 +371,7 @@ class OERPhysics:
         """求解 ODE 系统，返回 (t, y, E_actual, i_total)。"""
         if 'RTF' not in params:
             params = initialize_system(params)
+        validate_physics_parameters(params, require_time_grid=True)
 
         num_states = 6
         y0 = np.zeros(num_states)
