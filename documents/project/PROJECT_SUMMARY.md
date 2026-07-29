@@ -1,763 +1,434 @@
-# OER-FTAcV 项目目标与架构优先路线
+# OER-FTAcV 项目总览、架构与交接
 
 更新日期：2026-07-29
-项目负责人：刘拾玉
-当前分支：`codex/reclassify-project`（正式版本以 `WORK_STATUS.md` 记录的
-commit 和归档 snapshot 为准）
+负责人：刘拾玉
+当前分支：`codex/reclassify-project`
 
-> 本文是项目目标、完成定义和后续路线的唯一总入口。
-> 历史执行记录见 `WORK_STATUS.md`，阶段纠错见 `documents/corrections/项目纠错.md`，具体实施步骤见 `documents/plans/`。
+> 本文是项目唯一总入口，保存当前架构、接口、正式结论、未完成目标和交接
+> 方法。历史执行过程见 `WORK_STATUS.md`，当前行动步骤见
+> `documents/plans/2026-07-29-vacation-and-post-experiment-roadmap.md`。
 
----
+## 1. 当前一句话状态
 
-## 1. 项目目标
+项目的物理正演、谐波特征、目标函数契约和计算工作流已经形成可验证底座；
+现有四组 FTacV 数据可用于条件模型分析，但关键实验元数据尚未完全追溯，
+且当前参数组合没有通过合成恢复门，因此暂时不能报告正式真实数据反演参数。
 
-### 1.1 科学目标
-
-建立一套可验证、可复现的碱性 OER FTacV 微观动力学反演方法，将实验电流转换为具有明确可信边界的动力学与热力学信息：
-
-```text
-实验 FTacV 数据
-→ 数据与采样契约
-→ AEM 正演模型
-→ 谐波特征
-→ 参数反演
-→ 可识别性与不确定度
-→ 对反应控制因素的有限度解释
-```
-
-项目最终需要回答：
-
-1. 当前数据能稳定识别哪些参数？
-2. 哪些参数只能固定、给范围或报告下限？
-3. 哪些谐波和电位区间提供独立信息？
-4. 不同数据集的差异来自动力学、热力学，还是实验与模型偏差？
-5. 结论在数值误差、随机种子和实验重复性下是否仍成立？
-
-### 1.2 工程目标
-
-形成一个可复用的 Python 计算核心，并在核心可信后接入 Web 工作台。系统至少支持：
-
-- 真实 FTacV 数据导入与元数据验证；
-- AEM 正演及覆盖度、电位、电流输出；
-- DC、全局复数谐波和电位分辨锁相特征；
-- 可选择且可追踪的目标函数；
-- 参数反演、失败统计和结果复算；
-- 敏感性、耦合、边界命中和不确定度报告；
-- 结果、配置、代码提交和计算环境追溯。
-
-### 1.3 当前主线
-
-当前主线不是继续扩展机理，也不是直接追求更低拟合损失，而是：
+当前主线：
 
 ```text
-先完成底层架构
-→ 冻结可信正演与特征接口
-→ 再提高反演精度
-→ 最后建立置信度并形成科学结论
+休假期间：现有数据的条件模型可达性与残差归因
+→ 形成解除参数耦合的实验设计
+→ 恢复实验后补齐独立约束与结构化数据
+→ 重开 A6-v2 合成恢复
+→ 通过后再做正式联合反演和置信度
 ```
 
-正式 TPE 比较必须等待底层架构 Gate A 全部通过。
+当前不是主线：
 
----
+- 继续增加 TPE trials；
+- 为获得 PASS 更换优化器、扩大边界或放宽阈值；
+- 把四组不同实验当作重复实验平均；
+- 继续扩展复杂机理；
+- 用 C++ CN 结果承担正式科学结论；
+- 报告未经恢复门验证的参数点估计。
 
-## 2. 完成本项目需要达成的目标
+## 2. 项目目标与科学边界
 
-项目分为三层。每一层通过后，下一层才能成为主线。
+### 2.1 科学目标
 
-| 层级 | 目标 | 完成定义 | 当前状态 |
-|---|---|---|---|
-| A | 底层架构可用 | 数据、物理、求解器、信号、特征、目标函数和证据链均有独立测试 | 进行中 |
-| B | 反演精度提高 | 新方法在统一预算下优于或不劣于可信基线，并能解释增益来源 | 未开始正式评价 |
-| C | 置信度验证 | 参数结论具有数值、优化和实验不确定度，结论可重复 | 未完成 |
+建立可验证、可复现的碱性 OER FTacV 微观动力学方法，回答：
 
-“代码可以运行”不等于完成；“一次拟合更好”也不等于精度提高。
+1. 当前实验条件能约束哪些参数或参数组合；
+2. 哪些参数必须由独立实验固定或给先验范围；
+3. DC、不同谐波和不同电位区间各自提供什么信息；
+4. 模型不能拟合时，问题来自机理、背景、电位标尺还是数据处理；
+5. 参数结论在求解误差、优化随机性和实验变化下是否稳定。
 
----
+### 2.2 工程目标
 
-# 3. 层级 A：完成底层代码架构
+形成可复用的 Python 核心和远程工作流，支持严格数据导入、AEM 正演、
+复数谐波与 lock-in、冻结目标、敏感性/profile/合成恢复、失败分层及
+commit/配置/环境/结果哈希追溯；科学核心可信后再完成 Web 交付。
 
-## A1. 数据与采样契约
+### 2.3 科学结论等级
 
-### 目标
+结果按实现事实、数值事实、条件科学结论、正式反演结论和机理结论分级。
+当前只允许前三类；拟合损失降低不能升级为参数真实性或机理证明。
 
-保证每个实验文件进入模型前具有正确的列、单位、时间轴、电位轴、扫描方向、基频、采样率和扫描速率。
+## 3. 系统架构与数据流
 
-### 已完成
-
-- 数据加载与基础分析：
-  - `code/python/src/oer_aem/io.py`
-  - `code/python/src/oer_aem/data_contract.py`
-  - `code/python/scripts/analyze_data_quality.py`
-- 四组数据 FT2、FT3、FT4、FT8 已完成基础质量诊断：
-  - `results/diagnostics/data_quality/`
-- 残差的电位网格和符号契约已统一：
-  - `code/python/scripts/residual_diagnostics.py`
-  - `results/formal/architecture_validation/residual_contract.csv`
-
-### 文件总结
-
-`data_contract.py` 负责把原始数组转换为可验证的数据结构；`residual_diagnostics.py` 检查实验与模拟是否在同一电位口径下比较。FT4 已按实测低扫描速率处理，不能仅因 1 Hz 基频排除。
-
-### 未达成与路径规划
-
-1. 四个真实文件的固定 schema、哈希、时间单调性和采样字段已通过正式
-   审计；严格入口禁止静默排序、去重、裁剪和插值。
-2. 独立 validator 已重算文件结构、采样指标、元数据来源和 runner 结果。
-3. Gate A1 当前为 `FAIL_METADATA`：四份数据均缺少三列单位、电位参考和
-   仪器预处理的一手记录。
-4. 获得可追溯的仪器导出说明或实验记录后，只允许更新元数据来源并重跑
-   同一数值门；在此之前禁止真实数据正式反演。
-5. 正式证据：
-   `results/formal/data_contract/gate-a1-a57d42f/acceptance.md`。
-
-### 纠错与失败路径
-
-- 若文件格式不统一：先增加显式适配器，不在分析脚本中隐式猜列。
-- 若扫描速率无法从数据可靠恢复：标记 `metadata_unresolved`，不使用假定值替代。
-- 若数据方向不同：保留原始顺序并显式分支，不用排序掩盖回扫。
-
----
-
-## A2. 物理模型与参数系统
-
-### 目标
-
-建立含预氧化步骤的五步 AEM 正演模型，并证明方程、单位、参数变换和物理不变量正确。
-
-### 已完成
-
-- AEM 状态方程与总电流：
-  - `code/python/src/oer_aem/physics.py`
-- 热力学标度关系：
-  - `code/python/src/oer_aem/thermodynamics.py`
-- 默认参数及统一入口：
-  - `code/python/src/oer_aem/defaults.py`
-  - `code/python/src/oer_aem/core.py`
-- 参数编码、解码和边界：
-  - `code/python/src/oer_aem/inversion.py`
-- M0 与最小重构 M1 已做初步对照，M1 未通过多数数据门：
-  - `code/python/scripts/compare_reconstruction_model.py`
-  - `results/formal/architecture_validation/reconstruction_model_comparison.csv`
-- 五步速率已由固定化学计量矩阵生成，参数域、稳态、电流三分量和完整 M0
-  回退已有独立测试。
-- Gate A2 首次正式归档：
-  - `results/formal/physics_invariants/gate-a2-6486d69/acceptance.md`
-  - 结论：`FAIL_NUMERICAL`
-- Gate A2-R 守恒积分修复归档：
-  - `results/formal/physics_invariants/gate-a2r-496a701/acceptance.md`
-  - 结论：`PASS`
-
-### 文件总结
-
-当前主模型为固定活性位密度的 M0。M1 只作为被拒绝的候选假设保留，不能写成已证明的表面重构机制。
-
-### 未达成与路径规划
-
-1. A2-R 已删除破坏守恒的逐分量投影，并冻结覆盖度/电位分量绝对容差。
-2. 11 个常规案例保持 LSODA；`thermo-edge` 通过显式、留痕的 BDF 回退
-   完成，并通过独立 Radau 交叉验证。
-3. 12 个案例的覆盖度、守恒、电流闭合、稳态、热力学、冻结基线和 M0
-   回退全部通过原阈值。
-4. Gate A2 数值修复路径关闭；下一步继续底层架构主线，不新增机理。
-5. A1 元数据仍未关闭，因此 A2-R PASS 不授权真实数据正式反演。
-
-### 纠错与失败路径
-
-- 覆盖度越界：先定位方程或数值约束，不通过裁剪输出掩盖。
-- 单调性不符：先检查单位、指数符号和参数映射，再讨论机理缺项。
-- M0 无法解释结构残差：只有在数据、求解器和特征层均通过后，才允许测试一个最小新增物理项。
-
----
-
-## A3. 数值求解器与后端一致性
-
-### 目标
-
-建立可信参考求解器和快速求解器，保证加速不改变下游科学特征。
-
-### 已完成
-
-- LSODA 参考路径：
-  - `code/python/src/oer_aem/physics.py`
-- C++ Crank–Nicolson 求解器与 Python bridge：
-  - `code/cpp/src/oer_cn_solver.cpp`
-  - `code/python/src/oer_aem/cpp_bridge.py`
-- 显式后端选择：
-  - `solver_backend=auto|cn|lsoda`
-  - `code/python/src/oer_aem/inversion.py`
-- CN 与 LSODA 已统一稳态初值；`cn` 失败时禁止静默回退。
-- 下游特征等价性脚本：
-  - `code/python/scripts/validate_solver_equivalence.py`
-- 本机压力测试结果：
-  - 32 points/cycle：高次谐波失败；
-  - 64 points/cycle：6 样本仍有失败；
-  - 128 points/cycle：6 样本通过。
-- Legion 正式门已按预注册配置完成：
-  - commit `1becc125311e`；
-  - 24 samples、seed 17、256 cycles、128 points/cycle；
-  - 正式证据：`results/formal/solver_equivalence/formal-1becc12/`；
-  - Gate A3 结果：**FAIL**。
-- 预注册失败路径的 256 points/cycle 独立门也已完成：
-  - commit `a4581dea2d8`；
-  - 168 行完整，LSODA/CN 均成功且指标有限；
-  - 仍有 22 项锁相相位误差超阈值，包含低阶 H2/H3；
-  - 正式证据：`results/formal/solver_equivalence/formal-a4581de-ppc256/`；
-  - Gate A3 结果：**FAIL**。
-
-### 文件总结
-
-旧 C++ 内部稳态 Newton 会给出错误初值，造成约 18.5% 总电流
-NRMSE。统一初值后，本机 6 样本测试曾通过，但 24 样本正式门未通过：
-LSODA 在 sample 12、21 失败；有效样本中有 15 项锁相相位超阈值，
-sample 20 的 DC NRMSE 为 2.61%，超过 1% 门。正式 CSV 因两个参考
-求解失败只有 156 行，而不是预期 168 行。LSODA 初始步修复后，
-256 points/cycle 的完整门不再缺行且 DC 通过，但仍有 22 项锁相相位
-失败，说明主要偏差不是输出采样密度不足。因此 CN 不能进入正式搜索。
-
-### 未达成与路径规划
-
-1. 将 Gate A3 保持为 FAIL，正式 TPE 继续使用 LSODA。
-2. sample 12、21 的 LSODA 直接失败机制已定位为高速率参数组合下自动
-   初始步长路径不稳定；显式 `first_step=1e-8` 后固定 24 样本全部完成
-   且无警告。更广参数空间的充分性未经验证，该修复不改变原 Gate A3 的
-   FAIL。
-3. 256 points/cycle 独立门已按原阈值完成并 FAIL；停止继续提高采样密度
-   作为修复手段。
-4. 当前底层架构冻结 LSODA 为唯一正式后端。CN 转为隔离的实验后端；
-   只有重新诊断离散方程/相位传播并通过新预注册门后才能恢复。
-
-### 纠错与失败路径
-
-- 正式门失败：不调整阈值；128 和 256 points/cycle 均失败后，不再继续
-  用提高采样密度替代算法诊断。
-- 仅弱谐波相位失败：保留原始数值，按预注册 2% 可解析性规则判断，不事后改变阈值。
-- 总电流或 H1–H3 失败：CN 不进入正式反演，继续使用 LSODA。
-- 动态库与源码提交不一致：整次结果作废并重算。
-
----
-
-## A4. 信号与谐波提取
-
-### 目标
-
-保证 DC、H1–H7 幅值、复数响应和相位具有统一的数学定义与应用电位参考。
-
-### 已完成
-
-- FFT 与锁相实现：
-  - `code/python/src/oer_aem/signal.py`
-  - `code/python/src/oer_aem/features.py`
-- 应用电位参考相位、I/Q 约定和复数域相位插值已修复：
-  - 提交 `f43e441`
-- 合成信号 H1–H7 压力测试：
-  - 最大幅值误差 0.29%；
-  - 最大相位误差 0.0029 rad；
-  - 峰位误差小于 5 mV。
-- 四个真实数据集已完成无警告诊断：
-  - `code/python/scripts/validate_potential_resolved_harmonics.py`
-  - `results/diagnostics/potential_resolved_harmonics/harmonic_diagnostics.json`
-- 四个真实数据集的正式稳定性门已通过：
-  - 抗混叠 2×/4×降采样；
-  - 单端 10% 记录截断；
-  - 112 行完整，60 行进入信号门评价；
-  - 最坏被评价幅值 NRMSE 0.411%，最坏相位 RMSE 0.0181 rad；
-  - `results/formal/harmonic_stability/gate-a4-6848613/`。
-
-### 文件总结
-
-锁相结果现在参考实测或已知应用电位基频，不再参考数组起点。`complex`、幅值和相位约定一致，有效区剔除滤波边缘。
-
-### 未达成与路径规划
-
-1. 合法重采样和记录长度比较已完成，Gate A4 为 PASS。
-2. 峰位漂移、相位环绕差、有效区比例和独立电位区间数已进入正式证据。
-3. 下一步分离真正的 `lockin_only` 与包含全局复数特征的 `hybrid`。
-4. 锁相特征可以进入 A5 正式精度比较，但不可把信号稳定性写成精度增益。
-
-### 纠错与失败路径
-
-- 相位随起始时间变化：回到参考相位定义，不用相位平移常数补偿。
-- 峰位随滤波设置漂移：降低电位分辨率声明或放弃该数据集的局部峰位。
-- H4–H7 低于噪声或可解析性门：保留诊断，不强制加入共同目标。
-
----
-
-## A5. 特征、目标函数与损失分解
-
-### 目标
-
-建立接口清晰、量纲可解释、分量可追踪的目标函数，避免单一总损失掩盖局部失败。
-
-### 已完成
-
-- legacy、Complex-SNR 和当前 `lockin_only` 模式：
-  - `code/python/src/oer_aem/inversion.py`
-  - `code/python/scripts/compare_feature_objectives.py`
-- 目标函数已区分：
-  - DC；
-  - 共同谐波；
-  - 数据特有谐波；
-  - 物理约束。
-- `feature_grid_size` 与损失点数尺度已修正：
-  - `code/python/scripts/compare_feature_grids.py`
-  - `results/formal/architecture_validation/grid_convergence.csv`
-- 固定参数库正式网格门已通过：
-  - 四模式 × 64/128/256/full × 8 候选，共 128 行；
-  - 128 vs full 最坏总损失误差 1.18%，共同 DC/H1–H3 均小于 0.4%；
-  - 四模式损失排序 Spearman 均为 1.0；
-  - 后续冻结 `feature_grid_size=128`；
-  - `results/formal/feature_grid_convergence/gate-a5-grid-44a020e/`。
-- 模式语义已严格拆分：
-  - `legacy`；
-  - `complex_snr`；
-  - 真正不含全局复数项的 `lockin_only`；
-  - 同时包含全局复数和锁相项的 `hybrid`。
-- 锁相损失已拆成 common/dataset-specific 的 amplitude/phase 四个分量。
-- 1-trial Legion smoke 为 60 行，四模式调度一致且损失字段有限：
-  - `results/smoke/architecture_validation/feature_mode_separation/`。
-- Gate A5 通道契约正式门已通过：
-  - 目标侧一次性冻结活动通道、SNR 权重、锁相掩码和损失分母；
-  - 候选侧缺失、形状错误或冻结点非有限时整次评价返回固定特征失败惩罚；
-  - ODE 失败与特征失败分别计数；
-  - 16 个数据集/模式记录及独立 validator 全部通过；
-  - `results/formal/feature_channel_contract/gate-a5-13adcb1/acceptance.md`。
-
-### 文件总结
-
-`lockin_only` 与 `hybrid` 的代码语义现在可独立归因。Gate A5 已证明
-候选不会改变观测集合、权重、掩码或分母；它仍不是正式精度证据，不同
-模式的 `total_loss` 不能直接横向排名。
-
-### 未达成与路径规划
-
-1. 模式拆分和独立损失分量已完成。
-2. 有效通道、权重、锁相掩码、分母和缺失原因的正式证据已完成，
-   Gate A5 为 `PASS`。
-3. 固定参数库的 64/128/256/full-grid 特征与损失收敛已 PASS。
-4. 正式反演统一使用 128 点；优化随机性比较转入层级 B，不再重复用 TPE
-   证明纯数值网格。
-5. Gate A5 已关闭，但 Gate A1 仍为 `FAIL_METADATA`，且 A6 多参数恢复
-   仍未关闭，因此不能进入真实数据正式反演或层级 B 精度结论。
-
-### 纠错与失败路径
-
-- 新模式只能降低总损失但恶化 H1–H3：判定失败。
-- 网格点增加导致损失机械增加：修正归一化，不比较未同构结果。
-- 权重依赖候选模拟参数：视为目标漂移，禁止进入正式评价。
-
----
-
-## A6. 可识别性与参数分类
-
-### 目标
-
-在真实反演前确定哪些参数值得自由拟合，避免优化器用参数补偿制造虚假机理解释。
-
-### 已完成
-
-- 敏感性矩阵、参数分类和合成恢复：
-  - `code/python/src/oer_aem/identifiability.py`
-  - `code/python/src/oer_aem/importance.py`
-  - `results/formal/architecture_validation/sensitivity_matrix.csv`
-  - `results/formal/architecture_validation/parameter_classification.csv`
-  - `results/formal/architecture_validation/synthetic_recovery.json`
-- 带符号中心差分和耦合方向：
-  - `results/formal/architecture_validation/signed_sensitivity.csv`
-  - `results/formal/architecture_validation/coupling_direction.csv`
-- 单参数设计实验可恢复 `k0_1`，但多参数动力学常数仍高度耦合。
-
-### 文件总结
-
-现有结果支持“部分参数可恢复”，不支持“全部动力学参数均可由当前数据唯一确定”。热力学参数比动力学常数更稳定。
-
-### 未达成与路径规划
-
-1. 真实中心差分、模式特征拆分和共同可用通道契约已实现；commit
-   `cf33eba` 的四模式正式敏感性已通过 schema、有限值、哈希和模式差异验收。
-2. 八参数全自由的 36-study 预算校准已 Scientific FAIL，不再启动其
-   72-study 正式恢复。
-3. 当前待验证的缩减自由集为 `k0_1,k0_2,k0_3,G_OH,G_O`；
-   `k0_4/scaling_OOH_OH/A/gamma` 进入固定或窄先验候选。
-4. recovery runner 已支持显式自由参数子集；条件恢复中其余参数取每个
-   synthetic truth 的对应值，优化器不以真值初始化。
-5. 五参数预算 pilot 已 Scientific FAIL：20/50 trials 均不稳定，100 trials
-   下 `k0_1` 在四模式均未被 seed 范围覆盖，不启动 72-study 正式恢复。
-6. 单参数 objective profile 已完成：20 个 profile 的 truth 均为全局最小，
-   但 `k0_1` 在四模式均存在宽广近简并区，从自由参数候选移除。
-7. `k0_2,k0_3,G_OH,G_O` 在 hybrid/lockin-only 下进入选择性的两参数
-   profile，区分剩余非线性耦合与 TPE 搜索不足。
-8. A6 recovery runner 已增加严格job级断点续跑：原子检查点、稳定输入
-   哈希、运行级科学指纹和损坏结果拒绝；`oer-wf 0.6.4` 可用明确时间戳恢复。
-   A6默认并行度改为8 workers。本机测试、Legion首次smoke和原目录恢复均已通过。
-9. 将参数正式分类为固定、窄先验、自由反演、仅范围或不可识别。
-10. Gate A6：最小自由参数集通过恢复门后，正式真实数据 TPE 才能启动。
-11. commit `a7bc9e4` 的三参数正式合成恢复已完成：基础设施PASS，但科学
-    Gate FAIL。72/72 study成功执行，只有47/72个组—参数组合的seed范围覆盖
-    真值；无噪声也只有24/36覆盖。`k0_2,k0_3,G_O`不能作为当前正式联合
-    自由集，真实数据TPE继续暂停。证据位于
-    `results/formal/identifiability/gate-a6-reduced-recovery-a7bc9e4/`。
-12. Stage 1 CN 单参数恢复已按冻结 v1 门完成并保持 scientific FAIL。
-    后续审计确认 seed 范围覆盖不是可靠精度门，已设计显式 v2：按 mode
-    分层约束归一化误差、seed 极差、边界和 study 状态。
-13. 现有归档的 v2 离线复核筛出共同候选 `hybrid`；这只允许进入
-    Stage 2 多参数 CN 筛选，不构成联合恢复 PASS。通过后仍需 LSODA
-    同配置确认。
-14. Stage 2 三个两参数 `hybrid` CN 任务均 scientific FAIL，停止
-    三参数扩展与 LSODA 复核。54/54 个 study 的真值 objective 都优于
-    TPE 最优，说明当前首要缺口是 100-trial TPE 未找到狭窄真值盆地，
-    不能直接把失败解释为结构不可识别。
-15. 下一步保持 100 次 forward-evaluation 预算和 v2 恢复门不变，比较
-    不使用 synthetic truth 初始化的全局—局部混合优化算法。只有新算法
-    在预注册代表性基准中优于 TPE，才允许重做完整两参数恢复。
-16. 固定预算开发门已完成：9 个 `center/no-noise/seed-7` study、
-    900 次 optimization call 全部通过结构和数值验收；`sobol_pattern`
-    在三个参数对的全部参数上均满足误差 `<=0.05`，冻结为唯一确认候选。
-    `de_fixed` 最坏误差 0.050948，未过门；TPE 保留为基线。
-17. 当前只允许运行排除三个开发案例后的 51-study CN 锁定确认集。开发门
-    PASS 不等于联合可识别；确认集通过的参数组合仍需 LSODA 同配置复核，
-    Gate A6 关闭前真实数据正式反演继续暂停。
-18. 51-study 锁定确认集三个参数对均未通过 Recovery Gate v2，eligible
-    pairs 为空；按预注册路线停止 LSODA 复核、三参数扩展和真实数据 TPE。
-19. 参数角色已由 commit `75e25ed` 冻结并独立复验：`fixed=8`、
-    `diagnostic_only=5`、`free=0`、`narrow_prior=0`，
-    `eligible_for_real_inversion=false`。正式验收位于
-    `results/formal/identifiability/gate-a6-closure-75e25ed/acceptance.md`。
-20. Gate A6 当前科学状态为 `FAIL_RECOVERY`。关闭归档的 validator
-    `PASS` 只证明角色和证据链自洽，不表示参数恢复通过；`fixed` 不表示
-    已知准确，`diagnostic_only` 不表示数学结构不可识别。
-
-### 纠错与失败路径
-
-- 参数持续命中边界：不继续扩边界，先判定不可识别或先验不合理。
-- 两参数响应近共线：固定其中一个、重参数化或只报告组合量。
-- 合成数据无法恢复：不得在真实数据中解释该参数的点估计。
-
----
-
-## A7. 反演执行、证据链与复现
-
-### 目标
-
-保证每次反演可重跑、可中断、可验收，并能追溯到唯一代码和环境。
-
-### 已完成
-
-- TPE 反演核心与结果结构：
-  - `code/python/src/oer_aem/inversion.py`
-- 实验比较脚本与基础 manifest：
-  - `code/python/scripts/compare_feature_objectives.py`
-  - `code/python/scripts/build_validation_manifest.py`
-  - `results/formal/architecture_validation/run_manifest.json`
-- 计算环境分工已确定：
-  - Mac：代码、测试、文档和 Git；
-  - Legion：正式长计算。
-- 本地已实现 `oer-wf 0.6.3` 的任务准备、smoke、systemd 启动、状态、
-  同步、通用验收和清理流程，49 项测试通过；新增确定性的 A7 基础设施
-  smoke 入口，避免用科学计算失败替代工作流验收。
-- wrapper 已支持 `spec_hash` 和跨进程文件信号，能区分
-  `SUCCESS`、`FAIL_NUMERICAL` 与 `FAIL_INFRA`。
-- DeepSeek 计算交付协议已建立：
-  - `documents/specifications/deepseek-compute-delivery-acceptance.md`
-  - 强制保存冻结任务规格、原始数据、日志、环境、manifest 和文件哈希；
-  - Codex 只在独立验收后接受结果和更新科学结论。
-
-### 未达成与路径规划
-
-1. ✅ Gate A7 已于 2026-07-27 关闭（PASS）：commit `cbbcda5`，
-   全链路 doctor→prepare→smoke→run→status→sync→verify 在真实 Legion
-   通过，故障注入（数值失败/缺文件/哈希冲突）均按协议正确分类和停止。
-2. 将 DeepSeek 协议中的 manifest、handoff 和验收文件生成过程脚本化。
-
-### 纠错与失败路径
-
-- 脚本、解释器和动态库来自不同工作树：结果无效。
-- smoke 输出覆盖正式基线：从版本库恢复正式结果，smoke 写入独立目录。
-- 进程结束但缺少完整输出：判定失败，不按日志最后一行推断成功。
-
----
-
-## A8. API 与 Web 外壳
-
-### 目标
-
-在计算核心稳定后，为数据分析和反演提供可操作界面；前端不得拥有独立科学逻辑。
-
-### 已完成
-
-- FastAPI 基础接口及反演任务接口：
-  - `code/web/backend/main.py`
-  - `code/web/tests/backend/test_analyze_e2e.py`
-  - `code/web/tests/backend/test_inversion_api.py`
-- React/Vite 基础工程：
-  - `code/web/frontend/`
-
-### 未达成与路径规划
-
-1. 等待 A1–A7 的 schema 冻结。
-2. API 只封装核心模块，不复制参数变换和特征算法。
-3. 增加任务状态、取消、失败原因、结果下载和 provenance 展示。
-4. 前端展示损失分解、参数边界、可识别性和置信区间。
-5. Gate A8：同一输入通过 CLI 与 API 产生一致结果。
-
-### 纠错与失败路径
-
-- 核心 schema 未冻结：暂停 UI 扩展，避免重复返工。
-- API 与 CLI 结果不同：以 Python 核心为唯一实现，删除重复逻辑。
-- 界面只展示最优曲线：补充失败、边界和不确定度信息后才可用于科研汇报。
-
----
-
-# 4. 层级 B：提高反演精度
-
-层级 B 只能在 A1–A7 通过后启动。目标不是让某一次损失更低，而是在同一数据、参数边界、随机种子和计算预算下获得可重复增益。
-
-## B1. 冻结可信基线
-
-### 路径
-
-1. 固定数据版本、M0 模型、LSODA 复算、自由参数集和采样设置。
-2. 重算 legacy 基线，不沿用旧 12/32 点混合证据。
-3. 保存每种子损失、参数、边界命中、失败数和运行时间。
-
-### 验收
-
-- 基线 manifest 完整；
-- 所有模式共享相同预算与初值；
-- smoke 与 formal 结果物理隔离。
-
-## B2. 单变量比较特征方法
-
-### 路径
-
-1. 比较 `legacy` 与 `complex_snr`。
-2. 比较 `legacy` 与真正的 `lockin_only`。
-3. 只有独立模式提供互补信息时，才测试最小 `hybrid`。
-4. 每次只改变特征定义，不同时改变网格、参数边界或优化器。
-
-### 验收
-
-- 合成参数恢复误差不劣于 legacy；
-- 共同 H1–H3 不显著恶化；
-- 边界命中和失败率不增加；
-- 增益在多个种子中存在。
-
-## B3. 优化效率
-
-### 路径
-
-1. CN 通过 Gate A3 后用于候选搜索。
-2. 最优候选和近优候选使用 LSODA 复算。
-3. 再评估 workers、pruner 和 `rtol=1e-5`；每项单独验证。
-4. C++ 核心已足够时，不优先投入 Numba RHS。
-
-### 验收
-
-- 加速前后入选参数和下游特征保持门内一致；
-- wall time 明确下降；
-- 失败率不升高；
-- 不用更宽容的数值误差换取表面加速。
-
-## B4. 最小物理扩展
-
-### 路径
-
-只有当冻结的 M0 在多个数据集保留同方向结构残差，且该残差不能由 Ru、Cdl、采样或特征解释时，才允许测试一个新增物理项。
-
-首选顺序：
-
-1. 独立测量或窄先验修正；
-2. 最小重构参数；
-3. 传质、膜阻或气泡等候选机制；
-4. LOM 等更大机理变化仅作为长期方向。
-
-### 验收
-
-- 改善至少出现在多数数据集；
-- 复杂度惩罚后仍受支持；
-- 新参数在合成数据中可识别；
-- 关闭扩展严格恢复 M0。
-
----
-
-# 5. 层级 C：置信度与科学结论验证
-
-## C1. 数值置信度
-
-### 路径
-
-- LSODA 容差收敛；
-- CN 网格收敛；
-- 特征网格收敛；
-- 重采样和滤波敏感性；
-- Mac 与 Legion 关键结果交叉复算。
-
-### 完成定义
-
-数值设置变化引起的误差小于预注册科学差异阈值。
-
-## C2. 优化置信度
-
-### 路径
-
-- 多随机种子；
-- 多起点或重复 study；
-- 近优参数集合；
-- profile likelihood 或 bootstrap；
-- 边界命中与参数相关性。
-
-### 完成定义
-
-报告参数区间和耦合，不只报告单个最优值；主要结论不依赖单个 seed。
-
-## C3. 实验置信度
-
-### 路径
-
-- 获取技术重复和独立电极重复；
-- 用重复性估计通道权重；
-- 比较不同频率、扫描速率和交流幅值；
-- 预留独立数据作为最终验证集。
-
-### 完成定义
-
-参数差异大于实验重复性，并能在独立数据上复现。
-
-## C4. 机理结论等级
-
-最终报告必须区分：
-
-1. **实现事实**：由测试证明，例如相位约定和守恒。
-2. **数值证据**：由收敛和多种子结果支持。
-3. **数据支持的模型判断**：例如 M0 优于当前 M1。
-4. **待实验验证的物理假设**：例如表面重构、传质或 LOM。
-
-任何拟合改善都不能单独升级为机理证明。
-
----
-
-# 6. 总体执行顺序
+### 3.1 科学数据流
 
 ```text
-Gate A1 数据契约
-→ Gate A2 物理不变量
-→ Gate A3 求解器等价
-→ Gate A4 信号稳定性
-→ Gate A5 特征与损失冻结
-→ Gate A6 自由参数集冻结
-→ Gate A7 正式计算证据链
-→ 层级 B 精度比较
-→ 层级 C 置信度验证
-→ Gate A8 Web 交付
+三列实验数据（电位、电流、时间）
+        │
+        ▼
+严格数据契约与采样诊断
+        │
+        ├───────────────┐
+        ▼               ▼
+AEM 正演模型        实验信号处理
+LSODA/BDF            DC / H1–H7 / lock-in
+        │               │
+        └───────┬───────┘
+                ▼
+         冻结特征通道契约
+                │
+                ▼
+     敏感性 / profile / 合成恢复
+                │
+        ┌───────┴────────┐
+        ▼                ▼
+条件模型分析       通过 Gate 后正式反演
+        │                │
+        └───────┬────────┘
+                ▼
+      正式证据归档 / API / Web
 ```
 
-Web 可以保留基础开发，但不得先于核心 schema 成为科研主线。
+### 3.2 Gate 依赖
 
----
+```text
+A1 数据 → A2 物理 → A3 求解器 → A4 信号 → A5 特征
+→ A6 参数恢复 → A7 证据链 → 正式反演 → 不确定度/机理
+```
 
-# 7. 当前已完成内容总表
+Gate 不是简单的全部 PASS 串联：失败 Gate 会改变允许路线。例如 A3 失败后
+仍可使用 LSODA，但不能让 CN 承担正式结论；A6 失败后仍可做条件模型
+可达性和实验设计，但不能报告可信参数点估计。
 
-| 模块 | 当前结论 | 主要文件 | 状态 |
-|---|---|---|---|
-| 数据基础诊断 | 结构与采样 PASS，关键元数据 FAIL | `results/formal/data_contract/gate-a1-a57d42f/acceptance.md` | Gate A1 FAIL_METADATA |
-| AEM M0 | A2-R 守恒、极端案例回退和独立交叉验证通过 | `results/formal/physics_invariants/gate-a2r-496a701/acceptance.md` | Gate A2-R PASS |
-| 热力学约束 | 标度关系和参数变换已实现 | `code/python/src/oer_aem/thermodynamics.py` | 已实现 |
-| LSODA | 参考求解器已建立 | `code/python/src/oer_aem/physics.py` | 已实现 |
-| C++ CN | 正式等价性门 FAIL，仅作快速筛选且须 LSODA 确认 | `code/cpp/src/oer_cn_solver.cpp` | 实验后端 |
-| 全局谐波 | 幅值和复数特征已实现 | `code/python/src/oer_aem/signal.py` | 已实现 |
-| 电位分辨锁相 | 核心相位错误已修复 | `code/python/src/oer_aem/signal.py` | 待真实重采样 |
-| 目标函数 | 通道、权重、掩码和分母已冻结并独立验收 | `results/formal/feature_channel_contract/gate-a5-13adcb1/acceptance.md` | Gate A5 PASS |
-| 网格 | 正式固定参数库门冻结 128 点 | `results/formal/feature_grid_convergence/gate-a5-grid-44a020e/` | PASS |
-| 可识别性 | 角色已冻结：8 fixed、5 diagnostic-only、无自由参数 | `results/formal/identifiability/gate-a6-closure-75e25ed/acceptance.md` | Gate A6 FAIL_RECOVERY，真实反演禁止 |
-| M1 重构 | 当前证据拒绝 | `code/python/scripts/compare_reconstruction_model.py` | 已形成否定结果 |
-| API | 基础任务接口存在 | `code/web/backend/main.py` | 非当前主线 |
-| Web | 基础前端存在 | `code/web/frontend/` | 非当前主线 |
+## 4. 代码目录与关键接口
 
----
+### 4.1 仓库目录
 
-# 8. 最近三个可执行里程碑
+| 路径 | 职责 |
+|---|---|
+| `code/python/src/oer_aem/` | 正式 Python 科学计算核心 |
+| `code/python/scripts/` | 计算、诊断、正式 runner 和独立 validator |
+| `code/python/tests/` | 单元、回归、结构和失败路径测试 |
+| `code/cpp/src/` | C++ CN 及实验性编译核心 |
+| `code/matlab/` | MATLAB 参考实现和历史比较 |
+| `code/web/` | FastAPI 后端和静态前端 |
+| `config/data-contracts/` | 实验数据注册表 |
+| `config/parameter-roles/` | 参数角色注册表 |
+| `config/oer-wf/` | 远程计算工作流工具和任务规格 |
+| `data/raw/` | 原始实验数据，只读保存 |
+| `results/formal/` | 可追溯的正式科学证据 |
+| `results/smoke/` | 小预算流程检查，不承担科学结论 |
+| `results/diagnostics/` | 辅助诊断和探索结果 |
+| `documents/project/` | 当前总览、历史状态和工作规则 |
+| `documents/corrections/` | 项目内错误、根因和复用规则 |
 
-## 里程碑 1：冻结并验收 Recovery Gate v2
+### 4.2 关键接口
 
-- 保持 v1 历史 FAIL，不静默改变旧任务；
-- 对三份 Stage 1 归档完成可复现离线复核；
-- 冻结共享 `hybrid` mode 和 Stage 2 配置；
-- 提交并推送 v2 实现、测试和科学口径。
+| 模块 | 主入口 | 输入 | 输出 | 状态/限制 |
+|---|---|---|---|---|
+| 严格数据读取 | `data_contract.read_strict_experimental_trace` | 三列文本文件 | `ExperimentalTrace`、文件事实 | 已验证；不静默排序、裁剪或插值 |
+| 采样诊断 | `data_contract.derive_sampling_diagnostics` | 电位、电流、时间 | 频率、振幅、采样率、扫描速率、缺口 | 已验证量化时间戳 |
+| 默认参数 | `defaults.py` | 无或覆盖值 | 统一参数字典 | 已实现 |
+| 统一核心 | `core.OERCore` | 参数和实验数据 | 物理、信号和目标入口 | 兼容入口 |
+| 热力学 | `thermodynamics.py` | AEM 参数 | 标度关系和电位参数 | 已实现；不等于参数已验证 |
+| 物理 RHS | `physics.elementary_rates`、`coverage_derivatives` | 状态、时间、参数 | 五步速率和覆盖度导数 | A2-R 正式通过 |
+| 正式动态求解 | `physics.OERPhysics.solve_ode_system` | 冻结参数 | `ODESolution`、attempt 记录 | LSODA；失败时显式 BDF 回退 |
+| C++ CN | `cpp_bridge.py`、`code/cpp/src/oer_cn_solver.cpp` | 同一正演参数 | 快速电流轨迹 | 实验后端；A3 未通过 |
+| 全局谐波 | `signal.extract_complex_harmonics` | 电流、采样率、基频 | H1–H7 复数特征 | 已验证 |
+| 电位分辨特征 | `signal.lockin_harmonics` | 电流、电位参考、时间 | 电位分辨 I/Q、幅值、相位 | A4 稳定性通过 |
+| 特征契约 | `inversion.build_feature_channel_contract` | 目标数据和模式 | 活动通道、权重、掩码、分母 | A5 正式通过 |
+| 特征提取 | `inversion.extract_features` | 电流和 `InversionConfig` | DC、复数谐波、lock-in、物理项 | 128 点正式网格 |
+| 目标函数 | `inversion.InversionObjective` | 冻结目标、候选参数 | 分量损失、失败计数、总损失 | 候选不能改变目标通道 |
+| TPE 适配 | `inversion.TPEInverter` | 目标、边界、预算 | `InversionResult` | 已实现；当前禁止正式真实反演 |
+| 敏感性 | `importance.py`、`identifiability.py` | 参数和冻结特征 | 有符号敏感性、相关和分类 | 局部诊断，不证明联合可恢复 |
+| Profile | `profiling.py`、`run_objective_profiles.py` | 参数网格 | 单/二维目标地形 | 诊断用 |
+| 合成恢复 | `recovery.py`、`run_synthetic_recovery.py` | 真值、噪声、seed、算法 | 逐 study 结果和 recovery gate | A6 当前失败 |
+| 优化器比较 | `optimizers.py`、`optimizer_benchmark.py` | 固定调用预算 | TPE/Sobol/DE 轨迹 | 开发证据不能覆盖确认失败 |
+| Web API | `code/web/backend/main.py` | JSON/实验数据 | analyze、simulate、TPE 响应 | 原型可用；非当前主线 |
+| Web 前端 | `code/web/frontend/index.html` | API 响应 | 实验、正演和反演视图 | 静态原型 |
 
-## 里程碑 2：同预算优化器诊断
+### 4.3 正式验证入口
 
-- 状态：**已完成**。
-- 三算法均严格使用 100 次调用，truth objective 只作 post-run diagnostic。
-- `sobol_pattern` 是唯一通过三个开发案例的替代算法，已冻结进入确认集。
+| Gate | Runner / validator |
+|---|---|
+| A1 | `audit_experimental_contracts.py` / `validate_gate_a1_contracts.py` |
+| A2 | `audit_physics_invariants.py` / `validate_gate_a2_physics.py` |
+| A2-R | `audit_gate_a2r.py` / `validate_gate_a2r.py` |
+| A3 | `validate_solver_equivalence.py` |
+| A4 | `validate_real_harmonic_stability.py` |
+| A5 | `audit_feature_channel_contracts.py` / `validate_gate_a5_channels.py` |
+| A6 | `validate_gate_a6_parameter_roles.py` |
+| 仓库文档 | `audit_repository_layout.py` |
 
-## 里程碑 3：重新关闭 Gate A6
+Validator 的 `PASS` 只说明其负责的结构或关闭契约通过，不能覆盖底层科学
+Gate 的 `FAIL`。
 
-- 状态：**已完成，科学结论为 `FAIL_RECOVERY`**。
-- 冻结的 `sobol_pattern` 已运行排除开发集后的 51-study CN 确认；
-  三个参数对均未通过 v2，eligible pairs 为空。
-- 按预注册分支不执行 LSODA 确认，并停止三参数扩展和真实数据正式 TPE。
-- 后续若重启 Gate A6，必须作为新的研究假设和新协议立项，不得事后修改
-  本次预算、算法、数据划分或阈值。
-- 13 参数机器可读角色登记表和独立关闭归档已完成；当前无参数具备正式
-  真实数据反演资格。
+## 5. Gate A1–A7 状态
 
----
+| Gate | 当前结论 | 已证明 | 未证明/限制 | 主要证据 |
+|---|---|---|---|---|
+| A1 数据契约 | `FAIL_METADATA` | 四文件结构、哈希、采样数值通过 | 预处理一手记录不足 | `results/formal/data_contract/gate-a1-a57d42f/acceptance.md` |
+| A2-R 物理不变量 | `PASS` | 守恒、稳态、电流闭合、极端回退通过 | 不证明 M0 是唯一机理 | `results/formal/physics_invariants/gate-a2r-496a701/acceptance.md` |
+| A3 求解器 | `FAIL` | LSODA 参考路径可用 | CN 锁相相位不等价 | `results/formal/solver_equivalence/formal-a4581de-ppc256/solver_equivalence_summary.json` |
+| A4 信号稳定性 | `PASS` | 合法降采样和截断下特征稳定 | 不证明反演更准确 | `results/formal/harmonic_stability/gate-a4-6848613/harmonic_stability_summary.json` |
+| A5 特征契约 | `PASS` | 通道、权重、掩码和分母候选不变 | 不证明参数可恢复 | `results/formal/feature_channel_contract/gate-a5-13adcb1/acceptance.md` |
+| A6 参数恢复 | `FAIL_RECOVERY` | 13 参数角色和失败路线已冻结 | 无参数具备正式反演资格 | `results/formal/identifiability/gate-a6-closure-75e25ed/acceptance.md` |
+| A7 证据工作流 | `PASS`（工程） | prepare/smoke/run/status/sync/verify 闭环 | 不证明任何科学 Gate | `WORK_STATUS.md` 第 0.7 节 |
 
-# 9. 项目级压力测试
+### 5.1 当前三个阻断项
 
-## 风险 1：把开发进度误当成科学完成
+1. **A1 元数据：** 已知列序和单位，但仪器预处理缺少原始记录；
+2. **A3 加速后端：** CN 没有通过相位等价性，正式计算仍依赖较慢的 LSODA；
+3. **A6 参数恢复：** 所有锁定两参数组合均失败，当前自由参数为空。
 
-**失败信号：** 功能已有代码，但缺少独立测试、正式结果或 manifest。
-**控制：** 状态只允许“已实现、已验证、正式通过”三级，不使用模糊的“完成”。
+这些阻断项不会使现有四组数据“不能使用”，但会限制结果等级。
 
-## 风险 2：底层接口继续变化导致正式计算作废
+## 6. 当前数据、特征与参数口径
 
-**失败信号：** 正式结果之间混用不同采样、后端、参数或损失定义。
-**控制：** A1–A7 全部关门后冻结 schema，再进入层级 B。
+### 6.1 实验数据
 
-## 风险 3：高次谐波数值存在但实验不可解析
+当前原始 FTacV 数据：
 
-**失败信号：** 相位随机、相对误差爆炸、结果随重采样漂移。
-**控制：** 同时检查幅值强度、噪声、相位稳定性和独立区间，不按“能提取”自动纳入拟合。
+| 数据集 | 基频 | 振幅 | 点/周期 | 说明 |
+|---|---:|---:|---:|---|
+| FT2 | 5 Hz | 0.16 V | 256 | 独立实验 |
+| FT3 | 5 Hz | 0.16 V | 256 | 独立实验 |
+| FT4 | 1 Hz | 0.16 V | 256 | 独立实验 |
+| FT8 | 5 Hz | 0.16 V | 256 | 独立实验 |
 
-## 风险 4：更复杂模型降低损失但参数不可识别
+统一列序：
 
-**失败信号：** 新参数命中边界、跨种子漂移或与旧参数完全补偿。
-**控制：** 新参数先过合成恢复和敏感性门，再接触真实正式评价。
+```text
+第 1 列：potential
+第 2 列：current
+第 3 列：time
+```
 
-## 风险 5：计算加速改变科学结论
+当前单位声明：
 
-**失败信号：** CN 与 LSODA 的 H1–H3、峰位或最优参数不一致。
-**控制：** CN 只在正式等价性门通过后用于搜索，最终结果由 LSODA 复算。
+```text
+potential = V vs RHE
+current = A
+time = s
+```
 
-## 风险 6：缺少重复实验却报告过强置信度
+来源边界：
 
-**失败信号：** 只用优化器重复结果代替实验重复性。
-**控制：** 数值、优化和实验不确定度分开报告；没有重复数据时明确限制结论等级。
+- 列序、单位和 RHE 标尺来自项目负责人声明；
+- 配套 CHI660E/CHI760F CV 文件头辅助支持 `V` 和 `A`；
+- 负责人不是原实验执行者；
+- 除 RHE 校正外未报告其他预处理，但现存文件不能证明“无预处理”；
+- 四组数据不是重复实验，禁止平均后当作降噪重复。
 
----
+### 6.2 特征口径
 
-# 10. 文档与版本规则
+- DC 和 H1–H3 是当前共同核心评价特征；
+- H4–H7 只有达到冻结可解析门时才进入评价；
+- 正式特征网格为 128 点；
+- `legacy`、`complex_snr`、`lockin_only`、`hybrid` 语义已分离；
+- 现阶段优先用 `hybrid` 和 `lockin_only` 做条件诊断；
+- 不同模式活动通道数不同，不能直接用未经同构化的总损失排名。
 
-1. `PROJECT_SUMMARY.md`：项目目标、完成定义和总路线。
-2. `WORK_STATUS.md`：按时间记录实际完成、测试、结果和提交。
-3. `documents/corrections/项目纠错.md`：记录当前项目错误、风险和修复。
-4. `documents/plans/`：保存具体阶段实施计划。
-5. `results/`：只保存可追溯结果；smoke 与 formal 分目录。
-6. 每个验证版本运行相关测试与全量测试，更新文档后单独提交并推送。
-7. 未验证建议标为“待验证”；失败结果可以提交，但必须明确标记 FAIL。
+### 6.3 参数角色
 
----
+当前机器可读登记表：
 
-# 11. 项目完成定义
+```text
+config/parameter-roles/gate-a6-parameter-roles.json
+```
 
-只有以下条件全部满足，本项目才可声明完成：
+| 角色 | 参数 | 含义 |
+|---|---|---|
+| `fixed` | `A`、`Cdl`、`Ru`、`E0_pre`、`k0_pre`、`gamma`、`k0_4`、`scaling_OOH_OH` | 当前运行时固定，不表示准确 |
+| `diagnostic_only` | `k0_1`、`k0_2`、`k0_3`、`G_OH`、`G_O` | 可做 profile/敏感性，不报告可信点估计 |
+| `free` | 无 | 当前没有通过恢复门的自由参数 |
+| `narrow_prior` | 无 | 当前没有独立依据冻结窄先验 |
 
-- A1–A7 底层架构全部通过；
-- 至少一种反演方法在统一预算下完成正式评价；
-- 最终候选参数由 LSODA 复算；
-- 参数可识别性、边界和区间已报告；
-- 数值、优化和实验置信度已分层验证；
-- 主要结论在独立或重复数据上得到支持，或明确写出缺失验证；
-- CLI/API 结果一致，正式结果具有完整 provenance；
-- 文档、测试、结果和 GitHub 提交一致。
+已确认的主要补偿：
+
+| 参数对 | 证据 | 当前处理 |
+|---|---|---|
+| `k0_3`–`scaling_OOH_OH` | 局部相关约 −0.99995 | 不同时自由拟合 |
+| `gamma`–`A` | 局部相关约 +0.9895 | 至少独立固定一个 |
+| `k0_1`–`k0_pre` | complex 模式约 +0.9881 | `k0_1` 仅诊断 |
+| `G_OH`–`G_O` | complex 模式约 −0.9848 | 需新电位/条件信息 |
+| `k0_2`–`k0_3`–`G_O` | 多参数恢复失稳 | 不报告联合点估计 |
+
+局部相关和恢复失败不能单独证明数学结构不可识别。
+
+## 7. 已完成能力与证据
+
+### 7.1 科学与数值底座
+
+- 数据：严格解析、哈希和量化时间戳诊断；
+- 物理：五步 AEM、守恒、电流分解、LSODA/BDF；
+- 信号：复数谐波、lock-in 和候选不变目标；
+- 反演诊断：敏感性、profile、恢复门、优化器比较和参数角色；
+- 证据：commit、配置、环境和文件哈希绑定。
+
+### 7.2 计算工作流
+
+`oer-wf 0.6.5` 已实现：
+
+```text
+doctor → prepare → smoke → run → status → sync → verify → clean
+```
+
+它支持固定 commit worktree、systemd 后台任务、规格哈希、smoke gate、
+job 级续跑、失败分层、Mac 同步和后端来源留痕。
+
+### 7.3 Web 原型
+
+FastAPI 和静态前端已支持数据分析、正演、TPE 接口和曲线显示；它不是当前
+科研主线，界面结果不能替代正式验收。
+
+## 8. 未完成目标与依赖
+
+| 顺序 | 未完成目标 | 依赖 | 完成信号 |
+|---:|---|---|---|
+| 1 | 用户声明元数据补录 | 现有四文件和声明 | 新 A1 归档诚实保持或更新状态 |
+| 2 | 条件模型可达性 | A2-R、A4、A5 | 判断实验特征是否位于 M0 可达范围 |
+| 3 | DC/H1–H3 残差归因 | 目标 2 | 区分模型不足、背景和参数补偿 |
+| 4 | 实验信息设计 | 目标 2–3 | 给出解除主要耦合的最小实验矩阵 |
+| 5 | 原始方法和独立测量 | 恢复实验条件 | A1 元数据和固定输入具备一手来源 |
+| 6 | 结构化新 FTacV 数据 | 目标 4–5 | 多条件、可追溯、预注册数据集 |
+| 7 | A6-v2 合成恢复 | 新条件敏感性/profile | 至少一个参数集通过锁定恢复门 |
+| 8 | 正式真实数据联合反演 | A1 与 A6-v2 通过 | 参数具备正式反演资格 |
+| 9 | 不确定度和机理结论 | 目标 8 | 数值、优化和实验置信度完整 |
+| 10 | Web 最终交付 | 科学输出 schema 冻结 | 前端只展示合格结论和限制 |
+
+依赖顺序不能通过增加优化预算绕过。
+
+## 9. 休假期间路线
+
+### 9.1 V1：补录已知元数据
+
+写入列序、`V vs RHE`、`A`、`s` 和声明来源；预处理保持 `unresolved`，
+重新生成 A1 证据，禁止把“应该无处理”改写为“确认无处理”。
+
+### 9.2 V2：条件模型可达性
+
+```text
+在冻结模型、合理参数范围和当前元数据假设下，
+M0 是否能够达到四组实验的 DC/H1–H3 特征区域？
+```
+
+输出可达/不可达特征、条件参数集合、模型距离、失败区域和固定输入稳定性；
+不得把最优候选写成真实参数。
+
+### 9.3 V3：残差归因
+
+按数据集和模式检查 DC、H1–H3 幅值/相位、电位残差位置，以及
+`Cdl`、`Ru`、`E0_pre`、`gamma/A` 扰动；四组分别报告。
+
+### 9.4 V4：实验信息设计
+
+根据可达性选择频率、振幅、扫描速率、电位窗口和独立
+EIS/面积/负载量/位点量测量，目标是降低相关并提高合成恢复。
+
+### 9.5 V5：计算加速
+
+只有 V2/V3 证明 LSODA 是主要瓶颈时才投入。优先并行和缓存，再评估编译型
+刚性求解器；新后端必须重过 A3，CN 只作开发诊断。
+
+## 10. 恢复实验后的路线
+
+### 10.1 E1：原始实验记录
+
+保存仪器方法、参比电极、RHE 换算、pH、温度、电流归一化、iR 补偿、
+滤波/平均/背景/裁剪、面积、负载量、批次和实验编号。
+
+### 10.2 E2：独立固定输入
+
+优先独立约束 `Ru`、`Cdl`、几何面积、负载量和有效位点量；若不能独立
+获得 `gamma`，明确其组合口径。
+
+### 10.3 E3：结构化 FTacV 条件矩阵
+
+至少改变基频、交流振幅和扫描速率，必要时改变电位窗口。具体数值由 V4
+预先决定，不能看到结果后再选择。
+
+### 10.4 E4：新条件敏感性与 profile
+
+先比较相关是否降低，再比较单参数和二维目标谷；保留旧 A6 失败证据，
+新结论使用独立版本。
+
+### 10.5 E5：A6-v2
+
+使用多真值、无噪声/实测噪声、多 seed 和固定预算；不使用 truth 初始化；
+CN 只筛选，由等价后端确认；失败即停止真实反演。
+
+### 10.6 E6–E7：正式反演与结论
+
+只有 A1 和 A6-v2 均通过后，才冻结联合反演，并执行多 seed、bootstrap、
+固定输入误差传播和留出验证。
+
+## 11. 运行、测试与远程计算
+
+### 11.1 本机测试
+
+```bash
+.venv/bin/python code/python/scripts/run_tests.py code/python/tests -q
+.venv/bin/python -m pytest code/web/tests/backend -q
+.venv/bin/python code/python/scripts/audit_repository_layout.py
+git diff --check
+```
+
+### 11.2 远程计算
+
+远程或 GitHub 操作前完整读取：
+
+```text
+/Users/liushiyu/gpt/本机环境配置.md
+```
+
+原则：
+
+- 使用已有 SSH 别名和项目虚拟环境；
+- 正式任务绑定干净 commit；
+- 长计算用 `oer-wf` 和 systemd 用户服务；
+- 默认 8 workers，每 worker 1 个 BLAS 线程；
+- CN 可优先用于开发筛选，但正式结论必须使用通过等价门的后端；
+- 不自动创建周期检查，除非用户明确要求；
+- 每阶段验证后只提交项目相关文件。
+
+结果分为 `results/smoke/`（流程）、`results/diagnostics/`（条件诊断）和
+`results/formal/`（冻结证据）；目录名不能替代验收。
+
+## 12. 后续 Agent 交接
+
+### 12.1 最小阅读顺序
+
+1. 根 `README.md`；
+2. 本文件；
+3. `documents/plans/2026-07-29-vacation-and-post-experiment-roadmap.md`；
+4. 当前任务直接相关的正式结果或 `acceptance.md`；
+5. 需要历史原因时再查 `WORK_STATUS.md` 和项目纠错；
+6. 需要远程环境时才读本机环境配置。
+
+不要默认读取全部历史 Git、所有正式结果或完整 `WORK_STATUS.md`。
+
+### 12.2 接手前检查
+
+先检查分支、工作树和全量测试，再确认任务阶段、冻结输入/输出/commit/阈值、
+A1/A3/A6 边界和用户未提交改动。
+
+### 12.3 结果表达
+
+必须区分观察、工程事实、数值结论、条件科学判断和机理假设；不确定内容
+标注“待验证”或“推测”，PASS/提高/等价必须给出可复现证据。
+
+## 13. 项目完成定义
+
+项目完成不是“曲线看起来拟合”，而是同时满足：
+
+1. 实验数据、元数据和预处理可追溯；
+2. 物理模型和数值后端通过对应 Gate；
+3. 特征和目标函数候选不变且可独立验证；
+4. 至少一个参数集通过多真值、含噪、多 seed 合成恢复；
+5. 正式真实数据反演绑定冻结配置和干净 commit；
+6. 固定输入误差、优化随机性和实验变化进入不确定度；
+7. 参数结论不超过数据支持范围；
+8. 新数据或留出条件能复核主要结论；
+9. Web 只展示通过科学 schema 的结果和限制；
+10. 代码、结果、文档和环境可由后续 Agent 重跑。
+
+当前完成度属于“可信底座已建立，正式参数反演尚未获得资格”。

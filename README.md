@@ -20,10 +20,10 @@
 ## 项目主入口
 
 - 项目目标与总路线：`documents/project/PROJECT_SUMMARY.md`
-- 当前工作状态：`documents/project/WORK_STATUS.md`
+- 当前两阶段计划：`documents/plans/2026-07-29-vacation-and-post-experiment-roadmap.md`
+- 历史工作状态：`documents/project/WORK_STATUS.md`
 - 项目工作流：`documents/project/PROJECT_WORKFLOW.md`
 - 项目纠错：`documents/corrections/项目纠错.md`
-- 当前实施计划：`documents/plans/2026-07-26-project-directory-reclassification.md`
 
 ## 常用命令
 

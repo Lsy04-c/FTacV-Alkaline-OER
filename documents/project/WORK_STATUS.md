@@ -1,4 +1,10 @@
-# OER-FTAcV 工作进展总结（2026-07-18，更新：2026-07-27）
+# OER-FTAcV 历史工作记录（2026-07-18 起）
+
+> 本文件只保存按时间追加的历史执行记录，不是当前计划入口。当前架构、
+> Gate、接口和未完成目标见 `PROJECT_SUMMARY.md`；当前行动见
+> `documents/plans/2026-07-29-vacation-and-post-experiment-roadmap.md`。
+> 除纠正事实错误外，不重写旧记录。旧记录引用的已完成计划或旧架构报告
+> 可能已从当前目录删除，其结论已汇入总览，原文件可从 Git 历史恢复。
 
 ## 0. 目录重分类状态（2026-07-26）
 
@@ -1422,3 +1428,18 @@ H1-H7压力测试：
   反演继续禁止。
 - 完整验收：
   `results/formal/identifiability/gate-a6-closure-75e25ed/acceptance.md`。
+
+## 38. 项目总览与交接文档重构（2026-07-29）
+
+- `PROJECT_SUMMARY.md` 重写为唯一总入口，集中保存项目目标、系统数据流、
+  关键接口、Gate A1–A7、数据/参数口径、已完成能力、未完成目标和交接步骤。
+- 新建唯一当前计划：
+  `documents/plans/2026-07-29-vacation-and-post-experiment-roadmap.md`，分为
+  休假期间 V1–V5 和恢复实验后 E1–E7。
+- 19 份已完成、失败关闭或被替代的实施计划从当前目录删除；旧
+  `architecture_validation_report.md` 的有效结论已合并进总览。原文件仍可
+  从 Git 历史恢复。
+- `WORK_STATUS.md` 保持历史记录职责，不再维护未来路线；根 README、
+  文档 README 和 `PROJECT_WORKFLOW.md` 已指向新入口。
+- 本次不修改代码、数据、配置和正式结果，不改变 A1 `FAIL_METADATA`、
+  A3 `FAIL` 或 A6 `FAIL_RECOVERY`。

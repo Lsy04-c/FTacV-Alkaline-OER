@@ -1,6 +1,13 @@
 # OER-FTAcV 项目工作规则
 
-更新日期：2026-07-18
+更新日期：2026-07-29
+
+当前状态入口：`PROJECT_SUMMARY.md`
+当前行动计划：
+`documents/plans/2026-07-29-vacation-and-post-experiment-roadmap.md`
+
+当前科学边界：A1 为 `FAIL_METADATA`，A6 为 `FAIL_RECOVERY`，正式真实
+数据反演仍被禁止。项目当前只进行条件模型分析、残差归因和实验信息设计。
 
 ## 1. 版本更新规则
 
@@ -10,7 +17,7 @@
 
 ```text
 origin git@github.com:Lsy04-c/FTacV-Alkaline-OER.git
-branch main
+branch codex/reclassify-project
 ```
 
 每版更新的基本流程：
@@ -22,7 +29,7 @@ git diff
 .venv/bin/python -m pytest code/web/tests/backend -q
 git add <本次实际修改文件>
 git commit -m "<type(scope): summary>"
-git push origin main
+git push origin codex/reclassify-project
 ```
 
 如果测试耗时过长或依赖缺失，必须在提交说明或回复中明确写出：
@@ -99,17 +106,15 @@ git push origin main
 
 ## 4. 当前最优先路线
 
-当前主线不是继续扩展机理，而是把已压测过的 TPE 反演能力接入平台。
+当前优先级由 `PROJECT_SUMMARY.md` 和唯一当前计划维护：
 
-优先级：
+1. 补录已知元数据，但不伪造预处理信息；
+2. 用四组数据做条件模型可达性；
+3. 分解 DC/H1–H3 残差和参数补偿；
+4. 设计恢复实验后的最小信息矩阵；
+5. 新实验通过元数据、敏感性和 A6-v2 后才进入正式反演。
 
-1. `code/python/src/oer_aem/inversion.py`
-2. 合成数据恢复测试
-3. `/api/inversion/start|status|cancel|result`
-4. 前端 `TPE 反演` 标签页
-5. 真实数据试跑
-
-每一步都要先验证，再进入下一步。
+Web 和现有 TPE 接口保留，但不作为当前科研主线。
 
 ## 5. 保留的开发 skill
 
