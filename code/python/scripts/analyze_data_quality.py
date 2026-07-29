@@ -20,9 +20,9 @@ import numpy as np
 
 PROJECT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT / "code" / "python" / "src"))
-sys.path.insert(0, str(PROJECT / "code" / "web" / "backend"))
 
-from main import _analyze_ftacv_data
+from oer_aem.data_contract import normalize_trace
+from oer_aem.experimental import analyze_ftacv_trace
 from oer_aem.signal import _apply_edge_taper
 
 RAW_DIR = PROJECT / "data" / "raw"
@@ -92,11 +92,11 @@ def _load_cv(filename: str) -> Dict[str, Any]:
 
 
 def _load_ftacv(filename: str) -> Dict[str, Any]:
-    """调用 _analyze_ftacv_data 自动识别参数并提取谐波。"""
+    """调用核心实验分析函数自动识别参数并提取谐波。"""
     rows = _load_numeric(filename)
     assert rows.shape[1] >= 3, f"{filename}: expected >=3 columns"
     try:
-        r = _analyze_ftacv_data(rows)
+        r = analyze_ftacv_trace(normalize_trace(rows))
     except Exception as e:
         return {"type": "FTacV", "filename": filename, "success": False, "error": str(e)}
     hq = r["harmonic_quality"]

@@ -180,6 +180,51 @@ def test_run_resume_reuses_exact_timestamp_directory(
     assert "--resume" in resp.data["command"]
 
 
+def test_run_resume_uses_task_declared_required_files(
+    mock_ex: MockExecutor, sample_spec: Path
+) -> None:
+    data = yaml.safe_load(sample_spec.read_text())
+    data["supports_resume"] = True
+    data["resume_required_files"] = [
+        "task_spec.json",
+        "targets.json",
+        "parameter_library.csv",
+    ]
+    sample_spec.write_text(yaml.safe_dump(data))
+    mock_ex.when_ssh(".wf_lock").returns(
+        0,
+        '{"task_id":"3f9aad1/solver_equiv_01","task_name":"solver_equiv_01",'
+        '"spec_hash":"sha256:x","commit":"3f9aad1","created_at":"t","worktree_path":"/w"}\n',
+    )
+    mock_ex.when_ssh("systemctl --user show").returns(
+        0,
+        "LoadState=loaded\nActiveState=failed\nSubState=failed\nMainPID=0\n"
+        "Result=exit-code\nExecMainStatus=1\n",
+    )
+    mock_ex.when_ssh("&& echo yes || echo no").returns(0, "yes\n")
+    mock_ex.when_ssh("task_spec.json").returns(0, "OK\n")
+    mock_ex.when_ssh("base64").returns(0, "OK\n")
+    mock_ex.when_ssh("daemon-reload").returns(0, "OK\n")
+    mock_ex.when_ssh("systemctl --user start").returns(0, "STARTED\n")
+
+    resp = run_run(
+        sample_spec,
+        resume_timestamp="20260729_010203",
+        executor=mock_ex,
+        skip_smoke=True,
+    )
+
+    assert resp.status == StatusEnum.PASS
+    resume_probes = [
+        call for call in mock_ex.call_log
+        if "task_spec.json" in call
+    ]
+    assert len(resume_probes) == 1
+    assert "targets.json" in resume_probes[0]
+    assert "parameter_library.csv" in resume_probes[0]
+    assert "job_plan.json" not in resume_probes[0]
+
+
 def test_run_rejects_resume_with_force_or_invalid_timestamp(
     mock_ex: MockExecutor, sample_spec: Path
 ) -> None:

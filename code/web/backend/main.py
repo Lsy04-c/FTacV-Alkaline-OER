@@ -16,13 +16,12 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
 from oer_aem import OERPhysics, OERSignal, initialize_oer_parameters
-from oer_aem.calibration import calibrate as calibrate_ftacv
-from oer_aem.data_contract import normalize_by_max_abs, normalize_trace
+from oer_aem.data_contract import normalize_trace
+from oer_aem.experimental import analyze_ftacv_trace
 from oer_aem.inversion import (
     DEFAULT_PARAM_SPECS,
     InversionConfig,
     TPEInverter,
-    assess_harmonic_quality,
     make_param_specs_from_physical_bounds,
 )
 
@@ -97,71 +96,6 @@ def _to_list(arr):
     return list(arr) if arr is not None else None
 
 
-def _analyze_ftacv_data(rows: np.ndarray) -> Dict[str, Any]:
-    """从 FTacV 实验数据自动识别采集参数并提取 DC + 1-7 次谐波。
-
-    数据格式：[E (V), i (A), t (s)]，单次正向扫描。
-    识别：v（线性斜坡）、dE（去趋势振幅）、f（FFT 主频）。
-    """
-    trace = normalize_trace(rows)
-    E_raw = trace.potential
-    i_raw = trace.current
-    t = trace.time
-
-    duration = float(t[-1])
-    dt = float(np.mean(np.diff(t)))
-    fs = 1.0 / dt
-
-    # DC 斜坡 → v
-    slope, intercept = np.polyfit(t, E_raw, 1)
-    v = float(slope)
-    E_dc = intercept + slope * t
-
-    # 交流分量 → dE, f
-    E_ac = E_raw - E_dc
-    dE = float(np.std(E_ac) * np.sqrt(2.0))
-    Y = np.abs(np.fft.rfft(E_ac))
-    freqs = np.fft.rfftfreq(len(t), dt)
-    k = int(np.argmax(Y[1:]) + 1) if len(Y) > 1 else 1
-    f0 = float(freqs[k])
-
-    # 谐波提取（与仿真同一管线：Tukey 窗 + FFT 选带）
-    sp = {'f': f0, 'band': np.ones(8), 'use_fft': True}
-    I_dc = OERSignal.extract_dc_fft(i_raw, fs, sp)
-    I_harm = OERSignal.extract_harmonics(i_raw, fs, sp)
-    harmonic_quality = assess_harmonic_quality(I_harm)
-
-    # 独立标定（丢弃前 1/4 瞬态段）：CdlA、Tafel 斜率、预氧化可分离性
-    cut = len(t) // 4
-    calib = calibrate_ftacv(E_raw[cut:], i_raw[cut:], t[cut:], i_dc=I_dc[cut:])
-    # 只保留前端需要的小字段
-    calib_brief = {
-        'cdl': calib['cdl'] if calib['cdl'].get('success') else {'success': False, 'error': calib['cdl'].get('error')},
-        'tafel': calib['tafel'] if calib['tafel'].get('success') else {'success': False, 'error': calib['tafel'].get('error')},
-        'preox': calib['preox'],
-    }
-
-    return {
-        'success': True,
-        'meta': {
-            'f': f0, 'dE': dE, 'v': v,
-            'E_start': float(intercept), 'E_end': float(intercept + slope * duration),
-            'duration': duration, 'n_points': int(len(t)), 'fs': fs,
-        },
-        'tdc': _to_list(E_dc),
-        'E_raw': _to_list(E_raw),
-        'i_raw': _to_list(i_raw),
-        'dc': _to_list(normalize_by_max_abs(I_dc)),
-        'harmonics': [
-            _to_list(normalize_by_max_abs(I_harm[:, kk])) for kk in range(7)
-        ],
-        'harmonic_quality': _serialize(harmonic_quality),
-        'suggested_fit_harmonics': harmonic_quality['fit_harmonics'],
-        'calib': calib_brief,
-    }
-
-
-
 def _serialize(val):
     if isinstance(val, (np.integer,)): return int(val)
     if isinstance(val, (np.floating,)): return float(val)
@@ -206,7 +140,7 @@ async def analyze_data(d: ExpDataIn) -> Dict[str, Any]:
         rows = np.asarray(d.rows, dtype=float)
         if rows.ndim != 2 or rows.shape[1] < 3 or rows.shape[0] < 1024:
             return {'success': False, 'error': f'数据形状无效: {rows.shape}（需要 N×3 且 N≥1024）'}
-        return _analyze_ftacv_data(rows)
+        return analyze_ftacv_trace(normalize_trace(rows))
     except Exception as e:
         return {'success': False, 'error': str(e)}
 

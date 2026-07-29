@@ -35,6 +35,8 @@ STOICHIOMETRIC_MATRIX = np.array(
     dtype=float,
 )
 DYNAMIC_ATOL = np.array([3e-11, 3e-11, 3e-11, 3e-11, 3e-11, 1e-8])
+STEADY_STATE_ENDPOINTS = (5.0, 50.0, 500.0, 5000.0, 50000.0)
+STEADY_STATE_RHS_MAX = 1e-8
 
 
 def get_state_indices(N: int = 2) -> SimpleNamespace:
@@ -233,6 +235,27 @@ class CurrentComponents:
 
 
 @dataclass(frozen=True)
+class SteadyStateAttempt:
+    """One bounded Radau relaxation stage."""
+
+    elapsed_s: float
+    rhs_norm: float
+    success: bool
+    message: str
+    nfev: int
+
+
+@dataclass(frozen=True)
+class SteadyStateSolution:
+    """Validated steady state plus adaptive-relaxation provenance."""
+
+    state: np.ndarray
+    elapsed_s: float
+    rhs_norm: float
+    attempts: tuple[SteadyStateAttempt, ...]
+
+
+@dataclass(frozen=True)
 class SolverAttempt:
     """One dynamic solver attempt and its observable completion state."""
 
@@ -254,14 +277,32 @@ class ODESolution:
     backend_used: str
     fallback_used: bool
     attempts: tuple[SolverAttempt, ...]
+    steady_state_elapsed_s: float | None
+    steady_state_rhs_norm: float | None
+    steady_state_attempts: tuple[SteadyStateAttempt, ...]
 
 
 class DynamicSolverError(RuntimeError):
     """All registered dynamic backends failed."""
 
-    def __init__(self, message: str, attempts: tuple[SolverAttempt, ...]):
+    def __init__(
+        self,
+        message: str,
+        attempts: tuple[SolverAttempt, ...],
+        *,
+        steady_state: SteadyStateSolution | None = None,
+    ):
         super().__init__(message)
         self.attempts = attempts
+        self.steady_state_elapsed_s = (
+            steady_state.elapsed_s if steady_state is not None else None
+        )
+        self.steady_state_rhs_norm = (
+            steady_state.rhs_norm if steady_state is not None else None
+        )
+        self.steady_state_attempts = (
+            steady_state.attempts if steady_state is not None else ()
+        )
 
 
 def elementary_rates(
@@ -485,8 +526,10 @@ class OERPhysics:
         y0[0] = 1.0
         y0[5] = params['E_start']
 
+        steady_state = None
         if params.get('use_steady_state', True):
-            y0 = OERPhysics.calculate_steady_state(params)
+            steady_state = OERPhysics.calculate_steady_state_detailed(params)
+            y0 = steady_state.state
 
         t_span = (0.0, float(params['total_time']))
         t_eval = np.asarray(params['t_span'])
@@ -555,6 +598,7 @@ class OERPhysics:
             raise DynamicSolverError(
                 f"dynamic solvers failed: {detail}",
                 tuple(attempts),
+                steady_state=steady_state,
             )
 
         t = np.asarray(successful.t, dtype=float)
@@ -570,6 +614,15 @@ class OERPhysics:
             backend_used=backend_used,
             fallback_used=backend_used != "LSODA",
             attempts=tuple(attempts),
+            steady_state_elapsed_s=(
+                steady_state.elapsed_s if steady_state is not None else None
+            ),
+            steady_state_rhs_norm=(
+                steady_state.rhs_norm if steady_state is not None else None
+            ),
+            steady_state_attempts=(
+                steady_state.attempts if steady_state is not None else ()
+            ),
         )
 
     @staticmethod
@@ -589,8 +642,10 @@ class OERPhysics:
         return t, y, E_actual, i_total
 
     @staticmethod
-    def calculate_steady_state(params: Dict[str, Any]) -> np.ndarray:
-        """在起始电位处进行短时间稳态松弛。"""
+    def calculate_steady_state_detailed(
+        params: Dict[str, Any],
+    ) -> SteadyStateSolution:
+        """Relax at the starting potential until the frozen RHS gate passes."""
         num_states = 6
         y0_guess = np.zeros(num_states)
         y0_guess[0] = 1.0
@@ -602,25 +657,74 @@ class OERPhysics:
         params_ss['omega'] = 0.0
         params_ss = initialize_system(params_ss)
 
-        ss_time = 5.0
-        sol = solve_ivp(
-            fun=lambda t, y: _oer_model_rhs(t, y, params_ss),
-            t_span=(0.0, ss_time),
-            y0=y0_guess,
-            method='Radau',
-            rtol=1e-4,
-            atol=1e-6,
-            max_step=ss_time / 50.0,
-        )
-        if not sol.success:
-            final_time = float(sol.t[-1]) if len(sol.t) else 0.0
-            raise RuntimeError(
-                "steady-state solver failed at "
-                f"t={final_time:.6g}/{ss_time:.6g}: {sol.message}"
+        attempts = []
+        state = y0_guess
+        elapsed = 0.0
+        final_rhs = float("inf")
+        for endpoint in STEADY_STATE_ENDPOINTS:
+            segment_duration = endpoint - elapsed
+            sol = solve_ivp(
+                fun=lambda t, y: _oer_model_rhs(t, y, params_ss),
+                t_span=(elapsed, endpoint),
+                y0=state,
+                method='Radau',
+                rtol=1e-4,
+                atol=1e-6,
+                max_step=segment_duration / 50.0,
             )
-        state = np.asarray(sol.y[:, -1], dtype=float)
-        validate_steady_state(state, params_ss, rhs_t=ss_time)
-        return state
+            if not sol.success:
+                final_time = float(sol.t[-1]) if len(sol.t) else elapsed
+                raise RuntimeError(
+                    "steady-state solver failed at "
+                    f"t={final_time:.6g}/{endpoint:.6g}: {sol.message}"
+                )
+            candidate = np.asarray(sol.y[:, -1], dtype=float)
+            if candidate.shape != (num_states,) or not np.all(
+                np.isfinite(candidate)
+            ):
+                raise RuntimeError(
+                    f"steady-state stage at {endpoint:g} s returned invalid state"
+                )
+            coverage = candidate[:5]
+            if (
+                float(np.min(coverage)) < -1e-8
+                or float(np.max(coverage)) > 1.0 + 1e-8
+                or abs(float(np.sum(coverage)) - 1.0) > 1e-8
+            ):
+                raise RuntimeError(
+                    f"steady-state stage at {endpoint:g} s violated coverage"
+                )
+            final_rhs = float(
+                np.max(np.abs(_oer_model_rhs(endpoint, candidate, params_ss)))
+            )
+            attempts.append(
+                SteadyStateAttempt(
+                    elapsed_s=float(endpoint),
+                    rhs_norm=final_rhs,
+                    success=True,
+                    message=str(sol.message),
+                    nfev=int(getattr(sol, "nfev", -1)),
+                )
+            )
+            state = candidate
+            elapsed = float(endpoint)
+            if final_rhs <= STEADY_STATE_RHS_MAX:
+                validate_steady_state(state, params_ss, rhs_t=elapsed)
+                return SteadyStateSolution(
+                    state=state,
+                    elapsed_s=elapsed,
+                    rhs_norm=final_rhs,
+                    attempts=tuple(attempts),
+                )
+        raise RuntimeError(
+            "steady-state did not reach the frozen RHS gate by "
+            f"{elapsed:g} s: RHS infinity norm is {final_rhs:.12g}"
+        )
+
+    @staticmethod
+    def calculate_steady_state(params: Dict[str, Any]) -> np.ndarray:
+        """Return the validated adaptive steady-state vector."""
+        return OERPhysics.calculate_steady_state_detailed(params).state
 
     @staticmethod
     def apply_default_E0(params: Dict[str, Any]) -> Dict[str, Any]:

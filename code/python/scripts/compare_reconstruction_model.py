@@ -15,12 +15,11 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "code" / "python" / "src"))
-sys.path.insert(0, str(ROOT / "code" / "web" / "backend"))
 sys.path.insert(0, str(ROOT / "code" / "python" / "scripts"))
 
 import compare_feature_objectives as feature_compare
-from main import _analyze_ftacv_data
-from oer_aem.data_contract import residual_exp_minus_sim
+from oer_aem.data_contract import normalize_trace, residual_exp_minus_sim
+from oer_aem.experimental import analyze_ftacv_trace, build_experimental_target
 from oer_aem.features import snr_weights, wrapped_phase_difference
 from oer_aem.inversion import (
     DEFAULT_PARAM_SPECS,
@@ -321,7 +320,8 @@ def run_comparison(
     jobs = []
     for filename in feature_compare.DATASETS:
         raw_rows = feature_compare._load_rows(feature_compare.RAW / filename)
-        analysis = _analyze_ftacv_data(raw_rows)
+        trace = normalize_trace(raw_rows)
+        analysis = analyze_ftacv_trace(trace)
         harmonics = tuple(
             int(h) for h in analysis["harmonic_quality"]["fit_harmonics"]
         )
@@ -335,8 +335,8 @@ def run_comparison(
             )
             for model in MODELS
         }
-        target = feature_compare._experimental_target(
-            raw_rows,
+        target = build_experimental_target(
+            trace,
             analysis,
             configs["M0"][0],
         )

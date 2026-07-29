@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v2-conditional-model-reachability",
+  "run_mode": "smoke",
+  "structure_complete": true,
+  "scientific_classification_enabled": false,
+  "datasets": {
+    "FT2": {
+      "scientific_classification": null,
+      "base_job_count": 8,
+      "stress_job_count": 0,
+      "ode_success_fraction": 0.75,
+      "baseline_reached": false,
+      "prefix_improvement": null,
+      "stress_changed": null,
+      "stress_scenario_reached": null,
+      "nearest_candidate": {
+        "candidate_id": 3,
+        "score": 76.59532239074193,
+        "passed": false
+      }
+    },
+    "FT3": {
+      "scientific_classification": null,
+      "base_job_count": 8,
+      "stress_job_count": 0,
+      "ode_success_fraction": 0.875,
+      "baseline_reached": false,
+      "prefix_improvement": null,
+      "stress_changed": null,
+      "stress_scenario_reached": null,
+      "nearest_candidate": {
+        "candidate_id": 5,
+        "score": 14.198487182764884,
+        "passed": false
+      }
+    },
+    "FT4": {
+      "scientific_classification": null,
+      "base_job_count": 8,
+      "stress_job_count": 0,
+      "ode_success_fraction": 0.875,
+      "baseline_reached": false,
+      "prefix_improvement": null,
+      "stress_changed": null,
+      "stress_scenario_reached": null,
+      "nearest_candidate": {
+        "candidate_id": 5,
+        "score": 9.16288749839001,
+        "passed": false
+      }
+    },
+    "FT8": {
+      "scientific_classification": null,
+      "base_job_count": 8,
+      "stress_job_count": 0,
+      "ode_success_fraction": 0.875,
+      "baseline_reached": false,
+      "prefix_improvement": null,
+      "stress_changed": null,
+      "stress_scenario_reached": null,
+      "nearest_candidate": {
+        "candidate_id": 5,
+        "score": 11.042336723175305,
+        "passed": false
+      }
+    }
+  },
+  "base_job_count": 32,
+  "stress_job_count": 0,
+  "workers": 2,
+  "duration_seconds": 197.0880557501223,
+  "reused_jobs": 0,
+  "executed_jobs": 32
+}

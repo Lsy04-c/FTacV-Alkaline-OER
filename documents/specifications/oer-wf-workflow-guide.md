@@ -1,6 +1,6 @@
 # oer-wf 可复用计算工作流 — 使用指南
 
-> 版本：0.6.5 | 57 个工作流测试通过 | 冻结验收契约与A6科学门 | 2026-07-29
+> 版本：0.6.6 | 93 个工作流测试通过 | V2 独立验收与可声明恢复契约 | 2026-07-30
 
 ## 1. 这是什么
 
@@ -43,7 +43,7 @@ pip install -e ".[dev]" --trusted-host pypi.org --trusted-host files.pythonhoste
 
 验证：
 ```bash
-wf --version   # 0.6.5
+wf --version   # 0.6.6
 pytest -q      # 49 passed
 ```
 
@@ -155,6 +155,14 @@ wf sync 1becc12/solver_equiv_01
 wf verify 1becc12/solver_equiv_01
 ```
 
+V2 条件可达性使用
+`examples/v2_conditional_reachability_lsoda.yaml`。其
+`conditional_reachability_gate` 调用项目独立 validator；smoke 重算
+文件、哈希、Sobol、job、评分和稳态 provenance，formal 还强制对四组
+最近候选执行 LSODA `rerun-best`。`wf smoke` 的远端文件检查不能替代
+同步后的 `wf verify`。validator 会从当前目录及其父目录发现项目根，
+因此可从仓库根或 `config/oer-wf` 执行。
+
 ### 6.8 `wf git-check` — 交付检查
 变更范围 + pytest + commit 草稿。**不自动 commit。**
 ```bash
@@ -216,6 +224,8 @@ build:
 
 script: "scripts/run_solver_equiv.py"
 supports_resume: false
+resume_required_files:
+  - "job_plan.json"
 args:
   - "--config"
   - "configs/solver_equiv.yaml"
@@ -247,12 +257,19 @@ validators:
 - `--output` 和 `--workers` 由 wf 注入，args 不可含
 - `task_id = <commit_short>/<task_name>` 自动推导
 - `python.source=main_repo` → 用主仓库 venv；`worktree` → 用 worktree 内 venv
+- runner 必须允许工作流在输出目录预先创建 `STATUS.json` 和
+  `task_spec.snapshot.yaml`；断点续跑仍须拒绝其他未知文件
+- `supports_resume: true` 时，`resume_required_files` 声明恢复前必须存在
+  的 runner 文件；默认保持 `job_plan.json`，没有该文件的 runner 必须
+  显式改为自己的冻结文件
+- 示例中的 `commit: UNFROZEN` 只用于本机集成测试；执行 `prepare` 前必须
+  换成通过本地验收的干净 commit
 
 ---
 
 ## 9. 工程规则与安全门
 
-### 五个安全门（v0.6.5）
+### 五个安全门（v0.6.6）
 
 | # | 安全门 | 说明 |
 |---|--------|------|
@@ -283,4 +300,15 @@ validators:
 - **spec_hash 端到端闭环（v0.6.3 修复）**：`wf smoke/run` 通过 `OER_WF_SPEC_HASH` 环境变量注入 systemd unit，wrapper 写入 STATUS.json，smoke gate 读取并比对。旧版 STATUS.json 缺 spec_hash 会导致 run 被拒绝。
 - **sync 路径层级（v0.6.3 修复）**：ExecStart 提取的完整时间戳路径直接用作远程结果目录，不再被误当作 `output_base` 二次查找子目录。
 - **A6 job级续跑（v0.6.4）**：父进程每完成一个job后按计划顺序原子替换 `results.jsonl`；恢复时只运行缺失job。旧版结果缺少指纹和 `job_input_hash`，不能直接恢复。
+- **V2 输出目录所有权（v0.6.6）**：V2 runner 允许
+  `STATUS.json`、`task_spec.snapshot.yaml` 和临时状态信号先于科学输出
+  存在；仍拒绝其他未知文件。否则通用 wrapper 会在计算启动前触发
+  “output directory is not empty”。
+- **恢复文件契约（v0.6.6）**：`wf run --resume-timestamp` 不再对所有
+  runner 硬编码 `job_plan.json`；TaskSpec 的 `resume_required_files`
+  冻结实际恢复前提。V2 要求 `task_spec.json`、`targets.json` 和
+  `parameter_library.csv`。
+- **正式运行清洁门（v0.6.6）**：科学 runner 仅忽略状态为 `??` 的
+  `.wf_lock` 和 `results/` 运行时产物。已跟踪文件的修改、删除、重命名
+  及其他未跟踪路径仍判为脏工作树。
 - **sudo**：Legion 端未配免密 sudo。需 root 操作时用 `wsl.exe -u root`。

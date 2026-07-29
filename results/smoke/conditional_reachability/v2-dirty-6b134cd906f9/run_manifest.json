@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v2-conditional-model-reachability",
+  "run_mode": "smoke",
+  "provenance": {
+    "source_commit": "7698e28a4b8b4aa4d97914891be6359999552eea",
+    "dirty": true,
+    "dirty_paths": [
+      "code/python/scripts/compare_feature_objectives.py",
+      "code/python/scripts/run_conditional_reachability.py",
+      "code/python/src/oer_aem/experimental.py",
+      "code/python/src/oer_aem/reachability.py",
+      "code/python/tests/test_conditional_reachability_runner.py",
+      "code/python/tests/test_experimental_analysis.py",
+      "code/python/tests/test_reachability.py",
+      "code/web/backend/main.py",
+      "config/reachability/",
+      "documents/specifications/2026-07-29-v2-conditional-model-reachability-design.md",
+      "documents/specifications/2026-07-29-v2-conditional-model-reachability-implementation.md"
+    ],
+    "dirty_content_sha256": "6b134cd906f911f82958b6f6e8eda403bbde10ef6847a619a3ce534c6223c7cc",
+    "python": "3.13.3",
+    "platform": "macOS-15.4.1-arm64-arm-64bit-Mach-O",
+    "command": [
+      "/Users/liushiyu/OER-FTAcV/.venv/bin/python",
+      "code/python/scripts/run_conditional_reachability.py",
+      "--task-spec",
+      "config/reachability/v2-conditional-reachability.json",
+      "--smoke",
+      "--workers",
+      "2",
+      "--output",
+      "/tmp/oer-v2-smoke-bound.GpoYcA"
+    ]
+  },
+  "task_spec_sha256": "c1391fdbe9e6194949a1859934252481991a922d85da40530cdd90f2f9cbce0d",
+  "parameter_library_sha256": "862a0e50c93796e71a837b6d4dbd48e72cf7f025a2c3cc4876bcdb002e4dd57d",
+  "targets_sha256": "26606752f195dcc2b316fd0a789b51504e6e94d759b581a3a1e5c7fccc2641f6",
+  "artifact_sha256": {
+    "base_results.jsonl": "d7a822c6f1180148e16b96370356dc324ff2ee52c7bcc5393e1df737fc086b3b",
+    "stress_results.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "summary.json": "d6b24fb5c0cbd2bd8305188a18305a09ef1d6caf222c9f5f769ded43e65e070e"
+  },
+  "parameter_library_content_sha256": "5d959e18fc6dfb20e27907d5719cc646fc4b191b9a4f1074d508b76f2dfae6db"
+}

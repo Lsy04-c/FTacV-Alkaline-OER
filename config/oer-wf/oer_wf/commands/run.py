@@ -171,14 +171,19 @@ def run_run(
     out_rel = f"{spec.output_dir}/{ts}"
     out_abs = f"{wt}/{out_rel}"
     if resume_timestamp is not None:
+        required_checks = " && ".join(
+            f"test -f {shlex.quote(out_abs + '/' + name)}"
+            for name in spec.resume_required_files
+        )
         r_existing = ex.ssh_exec(
             f"test -d {shlex.quote(out_abs)} && "
-            f"test -f {shlex.quote(out_abs + '/job_plan.json')} && echo OK || echo MISSING"
+            f"{required_checks} && echo OK || echo MISSING"
         )
         if not r_existing.ok or "OK" not in r_existing.stdout:
             return fail(
                 FailType.STRUCTURE,
-                f"resume output or job_plan.json missing: {out_abs}",
+                "resume output or required files missing: "
+                f"{out_abs}; required={spec.resume_required_files}",
                 next_action="select an existing failed/incomplete result timestamp",
             )
     else:

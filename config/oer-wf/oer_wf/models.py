@@ -92,6 +92,9 @@ class TaskSpec(BaseModel):
     args: list[str] = Field(default_factory=list)
     workers: int = 1
     supports_resume: Optional[bool] = None
+    resume_required_files: list[str] = Field(
+        default_factory=lambda: ["job_plan.json"]
+    )
     output_dir: str  # relative base; actual run creates <output_dir>/<timestamp>/
 
     smoke: SmokeSpec = Field(default_factory=SmokeSpec)
@@ -150,6 +153,17 @@ class TaskSpec(BaseModel):
     @classmethod
     def relative_paths(cls, v: str, info):
         return cls._assert_relative(info.field_name, v)
+
+    @field_validator("resume_required_files")
+    @classmethod
+    def resume_files_relative(cls, v: list[str]) -> list[str]:
+        if not v:
+            raise ValueError("resume_required_files must not be empty")
+        if len(set(v)) != len(v):
+            raise ValueError("resume_required_files must not contain duplicates")
+        for value in v:
+            cls._assert_relative("resume_required_files", value)
+        return v
 
     @field_validator("python")
     @classmethod

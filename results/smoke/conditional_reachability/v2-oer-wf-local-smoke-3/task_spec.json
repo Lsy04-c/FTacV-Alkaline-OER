@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v2-conditional-model-reachability",
+  "scientific_scope": "conditional_reachability_not_parameter_estimation",
+  "data_contract": {
+    "path": "config/data-contracts/gate-a1-datasets.json",
+    "sha256": "96aebc642d00d1f90696cd8060ec088eff4a9d22c9a3eba02a2d5bfa83ac4b62"
+  },
+  "parameter_role_contract": {
+    "path": "config/parameter-roles/gate-a6-parameter-roles.json",
+    "sha256": "ebb4c22604b0b19ba16508e3880ddeeda9a03cf62f8b8bdfa86a258a734867e3"
+  },
+  "metadata_conditions": {
+    "potential_unit": "V",
+    "potential_reference": "RHE",
+    "current_unit": "A",
+    "time_unit": "s",
+    "instrument_preprocessing": "unresolved"
+  },
+  "datasets": [
+    {
+      "dataset_id": "FT2",
+      "path": "data/raw/ftacv2-ref-5hz.txt",
+      "sha256": "979fdd7e132f8dffbe32671a9f3476eac4dcdcd79bc6ab8b29578af2401b0091"
+    },
+    {
+      "dataset_id": "FT3",
+      "path": "data/raw/ftacv3-ref-5Hz.txt",
+      "sha256": "72af2050d2b8400d68520df7aba5c08c74420b1b711c0e8f229fa64cdfaa468c"
+    },
+    {
+      "dataset_id": "FT4",
+      "path": "data/raw/ftacv4-ref-1hz.txt",
+      "sha256": "f9b6b8448dc27ed7a78147beb9b6b05aa2cba105d195cb6aaa30e473ffcb3a21"
+    },
+    {
+      "dataset_id": "FT8",
+      "path": "data/raw/ftacv8-ref-5Hz.txt",
+      "sha256": "943d2406370be468c4a112a337c55d53ef16c43482b610915ca552723ae9be0d"
+    }
+  ],
+  "candidate_count": 512,
+  "sobol_seed": 29,
+  "diagnostic_parameter_specs": [
+    [
+      "k0_1",
+      "log10",
+      -3.0,
+      5.0
+    ],
+    [
+      "k0_2",
+      "log10",
+      -3.0,
+      5.0
+    ],
+    [
+      "k0_3",
+      "log10",
+      -3.0,
+      5.0
+    ],
+    [
+      "G_OH",
+      "linear",
+      0.8,
+      1.8
+    ],
+    [
+      "G_O",
+      "linear",
+      2.2,
+      3.4
+    ]
+  ],
+  "fixed_baseline": {
+    "A": 1.0,
+    "Cdl": 2e-05,
+    "Ru": 10.0,
+    "E0_pre": 1.45,
+    "k0_pre": 500.0,
+    "gamma": 3e-09,
+    "k0_4": 5000.0,
+    "scaling_OOH_OH": 3.2
+  },
+  "fixed_stress_scenarios": [
+    {
+      "scenario_id": "A:x0.5",
+      "parameter": "A",
+      "value": 0.5
+    },
+    {
+      "scenario_id": "A:x2",
+      "parameter": "A",
+      "value": 2.0
+    },
+    {
+      "scenario_id": "Cdl:x0.5",
+      "parameter": "Cdl",
+      "value": 1e-05
+    },
+    {
+      "scenario_id": "Cdl:x2",
+      "parameter": "Cdl",
+      "value": 4e-05
+    },
+    {
+      "scenario_id": "Ru:x0.5",
+      "parameter": "Ru",
+      "value": 5.0
+    },
+    {
+      "scenario_id": "Ru:x2",
+      "parameter": "Ru",
+      "value": 20.0
+    },
+    {
+      "scenario_id": "E0_pre:minus0.05",
+      "parameter": "E0_pre",
+      "value": 1.4
+    },
+    {
+      "scenario_id": "E0_pre:plus0.05",
+      "parameter": "E0_pre",
+      "value": 1.5
+    },
+    {
+      "scenario_id": "k0_pre:x0.5",
+      "parameter": "k0_pre",
+      "value": 250.0
+    },
+    {
+      "scenario_id": "k0_pre:x2",
+      "parameter": "k0_pre",
+      "value": 1000.0
+    },
+    {
+      "scenario_id": "gamma:x0.5",
+      "parameter": "gamma",
+      "value": 1.5e-09
+    },
+    {
+      "scenario_id": "gamma:x2",
+      "parameter": "gamma",
+      "value": 6e-09
+    },
+    {
+      "scenario_id": "k0_4:x0.5",
+      "parameter": "k0_4",
+      "value": 2500.0
+    },
+    {
+      "scenario_id": "k0_4:x2",
+      "parameter": "k0_4",
+      "value": 10000.0
+    },
+    {
+      "scenario_id": "scaling_OOH_OH:minus0.2",
+      "parameter": "scaling_OOH_OH",
+      "value": 3.0
+    },
+    {
+      "scenario_id": "scaling_OOH_OH:plus0.2",
+      "parameter": "scaling_OOH_OH",
+      "value": 3.4
+    }
+  ],
+  "top_stress_candidates": 8,
+  "points_per_cycle": 128,
+  "feature_grid_size": 128,
+  "discard_fraction": 0.25,
+  "fit_harmonics": [
+    1,
+    2,
+    3
+  ],
+  "feature_mode": "hybrid",
+  "solver_backend": "lsoda",
+  "solver_fallback": "bdf",
+  "thresholds": {
+    "dc_nrmse": 0.1,
+    "global_amplitude_relative_error": 0.1,
+    "global_phase_error_rad": 0.1,
+    "lockin_amplitude_nrmse": 0.1,
+    "lockin_phase_rmse_rad": 0.1,
+    "lockin_peak_shift_v": 0.025,
+    "lockin_valid_fraction_min": 0.5,
+    "ode_success_fraction_min": 0.95,
+    "prefix_improvement_max": 0.1
+  },
+  "runtime": {
+    "default_workers": 8,
+    "blas_threads_per_worker": 1,
+    "smoke_candidate_count": 8,
+    "smoke_runs_stress": false,
+    "smoke_scientific_classification": null
+  },
+  "prohibited_result_fields": [
+    "best_params",
+    "estimated_params",
+    "truth"
+  ],
+  "run_mode": "smoke",
+  "source_state": {
+    "source_commit": "7698e28a4b8b4aa4d97914891be6359999552eea",
+    "dirty": true,
+    "dirty_paths": [
+      "code/python/scripts/analyze_data_quality.py",
+      "code/python/scripts/audit_feature_channel_contracts.py",
+      "code/python/scripts/compare_feature_objectives.py",
+      "code/python/scripts/compare_reconstruction_model.py",
+      "code/python/scripts/residual_diagnostics.py",
+      "code/python/scripts/run_conditional_reachability.py",
+      "code/python/scripts/validate_conditional_reachability.py",
+      "code/python/src/oer_aem/experimental.py",
+      "code/python/src/oer_aem/physics.py",
+      "code/python/src/oer_aem/reachability.py",
+      "code/python/tests/test_conditional_reachability_runner.py",
+      "code/python/tests/test_conditional_reachability_validator.py",
+      "code/python/tests/test_experimental_analysis.py",
+      "code/python/tests/test_physics.py",
+      "code/python/tests/test_reachability.py",
+      "code/web/backend/main.py",
+      "config/oer-wf/examples/v2_conditional_reachability_lsoda.yaml",
+      "config/oer-wf/oer_wf/commands/verify.py",
+      "config/oer-wf/oer_wf/validators/__init__.py",
+      "config/oer-wf/oer_wf/validators/conditional_reachability_gate.py",
+      "config/oer-wf/tests/test_conditional_reachability_gate.py",
+      "config/reachability/",
+      "documents/corrections/项目纠错.md",
+      "documents/project/PROJECT_SUMMARY.md",
+      "documents/project/WORK_STATUS.md",
+      "documents/specifications/2026-07-29-adaptive-steady-state-design.md",
+      "documents/specifications/2026-07-29-adaptive-steady-state-implementation.md",
+      "documents/specifications/2026-07-29-v2-conditional-model-reachability-design.md",
+      "documents/specifications/2026-07-29-v2-conditional-model-reachability-implementation.md",
+      "results/smoke/conditional_reachability/"
+    ],
+    "dirty_content_sha256": "b242fd0ecfc5b0eb7103f6d529746290ef7e95e6a91ac96c37e1d2fa1d4de100"
+  }
+}

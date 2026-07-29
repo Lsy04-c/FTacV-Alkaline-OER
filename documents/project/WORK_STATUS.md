@@ -1465,3 +1465,92 @@ H1-H7压力测试：
 - 完整验收：
   `results/formal/data_contract/gate-a1-7cf548f/acceptance.md`。
 - 下一步：V2 条件模型可达性；不启动正式真实数据反演。
+
+## 40. V2 条件模型可达性首轮工程 smoke（2026-07-29）
+
+- 新增 V2 设计与实施计划，冻结 5 个 `diagnostic_only` 参数、seed 29
+  scrambled Sobol 512 候选、四数据集分别评价、LSODA、hybrid H1–H3、
+  128 points/cycle、128 点特征网格及 16 个固定输入 OAT 场景。
+- 实验分析已从 FastAPI 提取到核心包，Web API schema 保持不变；新增
+  Sobol、掩码、相位包裹、最坏分量评分、分类优先级和机器任务契约测试。
+- runner 的 job hash 绑定 task spec、参数库、source commit 和脏文件内容
+  指纹；父进程原子写 JSONL，smoke 明确跳过 stress 且科学分类为 null。
+- 首轮真实 LSODA smoke：4 数据集 × 前 8 个 Sobol 候选，2 workers，
+  wall time 197.09 s；32 个 job 完整，27 成功、5 个
+  `ODE_INITIALIZATION`，各数据集成功数为 FT2=6、FT3=7、FT4=7、FT8=7。
+- 独立 validator 对 7 个 runner 文件、原始数据哈希、512 行参数库、
+  Sobol 覆盖、32 个唯一 job/hash 和所有成功行评分重算给出 `PASS`。
+  本机证据：
+  `results/smoke/conditional_reachability/v2-dirty-6b134cd906f9/`。
+- 数值门未满足：总体成功率 84.4% < 95%。失败均发生在动态扫描前的
+  `calculate_steady_state`；固定 5 s 松弛对低速率候选不足，RHS 范数为
+  `1.10e-7` 至 `1.92e-3`，冻结门为 `1e-8`。
+- 决策：停止正式 512 候选；先开发并独立验证自适应稳态初始化，不调整
+  RHS/ODE 成功率阈值，不删除失败候选，不把 smoke 最近候选解释为参数。
+- 未完成：正式 stress job 的独立全量校验、validator `--rerun-best`、
+  oer-wf 集成、Legion 正式运行和 V2 科学分类。
+
+## 41. V2 自适应稳态初始化与复验（2026-07-29）
+
+- 根因验证：首轮失败候选继续 Radau 松弛后，分别在累计 50、500 或
+  5000 s 达到原 RHS `1e-8` 门；额外单候选墙钟约 0.04–0.10 s。固定
+  5 s 预热不足，不支持“候选物理不可解”的结论。
+- 修复：`calculate_steady_state_detailed` 使用累计
+  5/50/500/5000/50000 s 分段松弛，每段续接前一终态；达到原门即返回，
+  达到上限仍失败则停止。未放宽 RHS、覆盖度或守恒门。
+- 可追溯性：`ODESolution` 和 V2 JSONL 记录稳态累计时间、最终 RHS 与
+  每段 elapsed/RHS/nfev；独立 validator 强制检查合法端点、前缀和最终门。
+- 参考验证：默认参数仍在首个 5 s 阶段返回并匹配旧单段结果；冻结慢候选
+  与严格 50000 s Radau 参考状态在 `1e-7` 绝对容差内一致。
+- 新 smoke：4 数据集 × 8 Sobol 候选，LSODA，8 workers；32/32 成功，
+  0 次 BDF 回退，wall time 100.44 s。稳态阶段分布为
+  5 s×27、50 s×3、500 s×1、5000 s×1。
+- 独立 validator 为 `PASS`，四数据集科学分类均保持 null。证据：
+  `results/smoke/conditional_reachability/v2-adaptive-steady-state-smoke/`。
+- 验证：专项 53 项、全量 Python 405 项、Web 3 项、布局和 diff 审计通过。
+- 决策：初始化数值门关闭；正式 V2 继续等待 validator 的正式 stress
+  全量重算、`--rerun-best` 与 oer-wf 集成，不启动真实参数反演。
+
+## 42. V2 oer-wf 本机集成验收（2026-07-29）
+
+- 新增 `conditional_reachability_gate`。该门从归档 snapshot 读取配置，
+  调用独立 validator；smoke 不复算最近候选，formal 强制四组
+  `rerun-best` LSODA 复算并要求四条证据。
+- 新增 `v2_conditional_reachability_lsoda.yaml`：LSODA、8 workers、
+  每 worker 单 BLAS 线程、显式 resume、7 个 runner 文件及 STATUS。
+  commit 暂为 `UNFROZEN`，禁止直接用于远程正式任务。
+- 首次本机 wrapper smoke 在计算前失败：runner 把工作流预写的
+  `task_spec.snapshot.yaml` 和 `STATUS.json` 误判为未知输出。新增回归测试
+  后，runner 只允许这两个文件和临时状态信号，其他未知文件仍被拒绝。
+- 第二次 smoke 完成计算，但手工模拟命令把 7 位 task ID 写错；严格续跑
+  又因工作树指纹变化拒绝混合证据。两份失败目录保留，不作验收证据。
+- 第三次 smoke 由 TaskSpec 自动生成 task ID。结果为 32/32 job 成功、
+  0 次 BDF 回退、98.45 s，FT2/FT3/FT4/FT8 分类均为 null。
+- snapshot 驱动的真实 `run_verify` 执行 schema、finite、provenance 和
+  独立 V2 gate，共 13 项检查全部通过。验收证据：
+  `results/smoke/conditional_reachability/v2-oer-wf-local-smoke-3/`。
+- 决策：本机工作流集成门关闭。下一步先完成全量回归，再冻结干净 commit；
+  此前不部署 Legion，不启动正式 512+stress 计算。
+- 全量回归：oer-wf 92 项、Python 408 项、Web 3 项通过；Web 仅保留既有
+  Starlette 弃用警告，Markdown/布局审计和 `git diff --check` 通过。
+
+## 43. V2 正式计算前冻结压力测试（2026-07-30）
+
+- 本轮工作流版本升至 `oer-wf 0.6.6`，用于区分旧 0.6.5 与新增的 V2
+  validator、恢复文件契约和正式清洁门。
+- 发现 resume 接口不一致：V2 有严格 JSONL 续跑，但 oer-wf 对所有任务
+  硬编码要求 `job_plan.json`，因此会在调用 runner 前拒绝恢复。
+- 修复：TaskSpec 新增 `resume_required_files`。默认仍为
+  `job_plan.json`，保持 A6 行为；V2 显式要求 `task_spec.json`、
+  `targets.json` 和 `parameter_library.csv`。
+- 发现 formal 清洁门不可达：oer-wf 必然预写未跟踪的 `.wf_lock`、
+  STATUS、snapshot 和结果目录，旧 provenance 会把这些运行时文件判脏。
+- 修复：只忽略状态为 `??` 的 `.wf_lock` 和 `results/`；已跟踪文件变化、
+  删除、重命名及其他未跟踪路径仍判脏，并记录忽略路径。
+- 正式预算：2048 base + 512 stress，共 2560 job；8 workers、单 BLAS
+  线程。按 32-job smoke 投影约 2.2 小时，保守预算 2–4 小时。
+- 当前退出条件：冻结 commit 前不部署；远端 smoke 失败不启动 formal；
+  formal 基础设施失败停止验收；合法的不可达或 solver-limited 分类按科学
+  结果报告，不改阈值。
+- 回归：oer-wf 93 项、Python 408 项、Web 3 项通过；Web 仅有既有
+  Starlette 弃用警告，Markdown/布局审计和 `git diff --check` 通过。

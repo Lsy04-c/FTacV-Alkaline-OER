@@ -1,0 +1,69 @@
+task_name: "v2_conditional_reachability_lsoda"
+commit: "UNFROZEN"
+description: "V2 conditional M0 reachability for FT2/FT3/FT4/FT8 (LSODA)"
+
+python:
+  source: "main_repo"
+  path: ".venv/bin/python"
+
+worktree_root: "worktrees"
+
+env:
+  PYTHONPATH: "code/python/src"
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+  NUMEXPR_NUM_THREADS: "1"
+
+build:
+  required: false
+
+script: "code/python/scripts/run_conditional_reachability.py"
+supports_resume: true
+resume_required_files:
+  - "task_spec.json"
+  - "targets.json"
+  - "parameter_library.csv"
+args:
+  - "--task-spec"
+  - "config/reachability/v2-conditional-reachability.json"
+workers: 8
+output_dir: "results/conditional_reachability/v2"
+
+smoke:
+  enabled: true
+  args:
+    - "--smoke"
+  overrides: {}
+  expected_files:
+    - "task_spec.json"
+    - "parameter_library.csv"
+    - "targets.json"
+    - "base_results.jsonl"
+    - "stress_results.jsonl"
+    - "summary.json"
+    - "run_manifest.json"
+    - "STATUS.json"
+
+expected_files:
+  - "task_spec.json"
+  - "parameter_library.csv"
+  - "targets.json"
+  - "base_results.jsonl"
+  - "stress_results.jsonl"
+  - "summary.json"
+  - "run_manifest.json"
+  - "STATUS.json"
+
+validators:
+  - "schema_check"
+  - "finite_check"
+  - "provenance"
+  - "conditional_reachability_gate"
+
+validator_config:
+  conditional_reachability_gate:
+    project_root: "."
+    task_spec: "config/reachability/v2-conditional-reachability.json"
+    rerun_best_smoke: false
+    rerun_best_formal: true

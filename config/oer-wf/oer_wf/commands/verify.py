@@ -11,6 +11,7 @@ from oer_wf.models import CheckResult, FailType, WfResponse
 from oer_wf.response import fail, ok
 from oer_wf.snapshot import SNAPSHOT_FILENAME, load_snapshot
 from oer_wf.validators import (
+    conditional_reachability_gate,
     finite_check,
     manifest_hash,
     optimizer_benchmark_gate,
@@ -21,6 +22,7 @@ from oer_wf.validators import (
 )
 
 _VALIDATOR_MAP = {
+    "conditional_reachability_gate": conditional_reachability_gate.run,
     "schema_check": schema_check.run,
     "finite_check": finite_check.run,
     "provenance": provenance.run,
@@ -189,6 +191,7 @@ def run_verify(
             continue
         try:
             if name in {
+                "conditional_reachability_gate",
                 "recovery_gate",
                 "optimizer_benchmark_gate",
                 "optimizer_confirmation_gate",

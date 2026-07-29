@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v2-conditional-model-reachability",
+  "run_mode": "smoke",
+  "provenance": {
+    "source_commit": "7698e28a4b8b4aa4d97914891be6359999552eea",
+    "dirty": true,
+    "dirty_paths": [
+      "code/python/scripts/analyze_data_quality.py",
+      "code/python/scripts/audit_feature_channel_contracts.py",
+      "code/python/scripts/compare_feature_objectives.py",
+      "code/python/scripts/compare_reconstruction_model.py",
+      "code/python/scripts/residual_diagnostics.py",
+      "code/python/scripts/run_conditional_reachability.py",
+      "code/python/scripts/validate_conditional_reachability.py",
+      "code/python/src/oer_aem/experimental.py",
+      "code/python/src/oer_aem/physics.py",
+      "code/python/src/oer_aem/reachability.py",
+      "code/python/tests/test_conditional_reachability_runner.py",
+      "code/python/tests/test_conditional_reachability_validator.py",
+      "code/python/tests/test_experimental_analysis.py",
+      "code/python/tests/test_physics.py",
+      "code/python/tests/test_reachability.py",
+      "code/web/backend/main.py",
+      "config/reachability/",
+      "documents/corrections/项目纠错.md",
+      "documents/project/PROJECT_SUMMARY.md",
+      "documents/project/WORK_STATUS.md",
+      "documents/specifications/2026-07-29-adaptive-steady-state-design.md",
+      "documents/specifications/2026-07-29-adaptive-steady-state-implementation.md",
+      "documents/specifications/2026-07-29-v2-conditional-model-reachability-design.md",
+      "documents/specifications/2026-07-29-v2-conditional-model-reachability-implementation.md",
+      "results/smoke/conditional_reachability/"
+    ],
+    "dirty_content_sha256": "0e23b5eac97ee6bc7e86ad5726c44b1f7c7b7939fe414c96d64dd55fb40be113",
+    "python": "3.13.3",
+    "platform": "macOS-15.4.1-arm64-arm-64bit-Mach-O",
+    "command": [
+      "/Users/liushiyu/OER-FTAcV/.venv/bin/python",
+      "code/python/scripts/run_conditional_reachability.py",
+      "--task-spec",
+      "config/reachability/v2-conditional-reachability.json",
+      "--smoke",
+      "--workers",
+      "8",
+      "--output",
+      "results/smoke/conditional_reachability/v2-adaptive-steady-state-smoke"
+    ]
+  },
+  "task_spec_sha256": "6be3a599de508e249976010498afcdc59ce55afe2ba1c4528dbc9dfc9fb384bf",
+  "parameter_library_sha256": "862a0e50c93796e71a837b6d4dbd48e72cf7f025a2c3cc4876bcdb002e4dd57d",
+  "targets_sha256": "26606752f195dcc2b316fd0a789b51504e6e94d759b581a3a1e5c7fccc2641f6",
+  "artifact_sha256": {
+    "base_results.jsonl": "f93281c63315391de9fa342f602ade84eb2b2acea73dfe0fa25f914140c8d48a",
+    "stress_results.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "summary.json": "137abda9dc29996177a0437931d04e20dd8eeaf3ac9f8508676659bb2c555903"
+  },
+  "parameter_library_content_sha256": "5d959e18fc6dfb20e27907d5719cc646fc4b191b9a4f1074d508b76f2dfae6db"
+}

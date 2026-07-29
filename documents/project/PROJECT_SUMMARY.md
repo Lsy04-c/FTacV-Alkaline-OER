@@ -308,7 +308,7 @@ FastAPI 和静态前端已支持数据分析、正演、TPE 接口和曲线显�
 
 ### 9.2 V2：条件模型可达性
 
-**下一步。**
+**进行中，初始化数值门和本机工作流门已关闭；正式 Legion 计算待启动。**
 
 ```text
 在冻结模型、合理参数范围和当前元数据假设下，
@@ -317,6 +317,38 @@ M0 是否能够达到四组实验的 DC/H1–H3 特征区域？
 
 输出可达/不可达特征、条件参数集合、模型距离、失败区域和固定输入稳定性；
 不得把最优候选写成真实参数。
+
+已完成 V2 设计、机器可读任务契约、实验分析核心拆分、Sobol 参数库与评分
+纯函数、可续跑 runner 和第一版独立 validator。绑定代码脏状态指纹的本机
+LSODA smoke 完成 4×8 个基础任务，7 个 runner 产物及独立评分重算
+`PASS`；证据位于
+`results/smoke/conditional_reachability/v2-dirty-6b134cd906f9/`。
+
+首轮 smoke 暴露固定 5 s 稳态松弛与最低 `k0=1e-3 s⁻¹` 的时间尺度冲突。
+现已改为累计 5/50/500/5000/50000 s 的有界自适应 Radau 松弛，保持
+RHS `1e-8`、覆盖度和守恒门不变。新 4×8 LSODA smoke 为 32/32 成功、
+无 BDF 回退；27 个候选在 5 s 收敛，3 个在 50 s、1 个在 500 s、1 个在
+5000 s 收敛。独立 validator `PASS`，8 workers wall time 100.44 s。
+证据位于
+`results/smoke/conditional_reachability/v2-adaptive-steady-state-smoke/`。
+该证据关闭初始化阻断点，但不产生科学分类。正式 512 候选和压力任务尚未
+启动。
+
+独立 validator 已实现正式 stress job 集合、payload/hash、评分和分类
+重算；`--rerun-best` 已对四组 smoke 最近候选完成 LSODA 复算。oer-wf
+新增专用门和 V2 TaskSpec，本机 wrapper smoke 为 32/32 成功、0 次 BDF
+回退、98.45 s；snapshot 驱动的 `wf verify` 13 项检查全部通过。证据：
+`results/smoke/conditional_reachability/v2-oer-wf-local-smoke-3/`。
+
+当前边界：TaskSpec 的 commit 仍为 `UNFROZEN`。冻结干净计算 commit、
+部署 Legion、运行正式 512 基础候选和 512 stress job、同步及正式
+`wf verify --rerun-best` 尚未完成，因此 V2 仍无科学分类。
+
+正式前压力测试已关闭两个工作流阻断点：V2 resume 现在声明
+`task_spec.json`、`targets.json` 和 `parameter_library.csv`，不再被通用
+`job_plan.json` 前提拒绝；清洁门只忽略未跟踪的 `.wf_lock` 与
+`results/` 运行产物，其他 Git 变化仍阻断 formal。正式规模为 2560 job，
+按本机 smoke 投影约 2.2 小时，保守预算 2–4 小时。
 
 ### 9.3 V3：残差归因
 

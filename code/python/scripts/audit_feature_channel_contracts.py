@@ -22,14 +22,13 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "code" / "python" / "src"))
 sys.path.insert(0, str(ROOT / "code" / "python" / "scripts"))
-sys.path.insert(0, str(ROOT / "code" / "web" / "backend"))
 
-from compare_feature_objectives import (  # noqa: E402
-    _config,
-    _experimental_target,
-)
-from main import _analyze_ftacv_data  # noqa: E402
+from compare_feature_objectives import _config  # noqa: E402
 from oer_aem.data_contract import read_strict_experimental_trace  # noqa: E402
+from oer_aem.experimental import (  # noqa: E402
+    analyze_ftacv_trace,
+    build_experimental_target,
+)
 from oer_aem import inversion as inversion_module  # noqa: E402
 from oer_aem.inversion import (  # noqa: E402
     InversionObjective,
@@ -352,7 +351,7 @@ def build_real_records(
         rows = np.column_stack(
             (trace.potential, trace.current, trace.time)
         )
-        analysis = _analyze_ftacv_data(rows)
+        analysis = analyze_ftacv_trace(trace)
         for mode in MODES:
             config = _config(
                 mode,
@@ -361,7 +360,7 @@ def build_real_records(
                 fit_harmonics=(1, 2, 3),
                 solver_backend="lsoda",
             )
-            target = _experimental_target(rows, analysis, config)
+            target = build_experimental_target(trace, analysis, config)
             contract = build_feature_channel_contract(target, config)
             contracts.append(
                 {

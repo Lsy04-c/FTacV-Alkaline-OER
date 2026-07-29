@@ -17,12 +17,10 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "code" / "python" / "src"))
-sys.path.insert(0, str(ROOT / "code" / "web" / "backend"))
 
-from main import _analyze_ftacv_data
 from oer_aem.data_contract import normalize_trace
 from oer_aem.defaults import initialize_oer_parameters
-from oer_aem.features import complex_harmonic_metrics
+from oer_aem.experimental import analyze_ftacv_trace, build_experimental_target
 from oer_aem.inversion import (
     DEFAULT_PARAM_SPECS,
     InversionConfig,
@@ -129,69 +127,6 @@ def _config(
         feature_mode=mode,
         solver_backend=solver_backend,
     )
-
-
-def _experimental_target(
-    rows: np.ndarray,
-    analysis: Mapping[str, Any],
-    config: InversionConfig,
-) -> dict[str, Any]:
-    tdc = np.asarray(analysis["tdc"], dtype=float)
-    order = np.argsort(tdc)
-    unique, keep = np.unique(tdc[order], return_index=True)
-    target = {
-        "dc": np.interp(
-            config.e_grid,
-            unique,
-            np.asarray(analysis["dc"], dtype=float)[order][keep],
-        ),
-        "harm": [
-            np.interp(
-                config.e_grid,
-                unique,
-                np.asarray(channel, dtype=float)[order][keep],
-            )
-            for channel in analysis["harmonics"]
-        ],
-        "tafel": None,
-        "e_grid": config.e_grid,
-        "_experimental_duration": float(analysis["meta"]["duration"]),
-        "_experimental_scan_rate": float(analysis["meta"]["v"]),
-    }
-    if config.feature_mode in ("complex_snr", "hybrid", "combined"):
-        trace = normalize_trace(rows)
-        fs = 1.0 / float(np.mean(np.diff(trace.time)))
-        target["complex_harmonics"] = complex_harmonic_metrics(
-            trace.current[len(trace.current) // 4 :],
-            fs=fs,
-            f0=float(analysis["meta"]["f"]),
-            n_harmonics=max(config.fit_harmonics),
-        )
-    if config.feature_mode in ("lockin_only", "hybrid", "combined"):
-        from oer_aem.inversion import _interpolate_lockin_to_grid
-        from oer_aem.signal import estimate_reference_phase, lockin_harmonics
-        trace = normalize_trace(rows)
-        i0 = len(trace.current) // 4
-        t_trim = trace.time[i0:]
-        i_trim = trace.current[i0:]
-        lockin = lockin_harmonics(
-            i_trim, t_trim,
-            f0=float(analysis["meta"]["f"]),
-            harmonics=tuple(range(1, max(config.fit_harmonics) + 1)),
-            potential_resolution=0.05,
-            scan_rate=float(analysis["meta"]["v"]),
-            reference_phase=estimate_reference_phase(
-                trace.potential,
-                trace.time,
-                float(analysis["meta"]["f"]),
-            )[i0:],
-        )
-        target["lockin"] = _interpolate_lockin_to_grid(
-            lockin,
-            tdc[i0:],
-            config.e_grid,
-        )
-    return target
 
 
 def _sampling_evidence(
@@ -404,7 +339,8 @@ def run_comparison(
 
     for filename in DATASETS:
         rows = _load_rows(RAW / filename)
-        analysis = _analyze_ftacv_data(rows)
+        trace = normalize_trace(rows)
+        analysis = analyze_ftacv_trace(trace)
         harmonics = tuple(
             int(h) for h in analysis["harmonic_quality"]["fit_harmonics"]
         )
@@ -417,7 +353,7 @@ def run_comparison(
                 solver_backend=solver_backend,
             )
             specs = config.param_specs
-            target = _experimental_target(rows, analysis, config)
+            target = build_experimental_target(trace, analysis, config)
             for seed in SEEDS:
                 jobs.append(
                     dict(

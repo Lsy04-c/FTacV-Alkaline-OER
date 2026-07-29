@@ -1,0 +1,24 @@
+{
+  "status": "SUCCESS",
+  "exit_code": 0,
+  "pid": 28952,
+  "started_at": "2026-07-29T13:42:26Z",
+  "finished_at": "2026-07-29T13:44:06Z",
+  "commit": "UNFROZE",
+  "task_id": "UNFROZE/v2_conditional_reachability_lsoda",
+  "spec_hash": "sha256:7822090d87cc6e3a052c301be42c39534883ee5dab33a23297b68520dd6c20d0",
+  "command": [
+    ".venv/bin/python",
+    "code/python/scripts/run_conditional_reachability.py",
+    "--task-spec",
+    "config/reachability/v2-conditional-reachability.json",
+    "--output",
+    "results/smoke/conditional_reachability/v2-oer-wf-local-smoke-3",
+    "--workers",
+    "8",
+    "--smoke"
+  ],
+  "output_dir": "results/smoke/conditional_reachability/v2-oer-wf-local-smoke-3",
+  "error_msg": null,
+  "extra": {}
+}

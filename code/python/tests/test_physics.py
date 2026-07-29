@@ -173,6 +173,59 @@ def test_dynamic_solver_uses_state_aware_absolute_tolerances(monkeypatch):
     assert result.backend_used == "LSODA"
     assert result.fallback_used is False
     assert [item.backend for item in result.attempts] == ["LSODA"]
+    assert result.steady_state_elapsed_s is None
+    assert result.steady_state_rhs_norm is None
+    assert result.steady_state_attempts == ()
+
+
+def test_detailed_solver_propagates_steady_state_provenance(monkeypatch):
+    steady_attempt = physics_module.SteadyStateAttempt(
+        elapsed_s=50.0,
+        rhs_norm=2e-10,
+        success=True,
+        message="relaxed",
+        nfev=21,
+    )
+    steady = physics_module.SteadyStateSolution(
+        state=np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.9]),
+        elapsed_s=50.0,
+        rhs_norm=2e-10,
+        attempts=(steady_attempt,),
+    )
+    monkeypatch.setattr(
+        OERPhysics,
+        "calculate_steady_state_detailed",
+        staticmethod(lambda params: steady),
+    )
+
+    def fake_solve_ivp(**kwargs):
+        t_eval = np.asarray(kwargs["t_eval"], dtype=float)
+        y0 = np.asarray(kwargs["y0"], dtype=float)
+        return SimpleNamespace(
+            success=True,
+            t=t_eval,
+            y=np.repeat(y0[:, None], len(t_eval), axis=1),
+            message="ok",
+            nfev=7,
+        )
+
+    monkeypatch.setattr(physics_module, "solve_ivp", fake_solve_ivp)
+    params = initialize_oer_parameters()
+    params.update(
+        {
+            "n_points": 8,
+            "points_per_cycle": 8,
+            "total_time": 1.0,
+            "t_span": np.linspace(0.0, 1.0, 8),
+            "use_steady_state": True,
+        }
+    )
+
+    result = OERPhysics.solve_ode_system_detailed(params)
+
+    assert result.steady_state_elapsed_s == 50.0
+    assert result.steady_state_rhs_norm == pytest.approx(2e-10)
+    assert result.steady_state_attempts == (steady_attempt,)
 
 
 def test_detailed_solver_restarts_bdf_from_original_state(monkeypatch):
@@ -450,6 +503,109 @@ def test_steady_state_rejects_solver_failure(monkeypatch):
 
     with pytest.raises(RuntimeError, match="forced failure"):
         OERPhysics.calculate_steady_state(params)
+
+
+def test_adaptive_steady_state_preserves_default_five_second_solution():
+    params = initialize_oer_parameters()
+    params_ss = dict(params)
+    params_ss.update({"v": 0.0, "dE": 0.0, "omega": 0.0})
+    params_ss = OERPhysics.initialize_system(params_ss)
+    y0 = np.zeros(6)
+    y0[0] = 1.0
+    y0[5] = params["E_start"]
+    reference = physics_module.solve_ivp(
+        fun=lambda t, y: physics_module._oer_model_rhs(t, y, params_ss),
+        t_span=(0.0, 5.0),
+        y0=y0,
+        method="Radau",
+        rtol=1e-4,
+        atol=1e-6,
+        max_step=0.1,
+    ).y[:, -1]
+
+    solution = OERPhysics.calculate_steady_state_detailed(params)
+
+    assert solution.elapsed_s == 5.0
+    assert solution.rhs_norm <= 1e-8
+    assert len(solution.attempts) == 1
+    assert np.allclose(solution.state, reference, rtol=0.0, atol=1e-12)
+    assert np.allclose(
+        OERPhysics.calculate_steady_state(params),
+        solution.state,
+        rtol=0.0,
+        atol=1e-12,
+    )
+
+
+def test_adaptive_steady_state_relaxes_frozen_slow_v2_candidate():
+    params = initialize_oer_parameters()
+    params.update(
+        {
+            "E_start": 1.1240972826923847,
+            "k0_1": 0.15571646382514776,
+            "k0_2": 0.13493135186122124,
+            "k0_3": 54.26582323182952,
+            "k0_4": 5000.0,
+            "G_OH": 0.944564786925912,
+            "G_O": 2.622469707205892,
+            "scaling_OOH_OH": 3.2,
+            "gamma": 3e-9,
+        }
+    )
+    params = apply_alkaline_aem(params)
+    params = OERPhysics.initialize_system(params)
+
+    solution = OERPhysics.calculate_steady_state_detailed(params)
+    params_ss = dict(params)
+    params_ss.update({"v": 0.0, "dE": 0.0, "omega": 0.0})
+    params_ss = OERPhysics.initialize_system(params_ss)
+    reference_y0 = np.zeros(6)
+    reference_y0[0] = 1.0
+    reference_y0[5] = params["E_start"]
+    strict_reference = physics_module.solve_ivp(
+        fun=lambda t, y: physics_module._oer_model_rhs(t, y, params_ss),
+        t_span=(0.0, 50000.0),
+        y0=reference_y0,
+        method="Radau",
+        rtol=1e-8,
+        atol=1e-10,
+        max_step=100.0,
+    )
+
+    assert solution.elapsed_s == 5000.0
+    assert solution.rhs_norm <= 1e-8
+    assert [attempt.elapsed_s for attempt in solution.attempts] == [
+        5.0,
+        50.0,
+        500.0,
+        5000.0,
+    ]
+    assert np.sum(solution.state[:5]) == pytest.approx(1.0, abs=1e-8)
+    assert strict_reference.success is True
+    assert np.allclose(
+        solution.state,
+        strict_reference.y[:, -1],
+        rtol=0.0,
+        atol=1e-7,
+    )
+
+
+def test_adaptive_steady_state_fails_after_frozen_maximum(monkeypatch):
+    def fake_solve_ivp(**kwargs):
+        y0 = np.asarray(kwargs["y0"], dtype=float)
+        return SimpleNamespace(
+            success=True,
+            t=np.array(kwargs["t_span"], dtype=float),
+            y=np.repeat(y0[:, None], 2, axis=1),
+            message="no relaxation",
+            nfev=2,
+        )
+
+    monkeypatch.setattr(physics_module, "solve_ivp", fake_solve_ivp)
+    params = initialize_oer_parameters()
+
+    with pytest.raises(RuntimeError, match=r"50000.*RHS"):
+        OERPhysics.calculate_steady_state_detailed(params)
 
 
 def test_validate_steady_state_rejects_invalid_state_and_rhs():

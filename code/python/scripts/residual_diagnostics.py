@@ -23,10 +23,13 @@ import numpy as np
 PROJECT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT))
 sys.path.insert(0, str(PROJECT / "code" / "python" / "src"))
-sys.path.insert(0, str(PROJECT / "code" / "web" / "backend"))
 
-from main import _analyze_ftacv_data
-from oer_aem.data_contract import normalize_by_max_abs, residual_on_grid
+from oer_aem.data_contract import (
+    normalize_by_max_abs,
+    normalize_trace,
+    residual_on_grid,
+)
+from oer_aem.experimental import analyze_ftacv_trace
 from oer_aem.inversion import (
     InversionConfig,
     TPEInverter,
@@ -134,7 +137,7 @@ def _grid_residual_row(
 def diagnose_dataset(filename: str, n_trials=30) -> Dict[str, Any]:
     """对单个数据集运行反演 + 残差诊断。"""
     rows = _load_numeric(filename)
-    analysis = _analyze_ftacv_data(rows)
+    analysis = analyze_ftacv_trace(normalize_trace(rows))
     hq = analysis['harmonic_quality']
     fit_h = hq['fit_harmonics']
 

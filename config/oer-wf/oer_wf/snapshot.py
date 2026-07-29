@@ -23,6 +23,7 @@ def build_snapshot_dict(spec: TaskSpec, *, is_smoke: bool) -> dict[str, Any]:
         "args": list(spec.args),
         "workers": spec.workers,
         "supports_resume": spec.supports_resume,
+        "resume_required_files": list(spec.resume_required_files),
         "output_dir": spec.output_dir,
         "expected_files": expected,
         "validators": list(spec.validators),
