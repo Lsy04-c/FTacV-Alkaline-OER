@@ -34,6 +34,7 @@ STOICHIOMETRIC_MATRIX = np.array(
     ],
     dtype=float,
 )
+DYNAMIC_ATOL = np.array([3e-11, 3e-11, 3e-11, 3e-11, 3e-11, 1e-8])
 
 
 def get_state_indices(N: int = 2) -> SimpleNamespace:
@@ -229,6 +230,30 @@ class CurrentComponents:
     capacitive: float
     faradaic: float
     closure_residual: float
+
+
+@dataclass(frozen=True)
+class SolverAttempt:
+    """One dynamic solver attempt and its observable completion state."""
+
+    backend: str
+    success: bool
+    message: str
+    nfev: int
+    returned_points: int
+
+
+@dataclass(frozen=True)
+class ODESolution:
+    """Dynamic trajectory with explicit backend provenance."""
+
+    t: np.ndarray
+    y: np.ndarray
+    E_actual: np.ndarray
+    i_total: np.ndarray
+    backend_used: str
+    fallback_used: bool
+    attempts: tuple[SolverAttempt, ...]
 
 
 def elementary_rates(
@@ -442,14 +467,13 @@ class OERPhysics:
         return _oer_model_rhs(t, y, params)
 
     @staticmethod
-    def solve_ode_system(params: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """求解 ODE 系统，返回 (t, y, E_actual, i_total)。"""
+    def solve_ode_system_detailed(params: Dict[str, Any]) -> ODESolution:
+        """Solve the trajectory with explicit LSODA-to-BDF provenance."""
         if 'RTF' not in params:
             params = initialize_system(params)
         validate_physics_parameters(params, require_time_grid=True)
 
-        num_states = 6
-        y0 = np.zeros(num_states)
+        y0 = np.zeros(6)
         y0[0] = 1.0
         y0[5] = params['E_start']
 
@@ -461,34 +485,91 @@ class OERPhysics:
         if t_eval.ndim == 0 or len(t_eval) == 0:
             t_eval = np.linspace(0.0, t_span[1], int(params['n_points']))
 
-        try:
-            sol = solve_ivp(
-                fun=lambda t, y: _oer_model_rhs(t, y, params),
-                t_span=t_span,
-                y0=y0,
-                t_eval=t_eval,
-                # 收敛性验证（256 周期全扫描）：rtol=1e-4 下 Radau 与 LSODA 的 H1
-                # 包络仅相关 0.78，未收敛；rtol=1e-6 时两者波形相关 1.0、谐波一致。
-                # LSODA 在该问题上比 Radau 快约 3 倍。
-                method='LSODA',
-                rtol=1e-6,
-                atol=1e-8,
-                first_step=1e-8,
-                max_step=min(t_span[1] / 50.0, 1.0 / (params['f'] * 20)),
-            )
-            if not sol.success:
-                # solve_ivp 刚性失败时不抛异常，必须显式检查，
-                # 否则截断的解会被当作完整仿真送入下游
-                raise RuntimeError(
-                    f'ODE 求解在 t = {sol.t[-1]:.4g} / {t_span[1]:.4g} s 处中断: {sol.message}'
+        attempts = []
+        successful = None
+        backend_used = ""
+        for backend in ("LSODA", "BDF"):
+            kwargs = {
+                "fun": lambda t, y: _oer_model_rhs(t, y, params),
+                "t_span": t_span,
+                "y0": y0.copy(),
+                "t_eval": t_eval,
+                "method": backend,
+                "rtol": 1e-6,
+                "atol": DYNAMIC_ATOL.copy(),
+                "max_step": min(
+                    t_span[1] / 50.0,
+                    1.0 / (params['f'] * 20),
+                ),
+            }
+            if backend == "LSODA":
+                kwargs["first_step"] = 1e-8
+            try:
+                sol = solve_ivp(**kwargs)
+                complete = bool(
+                    sol.success
+                    and len(sol.t) == len(t_eval)
+                    and np.asarray(sol.y).shape == (6, len(t_eval))
                 )
-            t = sol.t
-            y = sol.y.T
-            E_dc = params['E_start'] + params['v'] * t
-            E_actual = E_dc + params['dE'] * np.sin(params['omega'] * t)
-            i_total = (E_actual - y[:, 5]) / params['Ru']
+                message = str(sol.message)
+                if sol.success and not complete:
+                    message = (
+                        f"{message}; incomplete output "
+                        f"{len(sol.t)}/{len(t_eval)}"
+                    )
+                attempts.append(
+                    SolverAttempt(
+                        backend=backend,
+                        success=complete,
+                        message=message,
+                        nfev=int(getattr(sol, "nfev", -1)),
+                        returned_points=int(len(sol.t)),
+                    )
+                )
+                if complete:
+                    successful = sol
+                    backend_used = backend
+                    break
+            except Exception as exc:  # noqa: BLE001
+                attempts.append(
+                    SolverAttempt(
+                        backend=backend,
+                        success=False,
+                        message=f"{type(exc).__name__}: {exc}",
+                        nfev=-1,
+                        returned_points=0,
+                    )
+                )
+        if successful is None:
+            detail = "; ".join(
+                f"{item.backend}: {item.message}" for item in attempts
+            )
+            raise RuntimeError(f"dynamic solvers failed: {detail}")
+
+        t = np.asarray(successful.t, dtype=float)
+        y = np.asarray(successful.y, dtype=float).T
+        E_dc = params['E_start'] + params['v'] * t
+        E_actual = E_dc + params['dE'] * np.sin(params['omega'] * t)
+        i_total = (E_actual - y[:, 5]) / params['Ru']
+        return ODESolution(
+            t=t,
+            y=y,
+            E_actual=E_actual,
+            i_total=i_total,
+            backend_used=backend_used,
+            fallback_used=backend_used != "LSODA",
+            attempts=tuple(attempts),
+        )
+
+    @staticmethod
+    def solve_ode_system(params: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """求解 ODE 系统，返回 (t, y, E_actual, i_total)。"""
+        try:
+            result = OERPhysics.solve_ode_system_detailed(params)
+            return result.t, result.y, result.E_actual, result.i_total
         except Exception as exc:  # noqa: BLE001
             warnings.warn(f'ODE 求解失败: {exc}', stacklevel=2)
+            num_states = 6
             t = np.asarray(params['t_span']).reshape(-1)
             y = np.full((len(t), num_states), np.nan)
             E_actual = np.full(len(t), np.nan)

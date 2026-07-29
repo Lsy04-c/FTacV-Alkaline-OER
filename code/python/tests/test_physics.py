@@ -135,6 +135,123 @@ def test_lsoda_uses_validated_initial_step_for_stiff_parameter_sets(monkeypatch)
     assert captured["first_step"] == pytest.approx(1e-8)
 
 
+def test_dynamic_solver_uses_state_aware_absolute_tolerances(monkeypatch):
+    captured = {}
+
+    def fake_solve_ivp(**kwargs):
+        captured.update(kwargs)
+        t_eval = np.asarray(kwargs["t_eval"], dtype=float)
+        y0 = np.asarray(kwargs["y0"], dtype=float)
+        return SimpleNamespace(
+            success=True,
+            t=t_eval,
+            y=np.repeat(y0[:, None], len(t_eval), axis=1),
+            message="ok",
+            nfev=7,
+        )
+
+    monkeypatch.setattr(physics_module, "solve_ivp", fake_solve_ivp)
+    params = initialize_oer_parameters()
+    params.update(
+        {
+            "n_points": 8,
+            "points_per_cycle": 8,
+            "total_time": 1.0,
+            "t_span": np.linspace(0.0, 1.0, 8),
+            "use_steady_state": False,
+        }
+    )
+
+    result = OERPhysics.solve_ode_system_detailed(params)
+
+    assert physics_module.DYNAMIC_ATOL == pytest.approx(
+        np.array([3e-11] * 5 + [1e-8]), rel=0.0, abs=0.0
+    )
+    assert captured["atol"] == pytest.approx(
+        physics_module.DYNAMIC_ATOL, rel=0.0, abs=0.0
+    )
+    assert result.backend_used == "LSODA"
+    assert result.fallback_used is False
+    assert [item.backend for item in result.attempts] == ["LSODA"]
+
+
+def test_detailed_solver_restarts_bdf_from_original_state(monkeypatch):
+    calls = []
+
+    def fake_solve_ivp(**kwargs):
+        method = kwargs["method"]
+        y0 = np.asarray(kwargs["y0"], dtype=float).copy()
+        calls.append((method, y0, dict(kwargs)))
+        if method == "LSODA":
+            failed_state = y0.copy()
+            failed_state[0] = 0.5
+            return SimpleNamespace(
+                success=False,
+                t=np.array([0.0]),
+                y=failed_state[:, None],
+                message="forced LSODA failure",
+                nfev=3,
+            )
+        t_eval = np.asarray(kwargs["t_eval"], dtype=float)
+        return SimpleNamespace(
+            success=True,
+            t=t_eval,
+            y=np.repeat(y0[:, None], len(t_eval), axis=1),
+            message="BDF ok",
+            nfev=9,
+        )
+
+    monkeypatch.setattr(physics_module, "solve_ivp", fake_solve_ivp)
+    params = initialize_oer_parameters()
+    params.update(
+        {
+            "n_points": 8,
+            "points_per_cycle": 8,
+            "total_time": 1.0,
+            "t_span": np.linspace(0.0, 1.0, 8),
+            "use_steady_state": False,
+        }
+    )
+
+    result = OERPhysics.solve_ode_system_detailed(params)
+
+    assert [call[0] for call in calls] == ["LSODA", "BDF"]
+    assert calls[1][1] == pytest.approx(calls[0][1], rel=0.0, abs=0.0)
+    assert "first_step" in calls[0][2]
+    assert "first_step" not in calls[1][2]
+    assert result.backend_used == "BDF"
+    assert result.fallback_used is True
+    assert [item.success for item in result.attempts] == [False, True]
+    assert result.attempts[0].message == "forced LSODA failure"
+
+
+def test_detailed_solver_raises_when_all_backends_fail(monkeypatch):
+    def fake_solve_ivp(**kwargs):
+        y0 = np.asarray(kwargs["y0"], dtype=float)
+        return SimpleNamespace(
+            success=False,
+            t=np.array([0.0]),
+            y=y0[:, None],
+            message=f"forced {kwargs['method']} failure",
+            nfev=2,
+        )
+
+    monkeypatch.setattr(physics_module, "solve_ivp", fake_solve_ivp)
+    params = initialize_oer_parameters()
+    params.update(
+        {
+            "n_points": 8,
+            "points_per_cycle": 8,
+            "total_time": 1.0,
+            "t_span": np.linspace(0.0, 1.0, 8),
+            "use_steady_state": False,
+        }
+    )
+
+    with pytest.raises(RuntimeError, match="LSODA.*BDF"):
+        OERPhysics.solve_ode_system_detailed(params)
+
+
 def test_ode_coverage_trajectory_remains_physical_and_conserved():
     params = initialize_oer_parameters()
     params['n_points'] = 512
