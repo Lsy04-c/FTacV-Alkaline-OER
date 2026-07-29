@@ -256,6 +256,14 @@ class ODESolution:
     attempts: tuple[SolverAttempt, ...]
 
 
+class DynamicSolverError(RuntimeError):
+    """All registered dynamic backends failed."""
+
+    def __init__(self, message: str, attempts: tuple[SolverAttempt, ...]):
+        super().__init__(message)
+        self.attempts = attempts
+
+
 def elementary_rates(
     t: float,
     y: np.ndarray,
@@ -544,7 +552,10 @@ class OERPhysics:
             detail = "; ".join(
                 f"{item.backend}: {item.message}" for item in attempts
             )
-            raise RuntimeError(f"dynamic solvers failed: {detail}")
+            raise DynamicSolverError(
+                f"dynamic solvers failed: {detail}",
+                tuple(attempts),
+            )
 
         t = np.asarray(successful.t, dtype=float)
         y = np.asarray(successful.y, dtype=float).T

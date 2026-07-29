@@ -248,8 +248,12 @@ def test_detailed_solver_raises_when_all_backends_fail(monkeypatch):
         }
     )
 
-    with pytest.raises(RuntimeError, match="LSODA.*BDF"):
+    with pytest.raises(RuntimeError, match="LSODA.*BDF") as captured:
         OERPhysics.solve_ode_system_detailed(params)
+    assert [item.backend for item in captured.value.attempts] == [
+        "LSODA",
+        "BDF",
+    ]
 
 
 def test_ode_coverage_trajectory_remains_physical_and_conserved():
