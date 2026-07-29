@@ -39,8 +39,8 @@ Expected: branch `codex/reclassify-project`; no unrelated changes.
 ```text
 A1 results/formal/data_contract/gate-a1-a57d42f/acceptance.md
 A2 results/formal/physics_invariants/gate-a2r-496a701/acceptance.md
-A3 results/formal/solver_equivalence/formal-a4581de-ppc256/acceptance.md
-A4 results/formal/harmonic_stability/gate-a4-6848613/acceptance.md
+A3 results/formal/solver_equivalence/formal-a4581de-ppc256/solver_equivalence_summary.json
+A4 results/formal/harmonic_stability/gate-a4-6848613/harmonic_stability_summary.json
 A5 results/formal/feature_channel_contract/gate-a5-13adcb1/acceptance.md
 A6 results/formal/identifiability/gate-a6-closure-75e25ed/acceptance.md
 A7 documents/project/WORK_STATUS.md section 0.7
@@ -94,7 +94,9 @@ Expected: exit code 0.
 It must cover data contract, physics, solvers, signal extraction, objective,
 identifiability, validators, workflow and Web.
 
-- [ ] Include a Gate table that preserves these exact scientific outcomes:
+- [ ] Include a Gate table that preserves these exact outcomes. A3 and A4 use
+  their frozen summary JSON plus the matching `WORK_STATUS.md` acceptance
+  record because these older archives predate the `acceptance.md` convention:
 
 ```text
 A1 FAIL_METADATA
