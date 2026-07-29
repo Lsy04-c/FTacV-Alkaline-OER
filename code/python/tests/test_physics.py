@@ -19,8 +19,10 @@ from oer_aem import (
 from oer_aem.physics import (
     STOICHIOMETRIC_MATRIX,
     coverage_derivatives,
+    current_components,
     effective_gamma,
     elementary_rates,
+    validate_steady_state,
     validate_physics_parameters,
 )
 
@@ -310,6 +312,91 @@ def test_default_ru_range_excludes_singular_zero_resistance():
     params = initialize_oer_parameters()
 
     assert params["Ru_range"] == [0.1, 500.0]
+
+
+def test_steady_state_rejects_solver_failure(monkeypatch):
+    def fake_solve_ivp(**kwargs):
+        y0 = np.asarray(kwargs["y0"], dtype=float)
+        return SimpleNamespace(
+            success=False,
+            t=np.array([0.0, 0.2]),
+            y=np.repeat(y0[:, None], 2, axis=1),
+            message="forced failure",
+        )
+
+    monkeypatch.setattr(physics_module, "solve_ivp", fake_solve_ivp)
+    params = initialize_oer_parameters()
+
+    with pytest.raises(RuntimeError, match="forced failure"):
+        OERPhysics.calculate_steady_state(params)
+
+
+def test_validate_steady_state_rejects_invalid_state_and_rhs():
+    params = initialize_oer_parameters()
+    params.update({"v": 0.0, "dE": 0.0})
+    params = OERPhysics.initialize_system(params)
+
+    nonfinite = np.array([1.0, 0.0, 0.0, 0.0, 0.0, np.nan])
+    with pytest.raises(RuntimeError, match="finite"):
+        validate_steady_state(nonfinite, params, rhs_t=5.0)
+
+    unconserved = np.array([0.8, 0.1, 0.0, 0.0, 0.0, 0.9])
+    with pytest.raises(RuntimeError, match="sum"):
+        validate_steady_state(unconserved, params, rhs_t=5.0)
+
+    negative = np.array([1.01, -0.01, 0.0, 0.0, 0.0, 0.9])
+    with pytest.raises(RuntimeError, match="range"):
+        validate_steady_state(negative, params, rhs_t=5.0)
+
+    not_relaxed = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.9])
+    with pytest.raises(RuntimeError, match="RHS"):
+        validate_steady_state(not_relaxed, params, rhs_t=5.0)
+
+
+def test_current_components_close_external_circuit_current():
+    params = initialize_oer_parameters()
+    state = np.array([0.15, 0.25, 0.20, 0.18, 0.22, 1.45])
+
+    parts = current_components(0.17, state, params)
+
+    scale = max(
+        abs(parts.solution),
+        abs(parts.capacitive),
+        abs(parts.faradaic),
+        1e-12,
+    )
+    assert abs(parts.closure_residual) / scale <= 1e-12
+
+
+def test_full_m0_output_ignores_disabled_reconstruction_parameters():
+    base = initialize_oer_parameters()
+    base.update(
+        {
+            "beta_recon": 0.0,
+            "n_points": 128,
+            "points_per_cycle": 64,
+            "total_time": 2.0 / base["f"],
+            "use_steady_state": False,
+        }
+    )
+    base["t_span"] = np.linspace(0.0, base["total_time"], 128)
+    base = OERPhysics.initialize_system(base)
+    changed = dict(base)
+    changed.update({"E_recon": 99.0, "w_recon": 0.001})
+    state = np.array([0.15, 0.25, 0.20, 0.18, 0.22, 1.45])
+
+    assert OERPhysics.oer_model(0.17, state, base) == pytest.approx(
+        OERPhysics.oer_model(0.17, state, changed),
+        rel=0.0,
+        abs=0.0,
+    )
+    assert current_components(0.17, state, base) == current_components(
+        0.17, state, changed
+    )
+    base_output = OERPhysics.solve_ode_system(base)
+    changed_output = OERPhysics.solve_ode_system(changed)
+    for expected, actual in zip(base_output, changed_output):
+        assert expected == pytest.approx(actual, rel=0.0, abs=0.0)
 
 
 if __name__ == '__main__':

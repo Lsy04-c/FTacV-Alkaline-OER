@@ -367,11 +367,13 @@ For legal fixed states require:
 
 ```python
 parts = current_components(t, y, params)
-assert parts.solution == pytest.approx(
-    parts.capacitive + parts.faradaic,
-    rel=1e-12,
-    abs=1e-14,
+scale = max(
+    abs(parts.solution),
+    abs(parts.capacitive),
+    abs(parts.faradaic),
+    1e-12,
 )
+assert abs(parts.closure_residual) / scale <= 1e-12
 ```
 
 For `beta_recon=0`, vary `E_recon` and `w_recon` over their allowed range and

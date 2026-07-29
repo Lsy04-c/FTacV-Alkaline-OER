@@ -221,6 +221,16 @@ class ElementaryRates:
     original_coverage_sum: float
 
 
+@dataclass(frozen=True)
+class CurrentComponents:
+    """Instantaneous external, capacitive and faradaic currents in amperes."""
+
+    solution: float
+    capacitive: float
+    faradaic: float
+    closure_residual: float
+
+
 def elementary_rates(
     t: float,
     y: np.ndarray,
@@ -315,6 +325,86 @@ def coverage_derivatives(net_rates: np.ndarray) -> np.ndarray:
     return STOICHIOMETRIC_MATRIX @ rates
 
 
+def _surface_potential_derivative(
+    rates: ElementaryRates,
+    phi_s: float,
+    params: Dict[str, Any],
+) -> float:
+    gamma_eff = float(
+        effective_gamma(rates.applied_potential, params)
+    )
+    gammaF_Cdl_eff = gamma_eff * params["F"] / params["Cdl"]
+    return float(
+        (rates.applied_potential - phi_s) * params["invRC"]
+        - gammaF_Cdl_eff * float(np.sum(rates.net))
+    )
+
+
+def current_components(
+    t: float,
+    y: np.ndarray,
+    params: Dict[str, Any],
+) -> CurrentComponents:
+    """Return the three currents implied by the existing circuit equation."""
+    validate_physics_parameters(params)
+    state = np.asarray(y, dtype=float)
+    if state.shape != (6,) or not np.all(np.isfinite(state)):
+        raise ValueError("physics state must contain six finite values")
+    rates = elementary_rates(t, state, params, validate=False)
+    dphi_s = _surface_potential_derivative(
+        rates, float(state[5]), params
+    )
+    solution = float(
+        (rates.applied_potential - state[5]) / params["Ru"]
+    )
+    capacitive = float(params["Cdl"] * params["A"] * dphi_s)
+    gamma_eff = float(
+        effective_gamma(rates.applied_potential, params)
+    )
+    faradaic = float(
+        gamma_eff
+        * params["F"]
+        * params["A"]
+        * float(np.sum(rates.net))
+    )
+    return CurrentComponents(
+        solution=solution,
+        capacitive=capacitive,
+        faradaic=faradaic,
+        closure_residual=float(solution - capacitive - faradaic),
+    )
+
+
+def validate_steady_state(
+    state: np.ndarray,
+    params: Dict[str, Any],
+    *,
+    rhs_t: float,
+) -> float:
+    """Validate one relaxed state and return its RHS infinity norm."""
+    values = np.asarray(state, dtype=float)
+    if values.shape != (6,) or not np.all(np.isfinite(values)):
+        raise RuntimeError("steady state must contain six finite values")
+    coverage = values[:5]
+    if (
+        float(np.min(coverage)) < -1e-8
+        or float(np.max(coverage)) > 1.0 + 1e-8
+    ):
+        raise RuntimeError("steady-state coverage is outside physical range")
+    coverage_sum = float(np.sum(coverage))
+    if abs(coverage_sum - 1.0) > 1e-8:
+        raise RuntimeError(
+            f"steady-state coverage sum is {coverage_sum:.12g}"
+        )
+    derivative = _oer_model_rhs(float(rhs_t), values, params)
+    rhs_norm = float(np.max(np.abs(derivative)))
+    if not np.isfinite(rhs_norm) or rhs_norm > 1e-8:
+        raise RuntimeError(
+            f"steady-state RHS infinity norm is {rhs_norm:.12g}"
+        )
+    return rhs_norm
+
+
 def _oer_model_rhs(t: float, y: np.ndarray, params: Dict[str, Any]) -> np.ndarray:
     """ODE 右端函数（内部实现）。"""
     y = np.asarray(y, dtype=float)
@@ -322,16 +412,8 @@ def _oer_model_rhs(t: float, y: np.ndarray, params: Dict[str, Any]) -> np.ndarra
     rates = elementary_rates(t, y, params, validate=False)
     dtheta = coverage_derivatives(rates.net)
 
-    # 表面电位演化
-    # M0 uses the canonical fixed gamma. M1 is enabled only by beta_recon > 0.
-    gamma_eff = float(effective_gamma(rates.applied_potential, params))
-    gammaF_Cdl_eff = gamma_eff * params['F'] / params['Cdl']
-
-    r_elec_sum = float(np.sum(rates.net))
-    dphi_s = (
-        (rates.applied_potential - phi_s) * params["invRC"]
-        - gammaF_Cdl_eff * r_elec_sum
-    )
+    # M0 uses fixed gamma. M1 is enabled only by beta_recon > 0.
+    dphi_s = _surface_potential_derivative(rates, phi_s, params)
 
     dydt = np.concatenate([dtheta, [dphi_s]])
 
@@ -436,22 +518,24 @@ class OERPhysics:
         params_ss = initialize_system(params_ss)
 
         ss_time = 5.0
-        try:
-            sol = solve_ivp(
-                fun=lambda t, y: _oer_model_rhs(t, y, params_ss),
-                t_span=(0.0, ss_time),
-                y0=y0_guess,
-                method='Radau',
-                rtol=1e-4,
-                atol=1e-6,
-                max_step=ss_time / 50.0,
+        sol = solve_ivp(
+            fun=lambda t, y: _oer_model_rhs(t, y, params_ss),
+            t_span=(0.0, ss_time),
+            y0=y0_guess,
+            method='Radau',
+            rtol=1e-4,
+            atol=1e-6,
+            max_step=ss_time / 50.0,
+        )
+        if not sol.success:
+            final_time = float(sol.t[-1]) if len(sol.t) else 0.0
+            raise RuntimeError(
+                "steady-state solver failed at "
+                f"t={final_time:.6g}/{ss_time:.6g}: {sol.message}"
             )
-            y0 = sol.y[:, -1]
-        except Exception as exc:  # noqa: BLE001
-            warnings.warn(f'稳态计算失败，使用默认初值: {exc}', stacklevel=2)
-            y0 = y0_guess
-
-        return y0
+        state = np.asarray(sol.y[:, -1], dtype=float)
+        validate_steady_state(state, params_ss, rhs_t=ss_time)
+        return state
 
     @staticmethod
     def apply_default_E0(params: Dict[str, Any]) -> Dict[str, Any]:
