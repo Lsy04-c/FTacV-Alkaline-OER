@@ -1,6 +1,6 @@
 # oer-wf 可复用计算工作流 — 使用指南
 
-> 版本：0.6.6 | 93 个工作流测试通过 | V2 独立验收与可声明恢复契约 | 2026-07-30
+> 版本：0.6.7 | 94 个工作流测试通过 | 非阻塞正式启动与 oneshot 运行态识别 | 2026-07-30
 
 ## 1. 这是什么
 
@@ -43,8 +43,8 @@ pip install -e ".[dev]" --trusted-host pypi.org --trusted-host files.pythonhoste
 
 验证：
 ```bash
-wf --version   # 0.6.6
-pytest -q      # 49 passed
+wf --version   # 0.6.7
+pytest -q      # 94 passed
 ```
 
 远程 Legion 端（`wf run/smoke` 依赖）：
@@ -269,7 +269,7 @@ validators:
 
 ## 9. 工程规则与安全门
 
-### 五个安全门（v0.6.6）
+### 五个安全门（v0.6.7）
 
 | # | 安全门 | 说明 |
 |---|--------|------|
@@ -311,4 +311,7 @@ validators:
 - **正式运行清洁门（v0.6.6）**：科学 runner 仅忽略状态为 `??` 的
   `.wf_lock` 和 `results/` 运行时产物。已跟踪文件的修改、删除、重命名
   及其他未跟踪路径仍判为脏工作树。
+- **正式任务非阻塞启动（v0.6.7）**：`wf run` 使用 systemd
+  `--no-block`，提交长任务后立即返回；`Type=oneshot` 执行期间的
+  `activating/start` 与 `STATUS=RUNNING` 统一报告为 `running`。
 - **sudo**：Legion 端未配免密 sudo。需 root 操作时用 `wsl.exe -u root`。

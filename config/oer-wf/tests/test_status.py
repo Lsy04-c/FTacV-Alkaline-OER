@@ -42,6 +42,25 @@ def test_status_running(mock_ex: MockExecutor) -> None:
     assert resp.status == StatusEnum.RUNNING
 
 
+def test_status_oneshot_activating_is_running(mock_ex: MockExecutor) -> None:
+    mock_ex.when_ssh("systemctl").returns(
+        0,
+        "LoadState=loaded\nActiveState=activating\nSubState=start\nMainPID=42\n"
+        "Result=success\nExecMainStatus=0\n",
+    )
+    mock_ex.when_ssh("ls -1d").returns(
+        0,
+        "/home/lsy/OER-FTAcV/worktrees/3f9aad1/solver_equiv_01/"
+        "results/solver_equiv_01/20260727_090000\n",
+    )
+    mock_ex.when_ssh("cat ").returns(0, _status_json("RUNNING") + "\n")
+
+    resp = run_status(TASK, executor=mock_ex)
+
+    assert resp.status == StatusEnum.RUNNING
+    assert "running" in resp.message.lower()
+
+
 def test_status_success(mock_ex: MockExecutor) -> None:
     mock_ex.when_ssh("systemctl").returns(
         0,

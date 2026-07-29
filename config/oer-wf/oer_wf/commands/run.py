@@ -282,7 +282,9 @@ def run_run(
         )
 
     # ---- 6. start ----
-    r_start = ex.ssh_exec(f"systemctl --user start {unit} && echo STARTED")
+    r_start = ex.ssh_exec(
+        f"systemctl --user start --no-block {unit} && echo STARTED"
+    )
     if not r_start.ok or "STARTED" not in r_start.stdout:
         # oneshot may finish very fast; also accept if already inactive with STATUS
         r_show2 = ex.ssh_exec(show_cmd(unit))

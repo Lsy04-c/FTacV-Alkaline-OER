@@ -105,6 +105,12 @@ def test_run_starts_with_force(mock_ex: MockExecutor, sample_spec: Path) -> None
     assert resp.data.get("force") is True
     assert "output_dir" in resp.data
     assert resp.data.get("wrapped") is True
+    start_calls = [
+        call for call in mock_ex.call_log
+        if "systemctl --user start" in call
+    ]
+    assert len(start_calls) == 1
+    assert "--no-block" in start_calls[0]
 
 
 def test_run_aborts_if_snapshot_write_fails(

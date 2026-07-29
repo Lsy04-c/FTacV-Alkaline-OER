@@ -32,7 +32,7 @@ class SystemdState:
 
     @property
     def is_active(self) -> bool:
-        return self.active == "active"
+        return self.active in ("active", "activating")
 
     @property
     def is_failed(self) -> bool:

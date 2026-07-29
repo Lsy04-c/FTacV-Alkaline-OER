@@ -1556,3 +1556,21 @@ H1-H7压力测试：
   Starlette 弃用警告，Markdown/布局审计和 `git diff --check` 通过。
 - compute commit：`fbda4cff248f498b29e1c054aaab2fcaab24e40f`；V2
   TaskSpec 已绑定该提交，下一步为推送、Legion 部署和远端 smoke。
+
+## 44. V2 远端 smoke、正式启动与工作流状态修复（2026-07-30）
+
+- Legion 远端 smoke 完成 32/32 job，独立 validator 与四组
+  `rerun-best` 均通过；provenance 为干净工作树。两个候选在 LSODA
+  明确失败后回退 BDF，符合冻结契约。
+- 已启动正式 V2：2048 base + 512 stress，共 2560 job；输出目录为
+  `results/conditional_reachability/v2/20260729_163222`。本阶段不创建
+  自动定时检查，不停止或重启运行中的任务。
+- 启动后发现工程状态误判：长时间 `Type=oneshot` 服务执行时 systemd
+  为 `activating/start`，旧版只把 `active` 视为运行中；同步
+  `systemctl start` 还会让 `wf run` 等待整个任务。
+- `oer-wf 0.6.7` 将 `active` 与 `activating` 均视为运行中，并为正式
+  启动加入 `--no-block`。两项回归测试先失败后通过，全量工作流测试
+  94 项通过。
+- 当前边界：该修复只改变编排器启动和状态解释，不改变 V2 科学代码、
+  solver、阈值、输入或已经运行的正式进程。下一步为部署 0.6.7 后复核
+  `wf status`，再等待正式结果完成并按冻结 validator 验收。
