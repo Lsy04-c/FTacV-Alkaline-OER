@@ -1570,7 +1570,11 @@ H1-H7压力测试：
   `systemctl start` 还会让 `wf run` 等待整个任务。
 - `oer-wf 0.6.7` 将 `active` 与 `activating` 均视为运行中，并为正式
   启动加入 `--no-block`。两项回归测试先失败后通过，全量工作流测试
-  94 项通过。
+  Mac 与 Legion 均为 94 项通过。
+- 0.6.7 已同步到 Legion `/home/lsy/oer-wf`。对既有正式 unit 的真实
+  查询返回 `running (pid=13191)`，同时保留
+  `active=activating`、`sub=start` 和 `STATUS=RUNNING` 原始证据，
+  证明修复的是状态解释而非计算进程。
 - 当前边界：该修复只改变编排器启动和状态解释，不改变 V2 科学代码、
-  solver、阈值、输入或已经运行的正式进程。下一步为部署 0.6.7 后复核
-  `wf status`，再等待正式结果完成并按冻结 validator 验收。
+  solver、阈值、输入或已经运行的正式进程。下一步等待正式结果完成，
+  再按冻结 validator 验收；不创建自动定时检查。
