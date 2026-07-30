@@ -59,6 +59,7 @@ def _source_probe(worktree: Path) -> dict[str, Any]:
         cwd=worktree,
         check=True,
         capture_output=True,
+        text=True,
     ).stdout
     invalid_untracked: list[str] = []
     for entry in status.split("\0"):

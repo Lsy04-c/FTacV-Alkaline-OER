@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import subprocess
 
 import pytest
 
@@ -52,6 +53,33 @@ def test_decode_request_round_trip() -> None:
     ).decode("ascii")
 
     assert remote_verify.decode_request(encoded) == raw
+
+
+def test_source_probe_parses_real_git_status(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.invalid"],
+        cwd=tmp_path,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test User"],
+        cwd=tmp_path,
+        check=True,
+    )
+    tracked = tmp_path / "tracked.txt"
+    tracked.write_text("tracked\n", encoding="utf-8")
+    subprocess.run(["git", "add", "tracked.txt"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "fixture"], cwd=tmp_path, check=True)
+    (tmp_path / ".wf_lock").write_text("{}\n", encoding="utf-8")
+    result_file = tmp_path / "results" / "run" / "STATUS.json"
+    result_file.parent.mkdir(parents=True)
+    result_file.write_text('{"status":"SUCCESS"}\n', encoding="utf-8")
+
+    result = remote_verify._source_probe(tmp_path)
+
+    assert result["tracked_clean"] is True
+    assert result["invalid_untracked"] == []
 
 
 def test_execute_rejects_archive_outside_frozen_worktree(
