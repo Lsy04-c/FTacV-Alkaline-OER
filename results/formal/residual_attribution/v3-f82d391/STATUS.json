@@ -1,0 +1,23 @@
+{
+  "status": "SUCCESS",
+  "exit_code": 0,
+  "pid": 13772,
+  "started_at": "2026-07-30T09:00:27Z",
+  "finished_at": "2026-07-30T09:02:36Z",
+  "commit": "f82d391",
+  "task_id": "f82d391/v3_residual_attribution_lsoda",
+  "spec_hash": "sha256:d98bd972dcdfba7d8412028dc84bde49fb2bc01a0963839f65c310218b9ea921",
+  "command": [
+    "/home/lsy/OER-FTAcV/.venv/bin/python",
+    "/home/lsy/OER-FTAcV/worktrees/f82d391/v3_residual_attribution_lsoda/code/python/scripts/run_v3_residual_attribution.py",
+    "--task-spec",
+    "config/residual/v3-residual-attribution.json",
+    "--output",
+    "/home/lsy/OER-FTAcV/worktrees/f82d391/v3_residual_attribution_lsoda/results/residual_attribution/v3/20260730_090024",
+    "--workers",
+    "8"
+  ],
+  "output_dir": "/home/lsy/OER-FTAcV/worktrees/f82d391/v3_residual_attribution_lsoda/results/residual_attribution/v3/20260730_090024",
+  "error_msg": null,
+  "extra": {}
+}

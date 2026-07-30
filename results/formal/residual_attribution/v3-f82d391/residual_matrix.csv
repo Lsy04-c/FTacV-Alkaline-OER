@@ -1,0 +1,109 @@
+dataset_id,channel,segment,ensemble_size,valid_candidate_count,signed_mean_median,signed_mean_q25,signed_mean_q75,positive_count,negative_count,direction_class,nearest_candidate_id,nearest_signed_mean,nearest_within_iqr
+FT2,dc,high,12,12,0.3264931458453495,-0.0033915967580891992,0.6035290637395423,9,3,ensemble sign-consistent,289,0.21296887288218008,True
+FT2,dc,low,12,12,-0.1940999933726777,-0.41931504192225294,-0.02889842159385311,2,10,ensemble sign-consistent,289,-0.03376779075190718,True
+FT2,dc,mid,12,12,0.008306013440405303,-0.06408199087069345,0.06487395714580903,6,6,candidate-dependent,289,0.06408926735102777,True
+FT2,global_amplitude_h1,global,12,12,0.84871513114927,0.739165335653855,0.8717888813838611,12,0,ensemble sign-consistent,289,0.8740837236939304,False
+FT2,global_amplitude_h2,global,12,12,0.8551474696622745,0.44500323458746716,0.9699294813598229,12,0,ensemble sign-consistent,289,0.9984047901252328,False
+FT2,global_amplitude_h3,global,12,12,0.5317508497742718,-0.8012407225658968,0.8740877740911456,8,4,candidate-dependent,289,0.9929881901475602,False
+FT2,global_phase_h1,global,12,12,-0.2896734320346402,-0.48089113741185924,-0.18285992848488852,2,10,ensemble sign-consistent,289,-0.5261335064506392,False
+FT2,global_phase_h2,global,12,12,-0.09752145837824798,-0.3340181410003985,0.5414370800136822,5,7,candidate-dependent,289,0.533964995590233,True
+FT2,global_phase_h3,global,12,12,-1.6197861928774424,-1.8677084434395195,-1.428004974434431,2,10,ensemble sign-consistent,289,-1.5124721089260418,True
+FT2,lockin_amplitude_h1,high,12,0,,,,0,0,not-observable,289,,
+FT2,lockin_amplitude_h1,low,12,0,,,,0,0,not-observable,289,,
+FT2,lockin_amplitude_h1,mid,12,12,0.614734483369014,0.5409244245067928,0.6192382010448498,12,0,ensemble sign-consistent,289,0.6192379028047991,True
+FT2,lockin_amplitude_h2,high,12,0,,,,0,0,not-observable,289,,
+FT2,lockin_amplitude_h2,low,12,0,,,,0,0,not-observable,289,,
+FT2,lockin_amplitude_h2,mid,12,12,0.4535567006276615,0.2554737444780778,0.4830837225525338,12,0,ensemble sign-consistent,289,0.4830537218720731,True
+FT2,lockin_amplitude_h3,high,12,0,,,,0,0,not-observable,289,,
+FT2,lockin_amplitude_h3,low,12,0,,,,0,0,not-observable,289,,
+FT2,lockin_amplitude_h3,mid,12,12,0.3414480975684182,0.21550213997364415,0.3659146880988666,12,0,ensemble sign-consistent,289,0.36588755543450446,True
+FT2,lockin_phase_h1,high,12,0,,,,0,0,not-observable,289,,
+FT2,lockin_phase_h1,low,12,0,,,,0,0,not-observable,289,,
+FT2,lockin_phase_h1,mid,12,12,-0.3369855853948323,-0.45464866261168757,-0.22052635044806956,2,10,ensemble sign-consistent,289,-0.45445020226517313,True
+FT2,lockin_phase_h2,high,12,0,,,,0,0,not-observable,289,,
+FT2,lockin_phase_h2,low,12,0,,,,0,0,not-observable,289,,
+FT2,lockin_phase_h2,mid,12,12,-0.3000823704610337,-0.8815412436701365,0.3504060225249153,4,8,candidate-dependent,289,-0.8738548600510107,True
+FT2,lockin_phase_h3,high,12,0,,,,0,0,not-observable,289,,
+FT2,lockin_phase_h3,low,12,0,,,,0,0,not-observable,289,,
+FT2,lockin_phase_h3,mid,12,12,-0.8962139123989604,-1.244091938040249,-0.5718792461090628,0,12,ensemble sign-consistent,289,-1.4556158486774464,False
+FT3,dc,high,12,12,0.20835653126268056,0.152448013483629,0.354208693024139,12,0,ensemble sign-consistent,484,0.05987273332013464,False
+FT3,dc,low,12,12,-0.03397493622394078,-0.23420037851432543,0.001291473920901735,3,9,ensemble sign-consistent,484,-0.001822396545465969,True
+FT3,dc,mid,12,12,0.1165690441001743,0.07069139728350757,0.13502192156136875,12,0,ensemble sign-consistent,484,0.05719669023633491,False
+FT3,global_amplitude_h1,global,12,12,0.8408347994331877,0.34234266251169193,0.8809355685091296,9,3,ensemble sign-consistent,484,-0.296184518256222,False
+FT3,global_amplitude_h2,global,12,12,0.902370868081695,-0.07059884273748897,0.939132266274439,9,3,ensemble sign-consistent,484,-0.5245328081820295,False
+FT3,global_amplitude_h3,global,12,12,0.6522448596634447,-0.6254075275812274,0.832839557752258,7,5,candidate-dependent,484,-0.8481210826098509,False
+FT3,global_phase_h1,global,12,12,-0.9337114812855021,-1.0921226022862653,-0.45761931772558345,3,9,ensemble sign-consistent,484,0.08652634965307436,False
+FT3,global_phase_h2,global,12,12,-0.30362180519479254,-0.6300504525984649,-0.1299519718041229,0,12,ensemble sign-consistent,484,-0.1318564446789108,True
+FT3,global_phase_h3,global,12,12,-0.183453322051239,-0.3386051954300992,-0.1408970188224944,1,11,ensemble sign-consistent,484,-0.23545887644212438,True
+FT3,lockin_amplitude_h1,high,12,0,,,,0,0,not-observable,484,,
+FT3,lockin_amplitude_h1,low,12,0,,,,0,0,not-observable,484,,
+FT3,lockin_amplitude_h1,mid,12,12,0.2743928026889224,0.1104308414698392,0.2795548729174516,9,3,ensemble sign-consistent,484,-0.050412987781780876,False
+FT3,lockin_amplitude_h2,high,12,0,,,,0,0,not-observable,484,,
+FT3,lockin_amplitude_h2,low,12,0,,,,0,0,not-observable,484,,
+FT3,lockin_amplitude_h2,mid,12,12,0.3565612417866495,-0.03994875217599978,0.3778680910985416,8,4,candidate-dependent,484,-0.1597366335008173,False
+FT3,lockin_amplitude_h3,high,12,0,,,,0,0,not-observable,484,,
+FT3,lockin_amplitude_h3,low,12,0,,,,0,0,not-observable,484,,
+FT3,lockin_amplitude_h3,mid,12,12,0.366865158823613,-0.24443058476516275,0.41248307468207224,7,5,candidate-dependent,484,-0.2541241600401662,False
+FT3,lockin_phase_h1,high,12,0,,,,0,0,not-observable,484,,
+FT3,lockin_phase_h1,low,12,0,,,,0,0,not-observable,484,,
+FT3,lockin_phase_h1,mid,12,12,-0.7835463716075528,-0.9300094666808404,-0.5394696499381428,1,11,ensemble sign-consistent,484,0.09123994249433087,False
+FT3,lockin_phase_h2,high,12,0,,,,0,0,not-observable,484,,
+FT3,lockin_phase_h2,low,12,0,,,,0,0,not-observable,484,,
+FT3,lockin_phase_h2,mid,12,12,-0.22226712271319354,-0.30667588419313635,-0.02795901225609615,3,9,ensemble sign-consistent,484,-0.14631126790411075,True
+FT3,lockin_phase_h3,high,12,0,,,,0,0,not-observable,484,,
+FT3,lockin_phase_h3,low,12,0,,,,0,0,not-observable,484,,
+FT3,lockin_phase_h3,mid,12,12,-0.14238345628838506,-0.5082105336565633,0.5036786389362811,6,6,candidate-dependent,484,-0.5416703265196708,False
+FT4,dc,high,12,12,0.10160504219008201,0.07675966870368492,0.16690426000523556,12,0,ensemble sign-consistent,249,0.11983615799546218,True
+FT4,dc,low,12,12,0.0019894532941959683,-0.001707909014102182,0.002907487193662508,7,5,candidate-dependent,249,0.0025980247553456888,True
+FT4,dc,mid,12,12,0.11122733072954138,0.0785967705186998,0.14845412763238547,12,0,ensemble sign-consistent,249,0.12187971151179586,True
+FT4,global_amplitude_h1,global,12,12,0.0769208565831741,-0.9325519177035371,0.8016038163433852,6,6,candidate-dependent,249,0.4675637481010663,True
+FT4,global_amplitude_h2,global,12,12,0.015909147806598634,-0.6255427903243653,0.7299410065218842,6,6,candidate-dependent,249,0.33390381129346935,True
+FT4,global_amplitude_h3,global,12,12,-0.05293953556786231,-0.20842207244472047,0.4589172938476888,5,7,candidate-dependent,249,-0.025815204271564328,True
+FT4,global_phase_h1,global,12,12,-0.017052671343262493,-0.255723325939892,0.059610117672106944,5,7,candidate-dependent,249,-0.020790805866094605,True
+FT4,global_phase_h2,global,12,12,-0.07286866138266279,-0.12512950697862113,-0.04188317460671298,2,10,ensemble sign-consistent,249,-0.2030730661877409,False
+FT4,global_phase_h3,global,12,12,-0.08601374839344522,-0.2727714978724761,-0.003064367343697305,3,9,ensemble sign-consistent,249,-0.26600469700205776,True
+FT4,lockin_amplitude_h1,high,12,0,,,,0,0,not-observable,249,,
+FT4,lockin_amplitude_h1,low,12,0,,,,0,0,not-observable,249,,
+FT4,lockin_amplitude_h1,mid,12,12,0.053533208537566546,-0.27254974645191515,0.2721828274994598,6,6,candidate-dependent,249,0.16905307817637769,True
+FT4,lockin_amplitude_h2,high,12,0,,,,0,0,not-observable,249,,
+FT4,lockin_amplitude_h2,low,12,0,,,,0,0,not-observable,249,,
+FT4,lockin_amplitude_h2,mid,12,12,0.024666099406930986,-0.32992615893608307,0.3429242875936773,6,6,candidate-dependent,249,0.15225907353141419,True
+FT4,lockin_amplitude_h3,high,12,0,,,,0,0,not-observable,249,,
+FT4,lockin_amplitude_h3,low,12,0,,,,0,0,not-observable,249,,
+FT4,lockin_amplitude_h3,mid,12,12,-0.025904645551266214,-0.28371080792665093,0.25723968759960103,6,6,candidate-dependent,249,0.006904356904212465,True
+FT4,lockin_phase_h1,high,12,0,,,,0,0,not-observable,249,,
+FT4,lockin_phase_h1,low,12,0,,,,0,0,not-observable,249,,
+FT4,lockin_phase_h1,mid,12,12,-0.1364795803526757,-0.29446431399645656,0.06830068925601486,4,8,candidate-dependent,249,-0.014195408054752846,True
+FT4,lockin_phase_h2,high,12,0,,,,0,0,not-observable,249,,
+FT4,lockin_phase_h2,low,12,0,,,,0,0,not-observable,249,,
+FT4,lockin_phase_h2,mid,12,12,0.25554206696837656,0.02694791089935413,0.2918804126175939,9,3,ensemble sign-consistent,249,0.045026399414449504,True
+FT4,lockin_phase_h3,high,12,0,,,,0,0,not-observable,249,,
+FT4,lockin_phase_h3,low,12,0,,,,0,0,not-observable,249,,
+FT4,lockin_phase_h3,mid,12,12,-0.01845015982928476,-0.31492237477917673,0.19758537199137682,5,7,candidate-dependent,249,-0.2939855168828243,True
+FT8,dc,high,12,12,0.07272055004367027,0.04779707084221929,0.6435558043205453,12,0,ensemble sign-consistent,226,0.04996322962730916,True
+FT8,dc,low,12,12,-0.006673158502544459,-0.012401253236630567,-0.002443061990858753,2,10,ensemble sign-consistent,226,-0.006107261898552509,True
+FT8,dc,mid,12,12,0.019599832327554766,-0.05801871096503597,0.041088370714640624,7,5,candidate-dependent,226,0.03395558807796117,True
+FT8,global_amplitude_h1,global,12,12,0.14190376335088525,-0.15684957424720775,0.43724016017091516,6,6,candidate-dependent,226,0.47912751366215267,False
+FT8,global_amplitude_h2,global,12,12,-0.42406559441995645,-0.5581931547584463,-0.03652510638759016,2,10,ensemble sign-consistent,226,0.09195345225314526,False
+FT8,global_amplitude_h3,global,12,12,-1.1333825391019337,-2.7428230014451316,-0.642452794951079,0,12,ensemble sign-consistent,226,-0.4345391448956963,False
+FT8,global_phase_h1,global,12,12,-0.11505540472778752,-0.6105384693337061,0.41908605244819863,6,6,candidate-dependent,226,0.40737300088202777,True
+FT8,global_phase_h2,global,12,12,-0.39968446385833667,-0.7111171457459478,-0.16306883910896833,0,12,ensemble sign-consistent,226,-0.18916527958542173,True
+FT8,global_phase_h3,global,12,12,-0.015480397862057016,-0.540520930260016,1.4913716787899114,6,6,candidate-dependent,226,-0.6292086284987977,False
+FT8,lockin_amplitude_h1,high,12,0,,,,0,0,not-observable,226,,
+FT8,lockin_amplitude_h1,low,12,0,,,,0,0,not-observable,226,,
+FT8,lockin_amplitude_h1,mid,12,12,0.0674592520531399,-0.055433812865994705,0.16834794781031467,7,5,candidate-dependent,226,0.2307070446374306,False
+FT8,lockin_amplitude_h2,high,12,0,,,,0,0,not-observable,226,,
+FT8,lockin_amplitude_h2,low,12,0,,,,0,0,not-observable,226,,
+FT8,lockin_amplitude_h2,mid,12,12,-0.23393102182898723,-0.3339079035272054,-0.07044680443876437,3,9,ensemble sign-consistent,226,0.11855342668275322,False
+FT8,lockin_amplitude_h3,high,12,0,,,,0,0,not-observable,226,,
+FT8,lockin_amplitude_h3,low,12,0,,,,0,0,not-observable,226,,
+FT8,lockin_amplitude_h3,mid,12,12,-0.409799374303314,-1.010771365617002,0.04103884982645389,4,8,candidate-dependent,226,0.1380394237729453,False
+FT8,lockin_phase_h1,high,12,0,,,,0,0,not-observable,226,,
+FT8,lockin_phase_h1,low,12,0,,,,0,0,not-observable,226,,
+FT8,lockin_phase_h1,mid,12,12,-0.24763114164789063,-0.5721896596308482,0.24601685763079867,5,7,candidate-dependent,226,0.26966363653498476,False
+FT8,lockin_phase_h2,high,12,0,,,,0,0,not-observable,226,,
+FT8,lockin_phase_h2,low,12,0,,,,0,0,not-observable,226,,
+FT8,lockin_phase_h2,mid,12,12,-0.07340368858566965,-0.4187780486857509,0.058544074464636706,5,7,candidate-dependent,226,0.1413836875043498,False
+FT8,lockin_phase_h3,high,12,0,,,,0,0,not-observable,226,,
+FT8,lockin_phase_h3,low,12,0,,,,0,0,not-observable,226,,
+FT8,lockin_phase_h3,mid,12,12,-0.11550913081031985,-0.30315304749838773,0.013423251960987759,3,9,ensemble sign-consistent,226,-0.055453478716243974,True

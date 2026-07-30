@@ -1614,3 +1614,30 @@ H1-H7压力测试：
   均 PASS。专项科学测试 17 项、oer-wf 97 项、全量 Python 425 项通过。
 - 下一步：冻结 compute commit，更新 V3 TaskSpec commit 指针，部署
   Legion 后运行真实 workflow smoke；PASS 后启动正式 48-job 任务。
+
+## 47. V3 正式残差归因与验收（2026-07-30）
+
+- compute commit 为 `f82d3918647b`，部署提交为 `ea07033`；TaskSpec
+  哈希为 `d98bd972dcdf`。Legion `oer-wf 0.6.8` 全测 97 项通过。
+- `doctor` 仅报告已知的远端主仓库脏和 systemd degraded；正式任务使用
+  独立干净 worktree，未读取或覆盖主仓库历史结果。
+- 远端 smoke 完成 4/4 job，结构检查和冻结工作树独立 validator 均
+  `PASS`。
+- 正式任务完成 48/48 job，四组各 12 个候选；wall time 127.60 s。
+  LSODA 完成 44 个任务，4 个任务按冻结契约回退 BDF。
+- 冻结 Legion validator 重建输入哈希、选择、全部残差和标量证据，并
+  以 LSODA 复算 FT2/FT3/FT4/FT8 最近候选；正式门为 `PASS`。
+- FT2/FT3/FT4/FT8 分别有 11/11/5/7 个通道区段达到至少 9/12 候选
+  残差同号。总体得分最强条件关联分别为 `G_OH`、`G_OH`、`k0_1`、
+  `k0_1`；不得解释为因果或真实参数。
+- Mac 冻结 worktree 重建的候选 ID 和顺序完全一致，但 5 个派生距离相差
+  1 ULP（`1.11e-16`）。validator 对完整 JSON 做精确比较，故本机
+  `wf verify` 报 `selection mismatch`。该结果属于验证器可移植性
+  假阴性，不覆盖冻结 Legion PASS，也没有触发阈值修改。
+- `wf verify` 还会重写归档中的 `acceptance.md`，与“只读验收”文档冲突。
+  Mac FAIL 副本已保留在本机归档，Legion PASS 文件已从远端恢复；两项
+  缺陷均进入项目纠错。
+- 正式证据：
+  `results/formal/residual_attribution/v3-f82d391/`。
+- 下一步进入 V4 实验信息设计。预处理一手记录、独立固定参数和新增实验
+  条件继续标为 deferred；休假期间不伪造或补推实验事实。

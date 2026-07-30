@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v3-residual-attribution",
+  "run_mode": "formal",
+  "v3_task_spec_hash": "a98043a83cbf4f356d73f5f2009f992cc4389df81a8e33db5af30cffab84442f",
+  "v2_input_sha256": {
+    "task_spec.json": "b900fb66a5d42b07db4fb298bdd3b1a6b5c78c0b6507dd1224eab38fbac98201",
+    "parameter_library.csv": "862a0e50c93796e71a837b6d4dbd48e72cf7f025a2c3cc4876bcdb002e4dd57d",
+    "targets.json": "e0eba1ad68d9e6a972d40b9cee9935bc0b2d5d6153a8a538f4d73dbd27c9a5f3",
+    "base_results.jsonl": "6b03d6c29ddaed3c7400d8da1a9ff688bd2e6f8b96381d2357abcb0be3036f1b",
+    "stress_results.jsonl": "791eb95b885049ba3a8afc3d1a58dc59574ccb092b1c6274b83d3c25fd486c67",
+    "summary.json": "851ff4efc7cf459231bcdda6c8a70428d715f2109d36435e1a8b7f7b5524c72d",
+    "run_manifest.json": "3134ab33c75b04b1252a945cf58fe800378b0e4985390f059483377f6c7af85f"
+  },
+  "provenance": {
+    "source_commit": "f82d3918647bc0d414af912d294b467b02f047d6",
+    "dirty": false,
+    "dirty_paths": [],
+    "ignored_workflow_paths": [
+      ".wf_lock",
+      "results/residual_attribution/"
+    ],
+    "dirty_content_sha256": null
+  },
+  "job_count": 48,
+  "artifact_sha256": {
+    "attribution_evidence.csv": "9706af7f134071df73015f7aeb1aaa27f7faa89a6ac1415599a198a670390a47",
+    "parameter_associations.csv": "f53d46346e93937ccb40d19ec8ceea1041c880af5a818eea3024bebf3c3d0deb",
+    "residual_curves.jsonl": "7074b767fade549fe0e997d6fe9a2a9c6c58fcf62e0d3a54cdd48e9a8e2cbde6",
+    "residual_matrix.csv": "7938152e7c247c524bc23c014ba5e9c2c2d88421289a19e90ade9574eff55530",
+    "selection.json": "e18d83ee52583255a8ddd818ba1e4fd03c6561a8377af0a329ec4c01f8aac318",
+    "stress_directions.csv": "ad1e541dfb7cf973209cba23968deeb93fcc0c97e8f6c2b4b0ab2f1eba36c1b1",
+    "summary.json": "28c00113f2ae90f6be43231fa322a3848b6be7838afd53ee06847cc34170dbba",
+    "v3_task_spec.json": "3adc17f22069c7a7d5ec135c9d86bc5ff68e2360932a733528b7ddba6ad59f48"
+  }
+}

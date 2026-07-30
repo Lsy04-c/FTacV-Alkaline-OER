@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v3-residual-attribution",
+  "run_mode": "formal",
+  "structure_complete": true,
+  "scientific_parameter_estimation_enabled": false,
+  "datasets": {
+    "FT2": {
+      "job_count": 12,
+      "success_count": 12,
+      "candidate_ids": [
+        289,
+        448,
+        354,
+        369,
+        58,
+        503,
+        96,
+        439,
+        18,
+        382,
+        221,
+        132
+      ],
+      "fallback_count": 2,
+      "sign_consistent_channel_segments": 11,
+      "candidate_dependent_channel_segments": 4
+    },
+    "FT3": {
+      "job_count": 12,
+      "success_count": 12,
+      "candidate_ids": [
+        484,
+        145,
+        329,
+        354,
+        143,
+        46,
+        125,
+        360,
+        505,
+        299,
+        198,
+        305
+      ],
+      "fallback_count": 1,
+      "sign_consistent_channel_segments": 11,
+      "candidate_dependent_channel_segments": 4
+    },
+    "FT4": {
+      "job_count": 12,
+      "success_count": 12,
+      "candidate_ids": [
+        249,
+        144,
+        354,
+        369,
+        436,
+        505,
+        18,
+        206,
+        5,
+        96,
+        293,
+        235
+      ],
+      "fallback_count": 0,
+      "sign_consistent_channel_segments": 5,
+      "candidate_dependent_channel_segments": 10
+    },
+    "FT8": {
+      "job_count": 12,
+      "success_count": 12,
+      "candidate_ids": [
+        226,
+        505,
+        16,
+        14,
+        443,
+        63,
+        150,
+        458,
+        397,
+        501,
+        260,
+        185
+      ],
+      "fallback_count": 1,
+      "sign_consistent_channel_segments": 7,
+      "candidate_dependent_channel_segments": 8
+    }
+  },
+  "job_count": 48,
+  "success_count": 48,
+  "failed_job_ids": [],
+  "workers": 8,
+  "duration_seconds": 127.6015563349938,
+  "reused_jobs": 0,
+  "executed_jobs": 48
+}

@@ -1,0 +1,37 @@
+args:
+- --task-spec
+- config/residual/v3-residual-attribution.json
+commit: f82d3918647bc0d414af912d294b467b02f047d6
+expected_files:
+- v3_task_spec.json
+- selection.json
+- residual_curves.jsonl
+- residual_matrix.csv
+- parameter_associations.csv
+- stress_directions.csv
+- attribution_evidence.csv
+- summary.json
+- run_manifest.json
+- STATUS.json
+- task_spec.snapshot.yaml
+is_smoke: false
+output_dir: results/residual_attribution/v3
+resume_required_files:
+- v3_task_spec.json
+- selection.json
+- residual_curves.jsonl
+script: code/python/scripts/run_v3_residual_attribution.py
+supports_resume: true
+task_name: v3_residual_attribution_lsoda
+validator_config:
+  v3_residual_attribution_gate:
+    project_root: .
+    rerun_nearest_formal: true
+    rerun_nearest_smoke: false
+    task_spec: config/residual/v3-residual-attribution.json
+validators:
+- schema_check
+- finite_check
+- provenance
+- v3_residual_attribution_gate
+workers: 8
