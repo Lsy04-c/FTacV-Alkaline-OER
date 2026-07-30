@@ -63,7 +63,7 @@ def test_central_sensitivity_uses_parameter_span_and_baseline_scale():
         parameter_span=2.0,
     )
 
-    np.testing.assert_allclose(result, [0.25, 0.5])
+    np.testing.assert_allclose(result, [0.5, 0.5])
 
 
 def test_matrix_metrics_reward_orthogonal_columns():

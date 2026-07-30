@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v4-computational-experiment-design",
+  "scientific_scope": "model_conditional_protocol_ranking_not_parameter_estimation",
+  "v2_archive": "results/formal/conditional_reachability/v2-fbda4cf",
+  "v2_input_sha256": {
+    "task_spec.json": "b900fb66a5d42b07db4fb298bdd3b1a6b5c78c0b6507dd1224eab38fbac98201"
+  },
+  "v3_archive": "results/formal/residual_attribution/v3-f82d391",
+  "v3_input_sha256": {
+    "v3_task_spec.json": "3adc17f22069c7a7d5ec135c9d86bc5ff68e2360932a733528b7ddba6ad59f48",
+    "selection.json": "e18d83ee52583255a8ddd818ba1e4fd03c6561a8377af0a329ec4c01f8aac318",
+    "residual_curves.jsonl": "7074b767fade549fe0e997d6fe9a2a9c6c58fcf62e0d3a54cdd48e9a8e2cbde6",
+    "run_manifest.json": "f747497dc165085b36ad9de14b41453022a2d932c992b3796497b94957ab19b1"
+  },
+  "parameter_role_registry": "config/parameter-roles/gate-a6-parameter-roles.json",
+  "parameter_role_sha256": "ebb4c22604b0b19ba16508e3880ddeeda9a03cf62f8b8bdfa86a258a734867e3",
+  "datasets": ["FT2", "FT3", "FT4", "FT8"],
+  "selection_ranks": [0, 1],
+  "diagnostic_parameters": ["k0_1", "k0_2", "k0_3", "G_OH", "G_O"],
+  "parameter_specs": [
+    ["k0_1", "log10", -3.0, 5.0],
+    ["k0_2", "log10", -3.0, 5.0],
+    ["k0_3", "log10", -3.0, 5.0],
+    ["G_OH", "linear", 0.8, 1.8],
+    ["G_O", "linear", 2.2, 3.4]
+  ],
+  "perturbations": {
+    "k0_1": 0.25,
+    "k0_2": 0.25,
+    "k0_3": 0.25,
+    "G_OH": 0.05,
+    "G_O": 0.05
+  },
+  "fit_harmonics": [1, 2, 3],
+  "solver_backend": "lsoda",
+  "feature_mode": "hybrid",
+  "feature_grid_size": 128,
+  "points_per_cycle": 128,
+  "ridge": 1e-8,
+  "minimum_positive_points": 6,
+  "linearity_cosine_min": 0.9,
+  "workers": 8,
+  "existing_conditions": [
+    {
+      "condition_id": "existing_ft2",
+      "condition_role": "existing",
+      "E_start": 1.124097282692384,
+      "E_end": 1.6229037173683536,
+      "frequency_hz": 4.999999877927828,
+      "amplitude_v": 0.1599992571304022,
+      "cycles": 256
+    },
+    {
+      "condition_id": "existing_ft3",
+      "condition_role": "existing",
+      "E_start": 0.924097277474612,
+      "E_end": 1.9229037265531128,
+      "frequency_hz": 4.999999877927828,
+      "amplitude_v": 0.15999925452484762,
+      "cycles": 256
+    },
+    {
+      "condition_id": "existing_ft4",
+      "condition_role": "existing",
+      "E_start": 0.9240972872232194,
+      "E_end": 1.9229036972968654,
+      "frequency_hz": 1.0000000146486612,
+      "amplitude_v": 0.15999925452486063,
+      "cycles": 256
+    },
+    {
+      "condition_id": "existing_ft8",
+      "condition_role": "existing",
+      "E_start": 0.9240972768661625,
+      "E_end": 1.8229037207529302,
+      "frequency_hz": 4.999999877927828,
+      "amplitude_v": 0.1599992598993544,
+      "cycles": 256
+    }
+  ],
+  "candidate_conditions": [
+    {
+      "condition_id": "candidate_1hz_matched_scan",
+      "condition_role": "candidate",
+      "E_start": 0.924097277474612,
+      "E_end": 1.9229037265531128,
+      "frequency_hz": 1.0,
+      "amplitude_v": 0.16,
+      "cycles": 52
+    },
+    {
+      "condition_id": "candidate_10hz_matched_scan",
+      "condition_role": "candidate",
+      "E_start": 0.924097277474612,
+      "E_end": 1.9229037265531128,
+      "frequency_hz": 10.0,
+      "amplitude_v": 0.16,
+      "cycles": 512
+    },
+    {
+      "condition_id": "candidate_5hz_amp_008",
+      "condition_role": "candidate",
+      "E_start": 0.924097277474612,
+      "E_end": 1.9229037265531128,
+      "frequency_hz": 5.0,
+      "amplitude_v": 0.08,
+      "cycles": 256
+    },
+    {
+      "condition_id": "candidate_5hz_amp_024",
+      "condition_role": "candidate",
+      "E_start": 0.924097277474612,
+      "E_end": 1.9229037265531128,
+      "frequency_hz": 5.0,
+      "amplitude_v": 0.24,
+      "cycles": 256
+    },
+    {
+      "condition_id": "candidate_5hz_fast_scan",
+      "condition_role": "candidate",
+      "E_start": 0.924097277474612,
+      "E_end": 1.9229037265531128,
+      "frequency_hz": 5.0,
+      "amplitude_v": 0.16,
+      "cycles": 128
+    }
+  ],
+  "smoke": {
+    "dataset_id": "FT2",
+    "selection_rank": 0,
+    "condition_ids": ["existing_ft3", "candidate_5hz_amp_008"],
+    "cycles": 8,
+    "points_per_cycle": 32
+  },
+  "deferred_experimental_inputs": [
+    "instrument_preprocessing",
+    "electrode_area",
+    "catalyst_loading",
+    "independent_Ru",
+    "independent_Cdl",
+    "independent_gamma",
+    "new_experimental_observations"
+  ]
+}

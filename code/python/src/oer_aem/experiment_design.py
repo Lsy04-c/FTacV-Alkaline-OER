@@ -113,7 +113,8 @@ def central_sensitivity(
     span = float(parameter_span)
     if not np.isfinite(span) or abs(span) <= np.finfo(float).eps:
         raise ValueError("parameter span must be finite and non-zero")
-    scale = max(float(np.max(np.abs(baseline_values))), 1e-30)
+    maximum = max(float(np.max(np.abs(baseline_values))), 1e-30)
+    scale = np.maximum(np.abs(baseline_values), maximum * 1e-12)
     return (plus_values - minus_values) / span / scale
 
 
@@ -196,19 +197,26 @@ def rank_candidate_conditions(
     ranked: list[dict[str, Any]] = []
     for source in rows:
         row = dict(source)
+        logdet_gain = row.get("q25_logdet_gain")
         row["eligible"] = bool(
             row["all_success"]
-            and float(row["q25_logdet_gain"]) > 0.0
+            and logdet_gain is not None
+            and float(logdet_gain) > 0.0
             and int(row["positive_gain_count"]) >= int(minimum_positive)
         )
         ranked.append(row)
+
+    def metric(row: Mapping[str, Any], name: str) -> float:
+        value = row.get(name)
+        return float("-inf") if value is None else float(value)
+
     return sorted(
         ranked,
         key=lambda row: (
             -int(bool(row["eligible"])),
-            -float(row["q25_logdet_gain"]),
-            -float(row["median_correlation_reduction"]),
-            -float(row["q25_min_singular_gain"]),
+            -metric(row, "q25_logdet_gain"),
+            -metric(row, "median_correlation_reduction"),
+            -metric(row, "q25_min_singular_gain"),
             int(row["total_points"]),
             str(row["condition_id"]),
         ),
