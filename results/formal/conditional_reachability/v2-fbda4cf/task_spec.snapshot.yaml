@@ -1,0 +1,35 @@
+args:
+- --task-spec
+- config/reachability/v2-conditional-reachability.json
+commit: fbda4cff248f498b29e1c054aaab2fcaab24e40f
+expected_files:
+- task_spec.json
+- parameter_library.csv
+- targets.json
+- base_results.jsonl
+- stress_results.jsonl
+- summary.json
+- run_manifest.json
+- STATUS.json
+- task_spec.snapshot.yaml
+is_smoke: false
+output_dir: results/conditional_reachability/v2
+resume_required_files:
+- task_spec.json
+- targets.json
+- parameter_library.csv
+script: code/python/scripts/run_conditional_reachability.py
+supports_resume: true
+task_name: v2_conditional_reachability_lsoda
+validator_config:
+  conditional_reachability_gate:
+    project_root: .
+    rerun_best_formal: true
+    rerun_best_smoke: false
+    task_spec: config/reachability/v2-conditional-reachability.json
+validators:
+- schema_check
+- finite_check
+- provenance
+- conditional_reachability_gate
+workers: 8

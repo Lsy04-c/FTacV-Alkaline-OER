@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v2-conditional-model-reachability",
+  "run_mode": "formal",
+  "structure_complete": true,
+  "scientific_classification_enabled": true,
+  "datasets": {
+    "FT2": {
+      "scientific_classification": "NOT_REACHED_WITHIN_LIBRARY",
+      "base_job_count": 512,
+      "stress_job_count": 128,
+      "ode_success_fraction": 0.978515625,
+      "baseline_reached": false,
+      "prefix_improvement": 0.06484428433221857,
+      "stress_changed": false,
+      "stress_scenario_reached": {
+        "A:x0.5": false,
+        "A:x2": false,
+        "Cdl:x0.5": false,
+        "Cdl:x2": false,
+        "Ru:x0.5": false,
+        "Ru:x2": false,
+        "E0_pre:minus0.05": false,
+        "E0_pre:plus0.05": false,
+        "k0_pre:x0.5": false,
+        "k0_pre:x2": false,
+        "gamma:x0.5": false,
+        "gamma:x2": false,
+        "k0_4:x0.5": false,
+        "k0_4:x2": false,
+        "scaling_OOH_OH:minus0.2": false,
+        "scaling_OOH_OH:plus0.2": false
+      },
+      "nearest_candidate": {
+        "candidate_id": 289,
+        "score": 15.52027173856423,
+        "passed": false
+      }
+    },
+    "FT3": {
+      "scientific_classification": "NOT_REACHED_WITHIN_LIBRARY",
+      "base_job_count": 512,
+      "stress_job_count": 128,
+      "ode_success_fraction": 1.0,
+      "baseline_reached": false,
+      "prefix_improvement": 0.02417867277984718,
+      "stress_changed": false,
+      "stress_scenario_reached": {
+        "A:x0.5": false,
+        "A:x2": false,
+        "Cdl:x0.5": false,
+        "Cdl:x2": false,
+        "Ru:x0.5": false,
+        "Ru:x2": false,
+        "E0_pre:minus0.05": false,
+        "E0_pre:plus0.05": false,
+        "k0_pre:x0.5": false,
+        "k0_pre:x2": false,
+        "gamma:x0.5": false,
+        "gamma:x2": false,
+        "k0_4:x0.5": false,
+        "k0_4:x2": false,
+        "scaling_OOH_OH:minus0.2": false,
+        "scaling_OOH_OH:plus0.2": false
+      },
+      "nearest_candidate": {
+        "candidate_id": 484,
+        "score": 10.439349854450954,
+        "passed": false
+      }
+    },
+    "FT4": {
+      "scientific_classification": "NOT_REACHED_WITHIN_LIBRARY",
+      "base_job_count": 512,
+      "stress_job_count": 128,
+      "ode_success_fraction": 0.998046875,
+      "baseline_reached": false,
+      "prefix_improvement": 0.0,
+      "stress_changed": false,
+      "stress_scenario_reached": {
+        "A:x0.5": false,
+        "A:x2": false,
+        "Cdl:x0.5": false,
+        "Cdl:x2": false,
+        "Ru:x0.5": false,
+        "Ru:x2": false,
+        "E0_pre:minus0.05": false,
+        "E0_pre:plus0.05": false,
+        "k0_pre:x0.5": false,
+        "k0_pre:x2": false,
+        "gamma:x0.5": false,
+        "gamma:x2": false,
+        "k0_4:x0.5": false,
+        "k0_4:x2": false,
+        "scaling_OOH_OH:minus0.2": false,
+        "scaling_OOH_OH:plus0.2": false
+      },
+      "nearest_candidate": {
+        "candidate_id": 249,
+        "score": 5.260716334141245,
+        "passed": false
+      }
+    },
+    "FT8": {
+      "scientific_classification": "NOT_REACHED_WITHIN_LIBRARY",
+      "base_job_count": 512,
+      "stress_job_count": 128,
+      "ode_success_fraction": 1.0,
+      "baseline_reached": false,
+      "prefix_improvement": 0.0,
+      "stress_changed": false,
+      "stress_scenario_reached": {
+        "A:x0.5": false,
+        "A:x2": false,
+        "Cdl:x0.5": false,
+        "Cdl:x2": false,
+        "Ru:x0.5": false,
+        "Ru:x2": false,
+        "E0_pre:minus0.05": false,
+        "E0_pre:plus0.05": false,
+        "k0_pre:x0.5": false,
+        "k0_pre:x2": false,
+        "gamma:x0.5": false,
+        "gamma:x2": false,
+        "k0_4:x0.5": false,
+        "k0_4:x2": false,
+        "scaling_OOH_OH:minus0.2": false,
+        "scaling_OOH_OH:plus0.2": false
+      },
+      "nearest_candidate": {
+        "candidate_id": 226,
+        "score": 6.468258623894354,
+        "passed": false
+      }
+    }
+  },
+  "base_job_count": 2048,
+  "stress_job_count": 512,
+  "workers": 8,
+  "duration_seconds": 7548.527106106048,
+  "reused_jobs": 0,
+  "executed_jobs": 2560
+}

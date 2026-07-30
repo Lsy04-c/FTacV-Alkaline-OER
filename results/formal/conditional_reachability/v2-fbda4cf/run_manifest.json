@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v2-conditional-model-reachability",
+  "run_mode": "formal",
+  "provenance": {
+    "source_commit": "fbda4cff248f498b29e1c054aaab2fcaab24e40f",
+    "dirty": false,
+    "dirty_paths": [],
+    "ignored_workflow_paths": [
+      ".wf_lock",
+      "results/conditional_reachability/"
+    ],
+    "dirty_content_sha256": null,
+    "python": "3.11.2",
+    "platform": "Linux-6.18.33.1-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+    "command": [
+      "/home/lsy/OER-FTAcV/.venv/bin/python",
+      "/home/lsy/OER-FTAcV/worktrees/fbda4cf/v2_conditional_reachability_lsoda/code/python/scripts/run_conditional_reachability.py",
+      "--task-spec",
+      "config/reachability/v2-conditional-reachability.json",
+      "--output",
+      "/home/lsy/OER-FTAcV/worktrees/fbda4cf/v2_conditional_reachability_lsoda/results/conditional_reachability/v2/20260729_163222",
+      "--workers",
+      "8"
+    ]
+  },
+  "task_spec_sha256": "b900fb66a5d42b07db4fb298bdd3b1a6b5c78c0b6507dd1224eab38fbac98201",
+  "parameter_library_sha256": "862a0e50c93796e71a837b6d4dbd48e72cf7f025a2c3cc4876bcdb002e4dd57d",
+  "targets_sha256": "e0eba1ad68d9e6a972d40b9cee9935bc0b2d5d6153a8a538f4d73dbd27c9a5f3",
+  "artifact_sha256": {
+    "base_results.jsonl": "6b03d6c29ddaed3c7400d8da1a9ff688bd2e6f8b96381d2357abcb0be3036f1b",
+    "stress_results.jsonl": "791eb95b885049ba3a8afc3d1a58dc59574ccb092b1c6274b83d3c25fd486c67",
+    "summary.json": "851ff4efc7cf459231bcdda6c8a70428d715f2109d36435e1a8b7f7b5524c72d"
+  },
+  "parameter_library_content_sha256": "5d959e18fc6dfb20e27907d5719cc646fc4b191b9a4f1074d508b76f2dfae6db"
+}

@@ -308,7 +308,8 @@ FastAPI 和静态前端已支持数据分析、正演、TPE 接口和曲线显�
 
 ### 9.2 V2：条件模型可达性
 
-**进行中，初始化数值门和本机工作流门已关闭；正式 Legion 计算待启动。**
+**V2 已完成正式验收；四组均为 `NOT_REACHED_WITHIN_LIBRARY`，下一步进入
+V3 残差归因。**
 
 ```text
 在冻结模型、合理参数范围和当前元数据假设下，
@@ -331,8 +332,7 @@ RHS `1e-8`、覆盖度和守恒门不变。新 4×8 LSODA smoke 为 32/32 成功
 5000 s 收敛。独立 validator `PASS`，8 workers wall time 100.44 s。
 证据位于
 `results/smoke/conditional_reachability/v2-adaptive-steady-state-smoke/`。
-该证据关闭初始化阻断点，但不产生科学分类。正式 512 候选和压力任务尚未
-启动。
+该证据关闭初始化阻断点，但不产生科学分类。
 
 独立 validator 已实现正式 stress job 集合、payload/hash、评分和分类
 重算；`--rerun-best` 已对四组 smoke 最近候选完成 LSODA 复算。oer-wf
@@ -340,15 +340,28 @@ RHS `1e-8`、覆盖度和守恒门不变。新 4×8 LSODA smoke 为 32/32 成功
 回退、98.45 s；snapshot 驱动的 `wf verify` 13 项检查全部通过。证据：
 `results/smoke/conditional_reachability/v2-oer-wf-local-smoke-3/`。
 
-compute commit 已冻结为 `fbda4cff248f`，TaskSpec 已绑定该提交。部署
-Legion、运行正式 512 基础候选和 512 stress job、同步及正式
-`wf verify --rerun-best` 尚未完成，因此 V2 仍无科学分类。
+compute commit 已冻结为 `fbda4cff248f`，TaskSpec 已绑定该提交。Legion
+正式计算完成 2048 base + 512 stress，共 2560 job；运行时间 7548.53 s。
+同一冻结 commit、同一 Legion 环境和单线程数值变量下，独立 validator
+重建 job、hash、评分和分类，并对四组最近候选执行 LSODA `rerun-best`，
+正式门为 `PASS`。
+
+FT2、FT3、FT4、FT8 均为 `NOT_REACHED_WITHIN_LIBRARY`；最近分数分别为
+15.5203、10.4393、5.2607 和 6.4683，512 候选相对前 256 候选的改进分别
+为 6.484%、2.418%、0% 和 0%。16 个固定输入压力场景均未改变分类。
+这只证明冻结参数库和压力场景未达到预注册特征门，不证明连续参数空间全局
+不可达，也不得把最近候选写成真实参数。正式证据：
+`results/formal/conditional_reachability/v2-fbda4cf/`。
+
+Mac 跨平台复算未满足逐指标 `1e-8` 等值门；未恢复单线程变量的 Legion
+进程也会出现约 `1e-5` 量级漂移。正式单线程 Legion 环境可复现通过。
+该差异登记为工作流环境冻结/可移植性问题，不回写科学门、不放宽阈值。
 
 正式前压力测试已关闭两个工作流阻断点：V2 resume 现在声明
 `task_spec.json`、`targets.json` 和 `parameter_library.csv`，不再被通用
 `job_plan.json` 前提拒绝；清洁门只忽略未跟踪的 `.wf_lock` 与
 `results/` 运行产物，其他 Git 变化仍阻断 formal。正式规模为 2560 job，
-按本机 smoke 投影约 2.2 小时，保守预算 2–4 小时。
+实际正式 wall time 为约 2.10 小时，与预算一致。
 
 ### 9.3 V3：残差归因
 

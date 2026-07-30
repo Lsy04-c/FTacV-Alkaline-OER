@@ -1578,3 +1578,22 @@ H1-H7压力测试：
 - 当前边界：该修复只改变编排器启动和状态解释，不改变 V2 科学代码、
   solver、阈值、输入或已经运行的正式进程。下一步等待正式结果完成，
   再按冻结 validator 验收；不创建自动定时检查。
+
+## 45. V2 正式结果与条件可达性结论（2026-07-30）
+
+- 正式任务正常结束：systemd `inactive/dead`、Result success、退出码 0，
+  STATUS `SUCCESS`；运行 7548.53 s。
+- 产物完整：2048 base、512 stress、512 参数库行和四组 target；schema、
+  有限值、hash、job 集合、评分与分类独立重建通过。
+- 同一冻结 commit、Legion Python 环境和 TaskSpec 单线程变量下，四组最近
+  候选 LSODA `rerun-best` 全部通过，正式 validator 为 `PASS`。
+- FT2/FT3/FT4/FT8 均为 `NOT_REACHED_WITHIN_LIBRARY`；最近分数为
+  15.5203/10.4393/5.2607/6.4683，扩库改进为
+  6.484%/2.418%/0%/0%，全部 stress 场景仍未达到门。
+- 科学边界：该结论不证明 M0 在连续空间全局不可达，不产生真实参数估计；
+  下一科学阶段为 V3 残差归因，而不是继续盲目扩大同一反演。
+- 验收可移植性：Mac 及未恢复单线程变量的 Legion 复算会出现最高约
+  `1e-5` 指标漂移，不能满足 `1e-8` 逐指标等值门；正式单线程 Legion
+  环境通过。未修改阈值，问题登记为 verifier 环境冻结缺口。
+- 正式证据：
+  `results/formal/conditional_reachability/v2-fbda4cf/`。

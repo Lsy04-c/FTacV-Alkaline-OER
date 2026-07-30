@@ -1,0 +1,23 @@
+{
+  "status": "SUCCESS",
+  "exit_code": 0,
+  "pid": 13191,
+  "started_at": "2026-07-29T16:32:27Z",
+  "finished_at": "2026-07-29T18:38:16Z",
+  "commit": "fbda4cf",
+  "task_id": "fbda4cf/v2_conditional_reachability_lsoda",
+  "spec_hash": "sha256:1e724f82e337a2ab67bc2dc4ad9374475405ebedfec068a20eb86b9ad739dc9d",
+  "command": [
+    "/home/lsy/OER-FTAcV/.venv/bin/python",
+    "/home/lsy/OER-FTAcV/worktrees/fbda4cf/v2_conditional_reachability_lsoda/code/python/scripts/run_conditional_reachability.py",
+    "--task-spec",
+    "config/reachability/v2-conditional-reachability.json",
+    "--output",
+    "/home/lsy/OER-FTAcV/worktrees/fbda4cf/v2_conditional_reachability_lsoda/results/conditional_reachability/v2/20260729_163222",
+    "--workers",
+    "8"
+  ],
+  "output_dir": "/home/lsy/OER-FTAcV/worktrees/fbda4cf/v2_conditional_reachability_lsoda/results/conditional_reachability/v2/20260729_163222",
+  "error_msg": null,
+  "extra": {}
+}
