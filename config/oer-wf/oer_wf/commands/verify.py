@@ -20,6 +20,7 @@ from oer_wf.validators import (
     recovery_gate,
     schema_check,
     v3_residual_attribution_gate,
+    v4_experiment_design_gate,
 )
 
 _VALIDATOR_MAP = {
@@ -32,6 +33,7 @@ _VALIDATOR_MAP = {
     "optimizer_confirmation_gate": optimizer_confirmation_gate.run,
     "recovery_gate": recovery_gate.run,
     "v3_residual_attribution_gate": v3_residual_attribution_gate.run,
+    "v4_experiment_design_gate": v4_experiment_design_gate.run,
 }
 
 
@@ -198,6 +200,7 @@ def run_verify(
                 "optimizer_benchmark_gate",
                 "optimizer_confirmation_gate",
                 "v3_residual_attribution_gate",
+                "v4_experiment_design_gate",
             }:
                 checks.extend(
                     fn(
