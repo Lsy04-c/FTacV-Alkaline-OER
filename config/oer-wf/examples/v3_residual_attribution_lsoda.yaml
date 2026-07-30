@@ -1,5 +1,5 @@
 task_name: "v3_residual_attribution_lsoda"
-commit: "UNFROZEN"
+commit: "f82d3918647bc0d414af912d294b467b02f047d6"
 description: "V3 ensemble DC/H1-H3 residual attribution for FT2/FT3/FT4/FT8"
 
 python:

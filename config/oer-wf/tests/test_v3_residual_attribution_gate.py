@@ -95,7 +95,7 @@ def test_v3_workflow_example_freezes_runtime_contract():
         yaml.safe_load(path.read_text(encoding="utf-8"))
     )
 
-    assert model.commit == "UNFROZEN"
+    assert model.commit == "f82d3918647bc0d414af912d294b467b02f047d6"
     assert model.workers == 8
     assert model.supports_resume is True
     assert model.smoke.args == ["--smoke"]
