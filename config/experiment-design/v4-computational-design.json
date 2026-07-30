@@ -37,6 +37,8 @@
   "feature_mode": "hybrid",
   "feature_grid_size": 128,
   "points_per_cycle": 128,
+  "steady_state_endpoints_s": [5.0, 50.0, 500.0, 5000.0, 50000.0, 500000.0],
+  "steady_state_rhs_max": 1e-8,
   "ridge": 1e-8,
   "minimum_positive_points": 6,
   "linearity_cosine_min": 0.9,

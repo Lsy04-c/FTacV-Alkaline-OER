@@ -160,8 +160,10 @@ def _validate_manifest(
         raise ValueError("manifest analysis mismatch")
     if manifest.get("run_mode") != frozen["run_mode"]:
         raise ValueError("manifest run mode mismatch")
-    if manifest.get("task_spec_hash") != _sha256_json(spec):
+    if manifest.get("task_spec_hash") != _sha256_json(frozen):
         raise ValueError("manifest task spec hash mismatch")
+    if manifest.get("configuration_hash") != _sha256_json(spec):
+        raise ValueError("manifest configuration hash mismatch")
     if manifest.get("source_state") != frozen["source_state"]:
         raise ValueError("manifest source state mismatch")
     if manifest.get("input_hashes") != inputs["input_hashes"]:
@@ -338,7 +340,7 @@ def validate_archive(
                 and int(row["selection_rank"])
                 == int(spec["smoke"]["selection_rank"])
             ]
-        task_hash = _sha256_json(spec)
+        task_hash = _sha256_json(frozen)
         primary_jobs = build_primary_jobs(
             points,
             conditions,

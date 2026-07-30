@@ -26,7 +26,14 @@ REQUIRED_FILES = {
     "summary.json",
     "run_manifest.json",
 }
-STEADY_STATE_ENDPOINTS = (5.0, 50.0, 500.0, 5000.0, 50000.0)
+STEADY_STATE_ENDPOINTS = (
+    5.0,
+    50.0,
+    500.0,
+    5000.0,
+    50000.0,
+    500000.0,
+)
 STEADY_STATE_RHS_MAX = 1e-8
 
 

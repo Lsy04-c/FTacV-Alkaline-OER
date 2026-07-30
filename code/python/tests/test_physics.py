@@ -590,6 +590,39 @@ def test_adaptive_steady_state_relaxes_frozen_slow_v2_candidate():
     )
 
 
+def test_adaptive_steady_state_relaxes_v4_cross_protocol_candidate():
+    params = initialize_oer_parameters()
+    params.update(
+        {
+            "E_start": 1.124097282692384,
+            "k0_1": 0.0077001095066955025,
+            "k0_2": 91942.82049915734,
+            "k0_3": 0.08209018892683063,
+            "k0_4": 5000.0,
+            "G_OH": 0.8611533299088479,
+            "G_O": 2.700550917163491,
+            "scaling_OOH_OH": 3.2,
+            "gamma": 3e-9,
+        }
+    )
+    params = apply_alkaline_aem(params)
+    params = OERPhysics.initialize_system(params)
+
+    solution = OERPhysics.calculate_steady_state_detailed(params)
+
+    assert solution.elapsed_s == 500000.0
+    assert solution.rhs_norm <= 1e-8
+    assert [attempt.elapsed_s for attempt in solution.attempts] == [
+        5.0,
+        50.0,
+        500.0,
+        5000.0,
+        50000.0,
+        500000.0,
+    ]
+    assert np.sum(solution.state[:5]) == pytest.approx(1.0, abs=1e-8)
+
+
 def test_adaptive_steady_state_fails_after_frozen_maximum(monkeypatch):
     def fake_solve_ivp(**kwargs):
         y0 = np.asarray(kwargs["y0"], dtype=float)
@@ -604,7 +637,7 @@ def test_adaptive_steady_state_fails_after_frozen_maximum(monkeypatch):
     monkeypatch.setattr(physics_module, "solve_ivp", fake_solve_ivp)
     params = initialize_oer_parameters()
 
-    with pytest.raises(RuntimeError, match=r"50000.*RHS"):
+    with pytest.raises(RuntimeError, match=r"500000.*RHS"):
         OERPhysics.calculate_steady_state_detailed(params)
 
 

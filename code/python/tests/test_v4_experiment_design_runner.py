@@ -11,6 +11,7 @@ import pytest
 
 import scripts.run_v4_experiment_design as runner
 from scripts.run_v4_experiment_design import (
+    _run_spec_hash,
     _resume_expected_jobs,
     build_condition_catalog,
     build_linearity_jobs,
@@ -204,6 +205,22 @@ def test_frozen_spec_loads_hashed_v2_v3_inputs():
     assert inputs["fixed_baseline"]["gamma"] == 3e-9
 
 
+def test_load_spec_rejects_steady_state_contract_drift(tmp_path):
+    changed = json.loads(SPEC.read_text(encoding="utf-8"))
+    changed["steady_state_endpoints_s"] = [
+        5.0,
+        50.0,
+        500.0,
+        5000.0,
+        50000.0,
+    ]
+    path = tmp_path / "changed.json"
+    path.write_text(json.dumps(changed), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="steady-state"):
+        load_spec(path)
+
+
 def test_condition_catalog_derives_points_duration_and_scan_rate():
     spec = load_spec(SPEC)
     conditions = build_condition_catalog(spec, smoke=False)
@@ -280,6 +297,71 @@ def test_build_sensitivity_evidence_produces_27_by_5_matrix():
     assert np.asarray(evidence[0]["matrix"]).shape == (27, 5)
     assert len(evidence[0]["column_norms"]) == 5
     assert evidence[0]["success"] is True
+
+
+def test_build_sensitivity_evidence_records_failed_group_before_feature_checks():
+    rows = _forward_rows_for_one_matrix()
+    for index, row in enumerate(rows):
+        row["job_id"] = f"job-{index}"
+    for row in rows[:10]:
+        row.update(
+            {
+                "success": False,
+                "failure_kind": "ODE_INITIALIZATION",
+                "feature_names": [],
+                "feature_values": [],
+                "observable": [],
+            }
+        )
+
+    evidence = build_sensitivity_evidence(
+        rows,
+        parameter_specs=PARAMETER_SPECS,
+        ridge=1e-8,
+    )
+
+    assert evidence[0]["success"] is False
+    assert evidence[0]["failed_job_count"] == 10
+    assert evidence[0]["failed_job_ids"] == [
+        f"job-{index}" for index in range(10)
+    ]
+    assert evidence[0]["failure_kinds"] == {"ODE_INITIALIZATION": 10}
+
+
+def test_run_one_forward_classifies_steady_state_gate_as_numerical(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        runner,
+        "condition_to_config",
+        lambda *args, **kwargs: object(),
+    )
+    monkeypatch.setattr(
+        runner,
+        "params_from_vector",
+        lambda *args, **kwargs: {},
+    )
+    monkeypatch.setattr(
+        runner.OERPhysics,
+        "solve_ode_system_detailed",
+        lambda params: (_ for _ in ()).throw(
+            RuntimeError(
+                "steady-state did not reach the frozen RHS gate by 50000 s"
+            )
+        ),
+    )
+
+    result = run_one_forward(
+        {
+            "job": {"condition": {}, "encoded_params": []},
+            "spec": {},
+            "parameter_specs": [],
+            "fixed_baseline": {},
+        }
+    )
+
+    assert result["success"] is False
+    assert result["failure_kind"] == "ODE_INITIALIZATION"
 
 
 def test_run_one_forward_returns_real_27_block_vector():
@@ -565,3 +647,22 @@ def test_main_calls_zero_argument_git_provenance(monkeypatch, tmp_path):
                 "--smoke",
             ]
         )
+
+
+def test_run_spec_hash_binds_source_commit_and_mode():
+    spec = load_spec(SPEC)
+    clean_a = {
+        "source_commit": "a" * 40,
+        "dirty": False,
+        "dirty_paths": [],
+        "ignored_workflow_paths": [".wf_lock"],
+        "dirty_content_sha256": None,
+    }
+    clean_b = {**clean_a, "source_commit": "b" * 40}
+
+    formal_a = _run_spec_hash(spec, smoke=False, provenance=clean_a)
+    formal_b = _run_spec_hash(spec, smoke=False, provenance=clean_b)
+    smoke_a = _run_spec_hash(spec, smoke=True, provenance=clean_a)
+
+    assert formal_a != formal_b
+    assert formal_a != smoke_a

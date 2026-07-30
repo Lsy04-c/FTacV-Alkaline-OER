@@ -35,7 +35,14 @@ STOICHIOMETRIC_MATRIX = np.array(
     dtype=float,
 )
 DYNAMIC_ATOL = np.array([3e-11, 3e-11, 3e-11, 3e-11, 3e-11, 1e-8])
-STEADY_STATE_ENDPOINTS = (5.0, 50.0, 500.0, 5000.0, 50000.0)
+STEADY_STATE_ENDPOINTS = (
+    5.0,
+    50.0,
+    500.0,
+    5000.0,
+    50000.0,
+    500000.0,
+)
 STEADY_STATE_RHS_MAX = 1e-8
 
 

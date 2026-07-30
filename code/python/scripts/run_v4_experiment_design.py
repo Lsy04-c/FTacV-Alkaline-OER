@@ -30,7 +30,12 @@ from oer_aem.experiment_design import (
     rank_candidate_conditions,
 )
 from oer_aem.inversion import InversionConfig, extract_features, params_from_vector
-from oer_aem.physics import DynamicSolverError, OERPhysics
+from oer_aem.physics import (
+    DynamicSolverError,
+    OERPhysics,
+    STEADY_STATE_ENDPOINTS,
+    STEADY_STATE_RHS_MAX,
+)
 from scripts.run_conditional_reachability import _attempt_rows, _git_provenance
 
 
@@ -221,6 +226,14 @@ def load_spec(path: str | Path) -> dict[str, Any]:
         "G_O",
     ]:
         raise ValueError("unexpected V4 diagnostic parameter order")
+    if tuple(float(value) for value in spec.get(
+        "steady_state_endpoints_s", []
+    )) != tuple(float(value) for value in STEADY_STATE_ENDPOINTS):
+        raise ValueError("V4 steady-state endpoint contract mismatch")
+    if float(spec.get("steady_state_rhs_max", float("nan"))) != float(
+        STEADY_STATE_RHS_MAX
+    ):
+        raise ValueError("V4 steady-state RHS contract mismatch")
     return spec
 
 
@@ -595,10 +608,16 @@ def run_one_forward(payload: Mapping[str, Any]) -> dict[str, Any]:
             "runtime_seconds": time.perf_counter() - started,
         }
     except Exception as exc:
+        failure_kind = (
+            "ODE_INITIALIZATION"
+            if isinstance(exc, RuntimeError)
+            and "steady-state" in str(exc).lower()
+            else "INFRA"
+        )
         return {
             **job,
             "success": False,
-            "failure_kind": "INFRA",
+            "failure_kind": failure_kind,
             "failure_message": f"{type(exc).__name__}: {exc}",
             "solver_backend_used": None,
             "solver_fallback_used": False,
@@ -644,6 +663,36 @@ def build_sensitivity_evidence(
         if len(baseline_rows) != 1:
             raise ValueError(f"expected one baseline row for {key}")
         baseline = baseline_rows[0]
+        failed = [row for row in rows if row.get("success") is not True]
+        expected_count = 1 + 2 * len(parameter_order)
+        if failed or len(rows) != expected_count:
+            failure_kinds: dict[str, int] = {}
+            for row in failed:
+                name = str(row.get("failure_kind") or "UNKNOWN")
+                failure_kinds[name] = failure_kinds.get(name, 0) + 1
+            evidence.append(
+                {
+                    "dataset_id": key[0],
+                    "candidate_id": key[1],
+                    "selection_rank": int(baseline["selection_rank"]),
+                    "condition_id": key[2],
+                    "condition_role": str(baseline["condition_role"]),
+                    "success": False,
+                    "feature_names": [],
+                    "observable": [],
+                    "matrix": [],
+                    "logdet": None,
+                    "min_singular_value": None,
+                    "max_abs_correlation": None,
+                    "column_norms": [],
+                    "failed_job_count": len(failed),
+                    "failed_job_ids": [
+                        str(row.get("job_id", "")) for row in failed
+                    ],
+                    "failure_kinds": failure_kinds,
+                }
+            )
+            continue
         feature_names = tuple(
             str(value) for value in baseline["feature_names"]
         )
@@ -654,11 +703,7 @@ def build_sensitivity_evidence(
             if tuple(str(value) for value in row["feature_names"]) != feature_names:
                 raise ValueError("forward feature names do not match")
             common &= np.asarray(row["observable"], dtype=bool)
-        success = (
-            len(rows) == 1 + 2 * len(parameter_order)
-            and all(row.get("success") is True for row in rows)
-            and bool(np.any(common))
-        )
+        success = bool(np.any(common))
         if not success:
             evidence.append(
                 {
@@ -675,6 +720,9 @@ def build_sensitivity_evidence(
                     "min_singular_value": None,
                     "max_abs_correlation": None,
                     "column_norms": [],
+                    "failed_job_count": 0,
+                    "failed_job_ids": [],
+                    "failure_kinds": {},
                 }
             )
             continue
@@ -726,6 +774,9 @@ def build_sensitivity_evidence(
                 ],
                 "observable": common.tolist(),
                 "matrix": matrix.tolist(),
+                "failed_job_count": 0,
+                "failed_job_ids": [],
+                "failure_kinds": {},
                 **metrics,
             }
         )
@@ -1177,6 +1228,18 @@ def _freeze_spec(
     }
 
 
+def _run_spec_hash(
+    spec: Mapping[str, Any],
+    *,
+    smoke: bool,
+    provenance: Mapping[str, Any],
+) -> str:
+    """Bind resumable jobs to configuration, mode and exact source state."""
+    return _sha256_json(
+        _freeze_spec(spec, smoke=smoke, provenance=provenance)
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--task-spec", type=Path, required=True)
@@ -1199,7 +1262,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         smoke=args.smoke,
         provenance=provenance,
     )
-    task_hash = _sha256_json(spec)
+    task_hash = _run_spec_hash(
+        spec,
+        smoke=args.smoke,
+        provenance=provenance,
+    )
     conditions = build_condition_catalog(spec, smoke=args.smoke)
     points = list(inputs["parameter_points"])
     if args.smoke:
@@ -1420,6 +1487,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "analysis_id": spec["analysis_id"],
         "run_mode": recommendation["run_mode"],
         "task_spec_hash": task_hash,
+        "configuration_hash": _sha256_json(spec),
         "source_state": frozen["source_state"],
         "input_hashes": inputs["input_hashes"],
         "primary_job_count": len(primary_jobs),
