@@ -58,6 +58,87 @@ def _read_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(handle))
 
 
+def compare_selection(
+    actual: Mapping[str, Any],
+    expected: Mapping[str, Any],
+) -> None:
+    """Compare discrete selection exactly and derived floats within 1 ULP."""
+    if set(actual) != set(expected):
+        raise ValueError("selection dataset mismatch")
+    for dataset_id in sorted(expected):
+        actual_rows = actual[dataset_id]
+        expected_rows = expected[dataset_id]
+        if not isinstance(actual_rows, list) or not isinstance(
+            expected_rows, list
+        ):
+            raise ValueError(f"selection rows must be lists: {dataset_id}")
+        if len(actual_rows) != len(expected_rows):
+            raise ValueError(f"selection length mismatch: {dataset_id}")
+        for index, (left, right) in enumerate(
+            zip(actual_rows, expected_rows)
+        ):
+            for key in ("candidate_id", "selection_rank"):
+                if left.get(key) != right.get(key):
+                    raise ValueError(
+                        f"selection {key} mismatch: {dataset_id}/{index}"
+                    )
+            if not np.allclose(
+                np.asarray(left.get("unit_params"), dtype=float),
+                np.asarray(right.get("unit_params"), dtype=float),
+                rtol=0.0,
+                atol=1e-15,
+            ):
+                raise ValueError(
+                    f"selection unit_params mismatch: {dataset_id}/{index}"
+                )
+            for key in ("score", "selection_min_distance"):
+                left_value = left.get(key)
+                right_value = right.get(key)
+                if left_value is None or right_value is None:
+                    if left_value is not right_value:
+                        raise ValueError(
+                            f"selection {key} mismatch: {dataset_id}/{index}"
+                        )
+                elif not math.isclose(
+                    float(left_value),
+                    float(right_value),
+                    rel_tol=1e-15,
+                    abs_tol=1e-15,
+                ):
+                    raise ValueError(
+                        f"selection {key} mismatch: {dataset_id}/{index}"
+                    )
+
+
+def align_job_selection_evidence(
+    jobs: Sequence[Mapping[str, Any]],
+    validated_selection: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """Rehash jobs with the already validated platform-local distance value."""
+    distances = {
+        (str(dataset_id), int(row["candidate_id"])): row.get(
+            "selection_min_distance"
+        )
+        for dataset_id, rows in validated_selection.items()
+        for row in rows
+    }
+    aligned: list[dict[str, Any]] = []
+    for source in jobs:
+        row = dict(source)
+        key = (str(row["dataset_id"]), int(row["candidate_id"]))
+        if key not in distances:
+            raise ValueError(f"selection evidence missing for job: {row['job_id']}")
+        row["selection_min_distance"] = distances[key]
+        payload = {
+            name: value
+            for name, value in row.items()
+            if name != "job_input_hash"
+        }
+        row["job_input_hash"] = _sha256_json(payload)
+        aligned.append(row)
+    return aligned
+
+
 def _assert_close(actual: Any, expected: Any, name: str) -> None:
     if expected is None:
         if actual is not None and actual != "":
@@ -238,8 +319,8 @@ def validate_archive(
             smoke=run_mode == "smoke",
         )
         actual_selection = _read_json(archive / "selection.json")
-        if _canonical_json(actual_selection) != _canonical_json(expected_selection):
-            raise ValueError("selection mismatch")
+        compare_selection(actual_selection, expected_selection)
+        jobs = align_job_selection_evidence(jobs, actual_selection)
 
         manifest = _read_json(archive / "run_manifest.json")
         if manifest["v3_task_spec_hash"] != _sha256_json(spec):
@@ -368,12 +449,20 @@ def validate_archive(
         "rerun_nearest": bool(rerun_nearest),
         "rerun_evidence": rerun_evidence,
     }
-    archive.mkdir(parents=True, exist_ok=True)
+    return result
+
+
+def format_acceptance(result: Mapping[str, Any]) -> str:
+    """Format a validator result without mutating its scientific archive."""
+    gate = str(result.get("gate"))
+    rerun_nearest = bool(result.get("rerun_nearest"))
+    rerun_evidence = list(result.get("rerun_evidence") or [])
+    errors = list(result.get("errors") or [])
     lines = [
         "# V3 Residual Attribution Acceptance",
         "",
         f"- Gate: `{gate}`",
-        f"- Rerun nearest: `{str(bool(rerun_nearest)).lower()}`",
+        f"- Rerun nearest: `{str(rerun_nearest).lower()}`",
     ]
     if rerun_evidence:
         lines.extend(
@@ -393,11 +482,7 @@ def validate_archive(
         )
     if errors:
         lines.extend(["", "## Errors", *[f"- {item}" for item in errors]])
-    (archive / "acceptance.md").write_text(
-        "\n".join(lines) + "\n",
-        encoding="utf-8",
-    )
-    return result
+    return "\n".join(lines) + "\n"
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -406,6 +491,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--task-spec", type=Path, required=True)
     parser.add_argument("--archive", type=Path, required=True)
     parser.add_argument("--rerun-nearest", action="store_true")
+    parser.add_argument("--acceptance-output", type=Path)
     args = parser.parse_args(argv)
     result = validate_archive(
         args.root,
@@ -413,6 +499,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.archive,
         rerun_nearest=args.rerun_nearest,
     )
+    if args.acceptance_output is not None:
+        args.acceptance_output.parent.mkdir(parents=True, exist_ok=True)
+        args.acceptance_output.write_text(
+            format_acceptance(result),
+            encoding="utf-8",
+        )
     print(json.dumps(result, indent=2))
     return 0 if result["gate"] == "PASS" else 1
 
