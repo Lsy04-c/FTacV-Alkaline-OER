@@ -9,6 +9,7 @@ from oer_wf.validators import (
     provenance,
     recovery_gate,
     schema_check,
+    v3_residual_attribution_gate,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "provenance",
     "recovery_gate",
     "schema_check",
+    "v3_residual_attribution_gate",
 ]

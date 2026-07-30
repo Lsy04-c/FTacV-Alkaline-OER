@@ -19,6 +19,7 @@ from oer_wf.validators import (
     provenance,
     recovery_gate,
     schema_check,
+    v3_residual_attribution_gate,
 )
 
 _VALIDATOR_MAP = {
@@ -30,6 +31,7 @@ _VALIDATOR_MAP = {
     "optimizer_benchmark_gate": optimizer_benchmark_gate.run,
     "optimizer_confirmation_gate": optimizer_confirmation_gate.run,
     "recovery_gate": recovery_gate.run,
+    "v3_residual_attribution_gate": v3_residual_attribution_gate.run,
 }
 
 
@@ -195,6 +197,7 @@ def run_verify(
                 "recovery_gate",
                 "optimizer_benchmark_gate",
                 "optimizer_confirmation_gate",
+                "v3_residual_attribution_gate",
             }:
                 checks.extend(
                     fn(

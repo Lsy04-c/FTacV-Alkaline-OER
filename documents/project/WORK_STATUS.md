@@ -1597,3 +1597,20 @@ H1-H7压力测试：
   环境通过。未修改阈值，问题登记为 verifier 环境冻结缺口。
 - 正式证据：
   `results/formal/conditional_reachability/v2-fbda4cf/`。
+
+## 46. V3 残差归因设计与本机 smoke（2026-07-30）
+
+- 冻结设计：
+  `documents/specifications/2026-07-30-v3-residual-attribution-design.md`。
+  当前实验待补项推迟到恢复实验后，不作为 V3 阻断项。
+- 每组从 V2 得分前 64 个成功候选中，固定选择最近候选和 11 个参数空间
+  maximin 候选；正式规模 48 job，不新增 TPE 或大参数库。
+- 新增纯残差模块、可续跑 runner、独立 validator、V3 JSON 任务契约和
+  `oer-wf 0.6.8` 专用门。DC、幅值和圆周相位分开保存，统一符号为
+  `实验 - 模拟`。
+- 首次 smoke 的 ODE 均成功，但 lock-in low 区没有有效点，被旧汇总错误
+  升级为 job FAIL。修复为 `n_points=0/not-observable`，不填充伪残差。
+- 最终任务哈希下本机 smoke 为 4/4 成功；独立 validator 与 oer-wf gate
+  均 PASS。专项科学测试 17 项、oer-wf 97 项、全量 Python 425 项通过。
+- 下一步：冻结 compute commit，更新 V3 TaskSpec commit 指针，部署
+  Legion 后运行真实 workflow smoke；PASS 后启动正式 48-job 任务。

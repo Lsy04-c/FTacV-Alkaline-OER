@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v3-residual-attribution",
+  "run_mode": "smoke",
+  "v3_task_spec_hash": "a98043a83cbf4f356d73f5f2009f992cc4389df81a8e33db5af30cffab84442f",
+  "v2_input_sha256": {
+    "task_spec.json": "b900fb66a5d42b07db4fb298bdd3b1a6b5c78c0b6507dd1224eab38fbac98201",
+    "parameter_library.csv": "862a0e50c93796e71a837b6d4dbd48e72cf7f025a2c3cc4876bcdb002e4dd57d",
+    "targets.json": "e0eba1ad68d9e6a972d40b9cee9935bc0b2d5d6153a8a538f4d73dbd27c9a5f3",
+    "base_results.jsonl": "6b03d6c29ddaed3c7400d8da1a9ff688bd2e6f8b96381d2357abcb0be3036f1b",
+    "stress_results.jsonl": "791eb95b885049ba3a8afc3d1a58dc59574ccb092b1c6274b83d3c25fd486c67",
+    "summary.json": "851ff4efc7cf459231bcdda6c8a70428d715f2109d36435e1a8b7f7b5524c72d",
+    "run_manifest.json": "3134ab33c75b04b1252a945cf58fe800378b0e4985390f059483377f6c7af85f"
+  },
+  "provenance": {
+    "source_commit": "b98267267b3ff2406fd4eb779abbd37119857643",
+    "dirty": true,
+    "dirty_paths": [
+      "code/python/scripts/run_v3_residual_attribution.py",
+      "code/python/scripts/validate_v3_residual_attribution.py",
+      "code/python/src/oer_aem/residual_attribution.py",
+      "code/python/tests/test_residual_attribution.py",
+      "code/python/tests/test_v3_residual_attribution_runner.py",
+      "code/python/tests/test_v3_residual_attribution_validator.py",
+      "config/oer-wf/examples/v3_residual_attribution_lsoda.yaml",
+      "config/oer-wf/oer_wf/__init__.py",
+      "config/oer-wf/oer_wf/commands/verify.py",
+      "config/oer-wf/oer_wf/validators/__init__.py",
+      "config/oer-wf/oer_wf/validators/v3_residual_attribution_gate.py",
+      "config/oer-wf/pyproject.toml",
+      "config/oer-wf/tests/test_v3_residual_attribution_gate.py",
+      "config/residual/"
+    ],
+    "ignored_workflow_paths": [
+      "results/smoke/residual_attribution/"
+    ],
+    "dirty_content_sha256": "fc5792a841ebee5ebcb76afb84dfe98bcbb709dd4d0a21d3b2690167b1f6f11b"
+  },
+  "job_count": 4,
+  "artifact_sha256": {
+    "attribution_evidence.csv": "b6e9180d2757771d6ecb07cad578863395c5825e059c09fa82c3c4a4cc51a66e",
+    "parameter_associations.csv": "5ebda4d00c01f32c4f8510e278b8570abc6850e74cfdb75834bfe86897d6b859",
+    "residual_curves.jsonl": "ddfb17d2503af402bfdb0e4dc5fc3d335895a780d800e9fc4e4fa5e250780479",
+    "residual_matrix.csv": "bb419920f9733e0a54864c49ee99a35fdf075dc21cf217de7590de4c7c14619b",
+    "selection.json": "4c4322f2fb48cf3b6e3fbbd24d18711ed5989c97c1bf042100b88a0bb95a9043",
+    "stress_directions.csv": "ad1e541dfb7cf973209cba23968deeb93fcc0c97e8f6c2b4b0ab2f1eba36c1b1",
+    "summary.json": "7132c716558067fef8fdbbe7afc3a5a16d1d4161d8fb7d954825c059df001bf5",
+    "v3_task_spec.json": "d937f78e3b2e37948f5cc8c181e7ecb5f81195a567ae8f1c6582f0743cea863b"
+  }
+}

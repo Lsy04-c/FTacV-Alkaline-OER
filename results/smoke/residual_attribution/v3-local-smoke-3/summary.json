@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v3-residual-attribution",
+  "run_mode": "smoke",
+  "structure_complete": true,
+  "scientific_parameter_estimation_enabled": false,
+  "datasets": {
+    "FT2": {
+      "job_count": 1,
+      "success_count": 1,
+      "candidate_ids": [
+        289
+      ],
+      "fallback_count": 0,
+      "sign_consistent_channel_segments": 0,
+      "candidate_dependent_channel_segments": 0
+    },
+    "FT3": {
+      "job_count": 1,
+      "success_count": 1,
+      "candidate_ids": [
+        484
+      ],
+      "fallback_count": 0,
+      "sign_consistent_channel_segments": 0,
+      "candidate_dependent_channel_segments": 0
+    },
+    "FT4": {
+      "job_count": 1,
+      "success_count": 1,
+      "candidate_ids": [
+        249
+      ],
+      "fallback_count": 0,
+      "sign_consistent_channel_segments": 0,
+      "candidate_dependent_channel_segments": 0
+    },
+    "FT8": {
+      "job_count": 1,
+      "success_count": 1,
+      "candidate_ids": [
+        226
+      ],
+      "fallback_count": 0,
+      "sign_consistent_channel_segments": 0,
+      "candidate_dependent_channel_segments": 0
+    }
+  },
+  "job_count": 4,
+  "success_count": 4,
+  "failed_job_ids": [],
+  "workers": 4,
+  "duration_seconds": 15.573270332999527,
+  "reused_jobs": 0,
+  "executed_jobs": 4
+}

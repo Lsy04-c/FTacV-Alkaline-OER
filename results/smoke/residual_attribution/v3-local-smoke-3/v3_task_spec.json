@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v3-residual-attribution",
+  "v2_archive": "results/formal/conditional_reachability/v2-fbda4cf",
+  "v2_input_sha256": {
+    "task_spec.json": "b900fb66a5d42b07db4fb298bdd3b1a6b5c78c0b6507dd1224eab38fbac98201",
+    "parameter_library.csv": "862a0e50c93796e71a837b6d4dbd48e72cf7f025a2c3cc4876bcdb002e4dd57d",
+    "targets.json": "e0eba1ad68d9e6a972d40b9cee9935bc0b2d5d6153a8a538f4d73dbd27c9a5f3",
+    "base_results.jsonl": "6b03d6c29ddaed3c7400d8da1a9ff688bd2e6f8b96381d2357abcb0be3036f1b",
+    "stress_results.jsonl": "791eb95b885049ba3a8afc3d1a58dc59574ccb092b1c6274b83d3c25fd486c67",
+    "summary.json": "851ff4efc7cf459231bcdda6c8a70428d715f2109d36435e1a8b7f7b5524c72d",
+    "run_manifest.json": "3134ab33c75b04b1252a945cf58fe800378b0e4985390f059483377f6c7af85f"
+  },
+  "datasets": [
+    "FT2",
+    "FT3",
+    "FT4",
+    "FT8"
+  ],
+  "pool_size": 64,
+  "ensemble_size": 12,
+  "smoke_ensemble_size": 1,
+  "fit_harmonics": [
+    1,
+    2,
+    3
+  ],
+  "solver_backend": "lsoda",
+  "feature_mode": "hybrid",
+  "feature_grid_size": 128,
+  "sign_consistency_required": 9,
+  "run_mode": "smoke",
+  "source_state": {
+    "source_commit": "b98267267b3ff2406fd4eb779abbd37119857643",
+    "dirty": true,
+    "dirty_paths": [
+      "code/python/scripts/run_v3_residual_attribution.py",
+      "code/python/scripts/validate_v3_residual_attribution.py",
+      "code/python/src/oer_aem/residual_attribution.py",
+      "code/python/tests/test_residual_attribution.py",
+      "code/python/tests/test_v3_residual_attribution_runner.py",
+      "code/python/tests/test_v3_residual_attribution_validator.py",
+      "config/oer-wf/examples/v3_residual_attribution_lsoda.yaml",
+      "config/oer-wf/oer_wf/__init__.py",
+      "config/oer-wf/oer_wf/commands/verify.py",
+      "config/oer-wf/oer_wf/validators/__init__.py",
+      "config/oer-wf/oer_wf/validators/v3_residual_attribution_gate.py",
+      "config/oer-wf/pyproject.toml",
+      "config/oer-wf/tests/test_v3_residual_attribution_gate.py",
+      "config/residual/"
+    ],
+    "ignored_workflow_paths": [
+      "results/smoke/residual_attribution/"
+    ],
+    "dirty_content_sha256": "fc5792a841ebee5ebcb76afb84dfe98bcbb709dd4d0a21d3b2690167b1f6f11b"
+  }
+}
