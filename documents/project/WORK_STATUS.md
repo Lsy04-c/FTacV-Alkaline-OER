@@ -1641,3 +1641,35 @@ H1-H7压力测试：
   `results/formal/residual_attribution/v3-f82d391/`。
 - 下一步进入 V4 实验信息设计。预处理一手记录、独立固定参数和新增实验
   条件继续标为 deferred；休假期间不伪造或补推实验事实。
+
+## 48. V4 实验信息设计实现、smoke 与正式启动（2026-07-30）
+
+- 冻结设计与实施计划：
+  `documents/specifications/2026-07-30-v4-computational-experiment-design.md`
+  和
+  `documents/plans/2026-07-30-v4-computational-experiment-design-implementation.md`。
+- V4 只比较未来采集协议在冻结 M0 和 8 个 V3 条件参数点下的局部可分离度；
+  不估计真实参数。预处理、面积、负载量、独立 `Ru/Cdl/gamma` 和新增实验
+  观测保持 deferred，不阻断本阶段。
+- 计算提交为 `6c2084a2acfc8ea2f52956f924a9193366fbf4e6`，工作流部署提交为
+  `c084641`。runner 支持 792 个主任务、可选 80 个半步长任务、8 workers、
+  job 级原子续跑和严格输入哈希；正式后端为 LSODA/BDF。
+- 独立 validator 重建条件、任务、27 块特征、敏感矩阵、两阶段排序、
+  半步长方向和推荐次序，并验证全部产物哈希。推荐两项时 formal 要求
+  8 条基线复算；`NO_ROBUST_RECOMMENDATION` 是允许的科学退出。
+- 本地回归：Python 461 项、oer-wf 101 项、Web 3 项通过。Web 仅有既有
+  Starlette 弃用警告。
+- 本地 smoke：22/22 正演成功，2 个敏感矩阵，独立 validator `PASS`。
+  smoke 的 `NO_ROBUST_RECOMMENDATION` 由 1 个参数点不足正式 6/8 门产生，
+  不作为科学结论。
+- Legion 已同步 oer-wf 0.6.9，远端 101 项测试通过。固定 worktree：
+  `/home/lsy/OER-FTAcV/worktrees/6c2084a/v4_experiment_design_lsoda`。
+- Legion smoke 输出：
+  `results/experiment_design/v4/_smoke_20260730_101218`；工作流结构门和
+  独立 validator 均为 `PASS`。
+- 正式任务 `6c2084a/v4_experiment_design_lsoda` 已由 systemd 启动，
+  输出目录：
+  `results/experiment_design/v4/20260730_101301`。启动后状态为
+  `RUNNING`，PID 14126；本项目未创建自动定时检查。
+- 待完成：正式任务终态、结果同步、独立 formal 验收、项目科学结论和
+  正式证据归档。验收前不得发布唯一协议优先级。

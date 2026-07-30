@@ -1,6 +1,6 @@
 # oer-wf 可复用计算工作流 — 使用指南
 
-> 版本：0.6.8 | 97 个工作流测试通过 | V3 残差归因正式门 | 2026-07-30
+> 版本：0.6.9 | 101 个工作流测试通过 | V4 实验信息设计门 | 2026-07-30
 
 ## 1. 这是什么
 
@@ -21,7 +21,7 @@
 - WSL2 Debian Bookworm，systemd PID 1，`linger=yes`
 - `user@1000.service` 开机自启（`multi-user.target.wants/` symlink）
 - `WSL-Keeper` 计划任务保活 VM（`wsl sleep 86400`）
-- `vmIdleTimeout=-1`
+- `C:\Users\lsy\.wslconfig` 使用 `vmIdleTimeout=86400000`（24 小时）
 - 项目主仓库：`/home/lsy/OER-FTAcV`，虚拟环境：`.venv`
 - rsync 3.2.7，oer-wf 已安装到项目 venv
 - SSH 详情：`config/oer-wf/docs/ssh_setup.md`
@@ -43,8 +43,8 @@ pip install -e ".[dev]" --trusted-host pypi.org --trusted-host files.pythonhoste
 
 验证：
 ```bash
-wf --version   # 0.6.8
-pytest -q      # 97 passed
+wf --version   # 0.6.9
+pytest -q      # 101 passed
 ```
 
 远程 Legion 端（`wf run/smoke` 依赖）：
@@ -163,6 +163,14 @@ V2 条件可达性使用
 同步后的 `wf verify`。validator 会从当前目录及其父目录发现项目根，
 因此可从仓库根或 `config/oer-wf` 执行。
 
+V4 计算型实验信息设计使用
+`examples/v4_experiment_design_lsoda.yaml`。TaskSpec 冻结 8 workers、
+LSODA/BDF 和单线程数值库环境。`v4_experiment_design_gate` 重建主任务、
+输入哈希、27 块特征、敏感矩阵、两阶段排序和半步长线性门。smoke 只验收
+22 个正演任务的结构与有限值；formal 覆盖 792 个主任务，并在推荐两项协议
+时增加 80 个半步长任务和 8 条独立复算证据。冻结规则得到
+`NO_ROBUST_RECOMMENDATION` 时允许 0 条复算证据，不将科学阴性误报为数值失败。
+
 ### 6.8 `wf git-check` — 交付检查
 变更范围 + pytest + commit 草稿。**不自动 commit。**
 ```bash
@@ -269,7 +277,7 @@ validators:
 
 ## 9. 工程规则与安全门
 
-### 五个安全门（v0.6.8）
+### 五个安全门（v0.6.9）
 
 | # | 安全门 | 说明 |
 |---|--------|------|
@@ -317,4 +325,7 @@ validators:
 - **V3 残差归因门（v0.6.8）**：重建四组代表候选选择、48-job 成员、
   有符号 DC/H1–H3 残差、参数关联、固定输入压力方向和五类证据表；
   formal 还要求冻结 Legion 单线程环境下四组最近候选复算。
+- **V4 实验信息设计门（v0.6.9）**：重建 8 个条件参数点、9 个协议、
+  27 块特征、792 个主任务、两阶段推荐和可选的 80 个半步长任务。推荐两项
+  时 formal 必须产生 8 条冻结环境复算证据；无稳健推荐是允许的科学退出。
 - **sudo**：Legion 端未配免密 sudo。需 root 操作时用 `wsl.exe -u root`。
