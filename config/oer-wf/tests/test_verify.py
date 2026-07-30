@@ -11,6 +11,8 @@ import yaml
 from oer_wf.commands.verify import run_verify
 from oer_wf.lock import spec_hash
 from oer_wf.models import StatusEnum, TaskSpec
+from oer_wf.transport import MockExecutor
+from oer_wf.verification_receipt import archive_tree_hash
 import oer_wf.config as cfg
 
 
@@ -103,6 +105,197 @@ def test_verify_nan_fails(tmp_path: Path, monkeypatch) -> None:
     resp = run_verify("3f9aad1/solver_equiv_01")
     assert resp.status == StatusEnum.FAIL
     assert resp.fail_type.value == "numerical"
+
+
+def _remote_archive(
+    tmp_path: Path,
+    monkeypatch,
+    *,
+    config_override: dict | None = None,
+) -> tuple[Path, str]:
+    root = tmp_path / "archive"
+    monkeypatch.setattr(cfg, "MAC_ARCHIVE_ROOT", root)
+    monkeypatch.setattr(cfg, "WSL_MAIN_REPO", Path("/home/lsy/OER-FTAcV"))
+    task_id = "abcdef1/remote_gate"
+    timestamp = "20260730_120000"
+    arch = root / "results" / "abcdef1" / "remote_gate" / timestamp
+    arch.mkdir(parents=True)
+    remote_output = (
+        "/home/lsy/OER-FTAcV/worktrees/abcdef1/remote_gate/"
+        f"results/gate/{timestamp}"
+    )
+    (arch / "STATUS.json").write_text(
+        json.dumps(
+            {
+                "status": "SUCCESS",
+                "commit": "abcdef1",
+                "task_id": task_id,
+                "started_at": "2026-07-30T12:00:00Z",
+                "output_dir": remote_output,
+            }
+        )
+    )
+    snapshot = {
+        "task_name": "remote_gate",
+        "commit": "abcdef1234567890abcdef1234567890abcdef12",
+        "script": "code/python/scripts/run.py",
+        "output_dir": "results/gate",
+        "expected_files": ["STATUS.json"],
+        "validators": ["v4_experiment_design_gate"],
+        "validator_config": {
+            "v4_experiment_design_gate": config_override
+            or {
+                "execution": "remote_worktree",
+                "timeout_sec": 900,
+                "project_root": ".",
+            }
+        },
+        "env": {"OMP_NUM_THREADS": "1"},
+        "python": {"source": "main_repo", "path": ".venv/bin/python"},
+        "worktree_root": "worktrees",
+    }
+    (arch / "task_spec.snapshot.yaml").write_text(yaml.safe_dump(snapshot))
+    return arch, task_id
+
+
+def test_verify_routes_remote_validator_and_uses_returned_checks(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    archive, task_id = _remote_archive(tmp_path, monkeypatch)
+    before = archive_tree_hash(archive)
+    remote = {
+        "status": "pass",
+        "fail_type": "null",
+        "message": "remote validator passed",
+        "checks": [
+            {
+                "name": "scientific:v4_experiment_design_gate",
+                "passed": True,
+                "detail": "gate=PASS",
+            }
+        ],
+        "validator": "v4_experiment_design_gate",
+        "commit": "abcdef1234567890abcdef1234567890abcdef12",
+        "worktree": "/home/lsy/OER-FTAcV/worktrees/abcdef1/remote_gate",
+        "archive": (
+            "/home/lsy/OER-FTAcV/worktrees/abcdef1/remote_gate/"
+            "results/gate/20260730_120000"
+        ),
+        "env_keys": ["OMP_NUM_THREADS"],
+        "duration_seconds": 1.5,
+    }
+    ex = (
+        MockExecutor()
+        .when_ssh("oer_wf.remote_verify")
+        .returns(0, json.dumps(remote))
+    )
+
+    resp = run_verify(task_id, executor=ex)
+
+    assert resp.status == StatusEnum.PASS
+    assert resp.checks[0].name == "scientific:v4_experiment_design_gate"
+    assert resp.data["validator_execution"][0]["execution"] == "remote_worktree"
+    assert any("oer_wf.remote_verify" in call for call in ex.call_log)
+    assert Path(resp.data["receipt"]).is_file()
+    assert archive_tree_hash(archive) == before
+
+
+def test_verify_local_validator_does_not_use_ssh(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    root = tmp_path / "archive"
+    monkeypatch.setattr(cfg, "MAC_ARCHIVE_ROOT", root)
+    arch = root / "results" / "abcdef1" / "local_gate" / "20260730_120000"
+    arch.mkdir(parents=True)
+    (arch / "STATUS.json").write_text('{"status":"SUCCESS"}')
+    (arch / "task_spec.snapshot.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "task_name": "local_gate",
+                "commit": "abcdef1234567890",
+                "script": "code/python/scripts/run.py",
+                "output_dir": "results/local_gate",
+                "expected_files": ["STATUS.json"],
+                "validators": ["schema_check"],
+            }
+        )
+    )
+    ex = MockExecutor()
+
+    resp = run_verify("abcdef1/local_gate", executor=ex)
+
+    assert resp.status == StatusEnum.PASS
+    assert ex.call_log == []
+
+
+def test_verify_remote_transport_failure_is_not_structure(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _, task_id = _remote_archive(tmp_path, monkeypatch)
+    ex = MockExecutor().when_ssh("oer_wf.remote_verify").returns(
+        124,
+        "",
+        "timeout after 900s",
+    )
+
+    resp = run_verify(task_id, executor=ex)
+
+    assert resp.status == StatusEnum.FAIL
+    assert resp.fail_type.value == "transport"
+    assert "timeout" in resp.message
+
+
+def test_verify_rejects_remote_evidence_for_wrong_commit(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _, task_id = _remote_archive(tmp_path, monkeypatch)
+    remote = {
+        "status": "pass",
+        "fail_type": "null",
+        "message": "remote validator passed",
+        "checks": [{"name": "scientific:gate", "passed": True, "detail": "ok"}],
+        "validator": "v4_experiment_design_gate",
+        "commit": "deadbeef",
+        "worktree": "/home/lsy/OER-FTAcV/worktrees/abcdef1/remote_gate",
+        "archive": (
+            "/home/lsy/OER-FTAcV/worktrees/abcdef1/remote_gate/"
+            "results/gate/20260730_120000"
+        ),
+        "env_keys": ["OMP_NUM_THREADS"],
+        "duration_seconds": 1.0,
+    }
+    ex = (
+        MockExecutor()
+        .when_ssh("oer_wf.remote_verify")
+        .returns(0, json.dumps(remote))
+    )
+
+    resp = run_verify(task_id, executor=ex)
+
+    assert resp.status == StatusEnum.FAIL
+    assert resp.fail_type.value == "structure"
+    assert "evidence mismatch" in resp.message
+
+
+def test_verify_remote_requires_frozen_environment(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    arch, task_id = _remote_archive(tmp_path, monkeypatch)
+    snapshot = yaml.safe_load((arch / "task_spec.snapshot.yaml").read_text())
+    snapshot.pop("env")
+    (arch / "task_spec.snapshot.yaml").write_text(yaml.safe_dump(snapshot))
+    ex = MockExecutor()
+
+    resp = run_verify(task_id, executor=ex)
+
+    assert resp.status == StatusEnum.FAIL
+    assert resp.fail_type.value == "structure"
+    assert ex.call_log == []
 
 
 def test_spec_hash_stable_without_validator_config() -> None:

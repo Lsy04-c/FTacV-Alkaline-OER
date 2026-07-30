@@ -125,7 +125,8 @@ def run(
             "validator errors must be a list",
         )
     evidence = result.get("rerun_evidence", [])
-    passed = result.get("gate") == "PASS" and not errors
+    gate = str(result.get("gate"))
+    passed = gate == "PASS" and not errors
     if passed and rerun and (
         not isinstance(evidence, list) or len(evidence) != 4
     ):
@@ -138,9 +139,16 @@ def run(
     )
     if errors:
         detail += "; errors: " + "; ".join(str(item) for item in errors[:12])
+    name = (
+        "numerical:v3_residual_attribution_gate"
+        if gate == "FAIL_NUMERICAL"
+        else "scientific:v3_residual_attribution_gate"
+        if gate == "FAIL_SCIENTIFIC"
+        else "structure:v3_residual_attribution_gate"
+    )
     return [
         CheckResult(
-            name="structure:v3_residual_attribution_gate",
+            name=name,
             passed=passed,
             detail=detail,
         )

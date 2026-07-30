@@ -67,6 +67,8 @@ validators:
 
 validator_config:
   v4_experiment_design_gate:
+    execution: "remote_worktree"
+    timeout_sec: 1800
     project_root: "."
     task_spec: "config/experiment-design/v4-computational-design.json"
     rerun_selected_smoke: false

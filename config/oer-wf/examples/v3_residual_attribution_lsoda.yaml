@@ -67,6 +67,8 @@ validators:
 
 validator_config:
   v3_residual_attribution_gate:
+    execution: "remote_worktree"
+    timeout_sec: 1800
     project_root: "."
     task_spec: "config/residual/v3-residual-attribution.json"
     rerun_nearest_smoke: false

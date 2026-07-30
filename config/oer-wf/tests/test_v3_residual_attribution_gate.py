@@ -85,6 +85,46 @@ def test_v3_gate_rejects_path_escape(tmp_path):
     assert "relative path" in checks[0].detail
 
 
+def test_v3_gate_preserves_numerical_failure_class(tmp_path, monkeypatch):
+    root = tmp_path / "project"
+    task_spec = root / "config" / "residual" / "v3.json"
+    task_spec.parent.mkdir(parents=True)
+    task_spec.write_text("{}", encoding="utf-8")
+    script = (
+        root
+        / "code"
+        / "python"
+        / "scripts"
+        / "validate_v3_residual_attribution.py"
+    )
+    script.parent.mkdir(parents=True)
+    script.write_text("# fixture\n", encoding="utf-8")
+    archive = _archive(tmp_path, "formal")
+    monkeypatch.setattr(
+        v3_residual_attribution_gate,
+        "_load_validate_archive",
+        lambda path: (
+            lambda *args, **kwargs: {
+                "gate": "FAIL_NUMERICAL",
+                "errors": ["rerun mismatch"],
+                "rerun_evidence": [],
+            }
+        ),
+    )
+
+    checks = v3_residual_attribution_gate.run(
+        archive,
+        validator_config={
+            "project_root": str(root),
+            "task_spec": "config/residual/v3.json",
+            "rerun_nearest_formal": True,
+        },
+    )
+
+    assert checks[0].passed is False
+    assert checks[0].name == "numerical:v3_residual_attribution_gate"
+
+
 def test_v3_workflow_example_freezes_runtime_contract():
     path = (
         Path(__file__).resolve().parents[1]
@@ -101,3 +141,6 @@ def test_v3_workflow_example_freezes_runtime_contract():
     assert model.smoke.args == ["--smoke"]
     assert model.env["OPENBLAS_NUM_THREADS"] == "1"
     assert model.validators[-1] == "v3_residual_attribution_gate"
+    gate = model.validator_config["v3_residual_attribution_gate"]
+    assert gate["execution"] == "remote_worktree"
+    assert gate["timeout_sec"] == 1800

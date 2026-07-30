@@ -1,6 +1,6 @@
 # oer-wf 可复用计算工作流 — 使用指南
 
-> 版本：0.6.9 | 101 个工作流测试通过 | V4 实验信息设计门 | 2026-07-30
+> 版本：0.7.0 | 132 个工作流测试通过 | 冻结远端科学验收 | 2026-07-30
 
 ## 1. 这是什么
 
@@ -43,8 +43,8 @@ pip install -e ".[dev]" --trusted-host pypi.org --trusted-host files.pythonhoste
 
 验证：
 ```bash
-wf --version   # 0.6.9
-pytest -q      # 101 passed
+wf --version   # 0.7.0
+pytest -q      # 132 passed
 ```
 
 远程 Legion 端（`wf run/smoke` 依赖）：
@@ -145,23 +145,34 @@ wf sync 1becc12/solver_equiv_01
 ```
 
 ### 6.7 `wf verify <task_id>` — 通用验收
-只读本地归档。验收契约来自同目录 `task_spec.snapshot.yaml`，该文件由
-`wf run` / `wf smoke` 在计算启动前写入。没有 snapshot 的旧归档必须显式
-提供全部 `--expected-file` 和 `--validator`；否则以
-`verification contract unavailable` 判为 structure FAIL，不再默认套用 CSV。
-任务可声明 `recovery_gate` 等专用验收器，科学门失败时
-`fail_type=scientific`。
+计算归档保持只读。验收契约来自同目录 `task_spec.snapshot.yaml`，该文件
+由 `wf run` / `wf smoke` 在计算启动前写入。基础文件、schema、有限值、
+provenance 和哈希在 Mac 同步归档上检查；声明
+`execution: remote_worktree` 的科学 validator 自动回到 Legion 冻结
+worktree，恢复 snapshot 中的完整 commit、Python 和环境变量后复算。
+
+每次完成的验收在计算归档之外追加 receipt：
+
+```text
+~/OER-FTAcV-archive/verifications/
+  <commit>/<task>/<result_timestamp>/<UTC>-<hash>.json
+```
+
+receipt 保存归档 tree hash、snapshot hash、环境 hash、执行位置、checks 和
+失败类别，不保存环境值，也不覆盖旧记录。没有 snapshot 的旧归档必须显式
+提供全部 `--expected-file` 和 `--validator`；旧 snapshot 未声明远端运行时
+则保持本地模式，不猜测历史环境。
 ```bash
 wf verify 1becc12/solver_equiv_01
 ```
 
 V2 条件可达性使用
 `examples/v2_conditional_reachability_lsoda.yaml`。其
-`conditional_reachability_gate` 调用项目独立 validator；smoke 重算
+`conditional_reachability_gate` 在冻结 Legion worktree 调用项目独立 validator；smoke 重算
 文件、哈希、Sobol、job、评分和稳态 provenance，formal 还强制对四组
 最近候选执行 LSODA `rerun-best`。`wf smoke` 的远端文件检查不能替代
-同步后的 `wf verify`。validator 会从当前目录及其父目录发现项目根，
-因此可从仓库根或 `config/oer-wf` 执行。
+同步后的 `wf verify`。远端 worker 验证 worktree commit、tracked clean
+状态、结果路径和时间戳后才调用 validator。
 
 V4 计算型实验信息设计使用
 `examples/v4_experiment_design_lsoda.yaml`。TaskSpec 冻结 8 workers、
@@ -277,7 +288,7 @@ validators:
 
 ## 9. 工程规则与安全门
 
-### 五个安全门（v0.6.9）
+### 六个安全门（v0.7.0）
 
 | # | 安全门 | 说明 |
 |---|--------|------|
@@ -286,6 +297,7 @@ validators:
 | 3 | **路径校验** | `script` / `output_dir` / `worktree_root` / `python.path` 拒绝绝对路径、`..` 和 `~` |
 | 4 | **smoke override 白名单** | 默认拒绝未知 override key；仅允许 `n_samples` / `max_steps` / `max_iter` / `timeout` / `debug`；`solver_backend` / `points_per_cycle` 等科学参数一律拦截 |
 | 5 | **显式断点续跑** | 仅 `supports_resume: true` 可使用 `--resume-timestamp`；精确复用历史目录，runner 校验 commit、dirty状态、科学配置、job集合、输入哈希及JSONL完整性 |
+| 6 | **冻结环境验收** | Mac 检查同步完整性；科学复算回到 Legion 冻结 commit 和 TaskSpec 环境；计算归档只读，receipt 仅追加 |
 
 ### 通用工程规则
 
@@ -328,4 +340,8 @@ validators:
 - **V4 实验信息设计门（v0.6.9）**：重建 8 个条件参数点、9 个协议、
   27 块特征、792 个主任务、两阶段推荐和可选的 80 个半步长任务。推荐两项
   时 formal 必须产生 8 条冻结环境复算证据；无稳健推荐是允许的科学退出。
+- **冻结远端验收（v0.7.0）**：snapshot 新增 `env`、`python` 和
+  `worktree_root`。V2/V3/V4 科学 validator 使用
+  `execution: remote_worktree`；SSH、环境、结构、数值和科学失败分开
+  返回。验收前后计算归档 tree hash 必须一致。
 - **sudo**：Legion 端未配免密 sudo。需 root 操作时用 `wsl.exe -u root`。

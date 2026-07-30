@@ -2,39 +2,20 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Optional
 
 from oer_wf import config
+from oer_wf import __version__
 from oer_wf.models import CheckResult, FailType, WfResponse
+from oer_wf.remote_dispatch import run_remote_validator
 from oer_wf.response import fail, ok
 from oer_wf.snapshot import SNAPSHOT_FILENAME, load_snapshot
-from oer_wf.validators import (
-    conditional_reachability_gate,
-    finite_check,
-    manifest_hash,
-    optimizer_benchmark_gate,
-    optimizer_confirmation_gate,
-    provenance,
-    recovery_gate,
-    schema_check,
-    v3_residual_attribution_gate,
-    v4_experiment_design_gate,
-)
-
-_VALIDATOR_MAP = {
-    "conditional_reachability_gate": conditional_reachability_gate.run,
-    "schema_check": schema_check.run,
-    "finite_check": finite_check.run,
-    "provenance": provenance.run,
-    "manifest_hash": manifest_hash.run,
-    "optimizer_benchmark_gate": optimizer_benchmark_gate.run,
-    "optimizer_confirmation_gate": optimizer_confirmation_gate.run,
-    "recovery_gate": recovery_gate.run,
-    "v3_residual_attribution_gate": v3_residual_attribution_gate.run,
-    "v4_experiment_design_gate": v4_experiment_design_gate.run,
-}
+from oer_wf.transport import Executor, RealExecutor
+from oer_wf.validator_runner import run_validator
+from oer_wf.verification_receipt import archive_tree_hash, write_receipt
 
 
 def _parse_task_id(task_id: str) -> tuple[str, str]:
@@ -147,7 +128,9 @@ def run_verify(
     timestamp: Optional[str] = None,
     expected_files: Optional[list[str]] = None,
     validators: Optional[list[str]] = None,
+    executor: Optional[Executor] = None,
 ) -> WfResponse:
+    ex = executor or RealExecutor()
     try:
         commit_short, task_name = _parse_task_id(task_id)
     except ValueError as exc:
@@ -160,6 +143,13 @@ def run_verify(
             f"no local archive for {task_id}"
             + (f" timestamp={timestamp}" if timestamp else ""),
             next_action=f"wf sync {task_id}",
+        )
+    try:
+        archive_hash_before = archive_tree_hash(archive)
+    except OSError as exc:
+        return fail(
+            FailType.TRANSPORT,
+            f"cannot hash local archive before verification: {exc}",
         )
 
     snapshot, expected, vnames, sources, contract_checks = _load_contract(
@@ -186,39 +176,54 @@ def run_verify(
         snapshot.get("validator_config") or {} if snapshot is not None else {}
     )
     checks: list[CheckResult] = []
+    validator_execution: list[dict[str, Any]] = []
     for name in vnames:
-        fn = _VALIDATOR_MAP.get(name)
-        if fn is None:
-            checks.append(
-                CheckResult(name=name, passed=False, detail="unknown validator")
+        raw_config = validator_config.get(name) or {}
+        execution = str(raw_config.get("execution", "local"))
+        timeout_sec = int(raw_config.get("timeout_sec", 600))
+        if execution == "remote_worktree":
+            early, validator_checks, evidence = run_remote_validator(
+                ex,
+                task_name=task_name,
+                commit_short=commit_short,
+                archive=archive,
+                snapshot=snapshot or {},
+                validator=name,
+                expected_files=expected,
+                validator_config=raw_config,
+                timeout_sec=timeout_sec,
             )
-            continue
-        try:
-            if name in {
-                "conditional_reachability_gate",
-                "recovery_gate",
-                "optimizer_benchmark_gate",
-                "optimizer_confirmation_gate",
-                "v3_residual_attribution_gate",
-                "v4_experiment_design_gate",
-            }:
-                checks.extend(
-                    fn(
-                        archive,
-                        expected,
-                        validator_config=validator_config.get(name) or {},
-                    )
-                )
-            else:
-                try:
-                    checks.extend(fn(archive, expected))
-                except TypeError:
-                    checks.extend(fn(archive))  # type: ignore[call-arg]
-        except Exception as exc:
-            checks.append(
-                CheckResult(name=name, passed=False, detail=f"validator error: {exc}")
+            if early is not None:
+                return early
+            checks.extend(validator_checks)
+            validator_execution.append(evidence)
+        else:
+            _, _, validator_checks = run_validator(
+                name,
+                archive,
+                expected,
+                raw_config,
+            )
+            checks.extend(validator_checks)
+            validator_execution.append(
+                {"validator": name, "execution": "local"}
             )
 
+    try:
+        archive_hash_after = archive_tree_hash(archive)
+    except OSError as exc:
+        return fail(
+            FailType.TRANSPORT,
+            f"cannot hash local archive after verification: {exc}",
+        )
+    if archive_hash_after != archive_hash_before:
+        checks.append(
+            CheckResult(
+                name="structure:archive_immutable",
+                passed=False,
+                detail="validator modified the synchronized calculation archive",
+            )
+        )
     failed = [check for check in checks if not check.passed]
     data: dict[str, Any] = {
         "task_id": task_id,
@@ -228,6 +233,8 @@ def run_verify(
         "contract_sources": sources,
         "expected_files": expected,
         "validators": vnames,
+        "validator_execution": validator_execution,
+        "archive_tree_hash": archive_hash_before,
     }
     status_path = archive / "STATUS.json"
     try:
@@ -236,16 +243,49 @@ def run_verify(
         data["status"] = None
 
     if not failed:
-        return ok(
+        response = ok(
             message=f"verify passed: {archive.name}",
             next_action="wf git-check",
             data=data,
             checks=checks,
         )
-    return fail(
-        _classify_fail(failed),
-        "verify failed: " + ", ".join(c.name for c in failed),
-        next_action="inspect archive; scientific or structure decision required",
-        data=data,
-        checks=checks,
-    )
+    else:
+        response = fail(
+            _classify_fail(failed),
+            "verify failed: " + ", ".join(c.name for c in failed),
+            next_action="inspect archive; scientific or structure decision required",
+            data=data,
+            checks=checks,
+        )
+    try:
+        snapshot_text = (archive / SNAPSHOT_FILENAME).read_bytes()
+        env_bytes = json.dumps(
+            (snapshot or {}).get("env", {}),
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        receipt = write_receipt(
+            config.MAC_ARCHIVE_ROOT,
+            task_id=task_id,
+            result_timestamp=archive.name,
+            payload={
+                "oer_wf_version": __version__,
+                "task_id": task_id,
+                "commit": (snapshot or {}).get("commit"),
+                "snapshot_sha256": hashlib.sha256(snapshot_text).hexdigest(),
+                "archive": str(archive),
+                "archive_tree_hash": archive_hash_before,
+                "environment_sha256": hashlib.sha256(env_bytes).hexdigest(),
+                "validator_execution": validator_execution,
+                "response": response.model_dump(mode="json"),
+            },
+        )
+    except (OSError, ValueError, TypeError) as exc:
+        return fail(
+            FailType.TRANSPORT,
+            f"verification finished but receipt write failed: {exc}",
+            data=data,
+            checks=checks,
+        )
+    response.data["receipt"] = str(receipt)
+    return response

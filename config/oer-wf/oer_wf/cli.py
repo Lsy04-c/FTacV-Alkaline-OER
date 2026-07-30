@@ -178,7 +178,7 @@ def verify(
         help="Validator for a legacy archive; repeat for each validator",
     ),
 ) -> None:
-    """Verify a Mac archive using its frozen task contract."""
+    """Verify a Mac archive and route frozen scientific reruns to Legion."""
     resp = run_verify(
         task_id,
         timestamp=timestamp,

@@ -126,7 +126,8 @@ def run(
         )
     evidence = result.get("rerun_evidence", [])
     status = result.get("recommendation_status")
-    passed = result.get("gate") == "PASS" and not errors
+    gate = str(result.get("gate"))
+    passed = gate == "PASS" and not errors
     if passed and rerun:
         expected_reruns = (
             8
@@ -145,6 +146,12 @@ def run(
                 "formal V4 rerun evidence count does not match "
                 f"recommendation status: status={status}"
             ]
+    if passed and status == "LOCAL_LINEARITY_UNSTABLE":
+        passed = False
+        errors = [
+            "selected protocol order is not preserved by the frozen "
+            "half-step linearity check"
+        ]
     detail = (
         f"gate={result.get('gate')}; mode={mode}; "
         f"status={status}; rerun_selected={str(rerun).lower()}; "
@@ -152,9 +159,16 @@ def run(
     )
     if errors:
         detail += "; errors: " + "; ".join(str(item) for item in errors[:12])
+    name = (
+        "numerical:v4_experiment_design_gate"
+        if gate == "FAIL_NUMERICAL"
+        else "scientific:v4_experiment_design_gate"
+        if status == "LOCAL_LINEARITY_UNSTABLE" or gate == "FAIL_SCIENTIFIC"
+        else "structure:v4_experiment_design_gate"
+    )
     return [
         CheckResult(
-            name="structure:v4_experiment_design_gate",
+            name=name,
             passed=passed,
             detail=detail,
         )

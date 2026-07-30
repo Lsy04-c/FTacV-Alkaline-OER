@@ -130,6 +130,73 @@ def test_v4_gate_rejects_path_escape(tmp_path):
     assert "relative path" in checks[0].detail
 
 
+def test_v4_gate_preserves_numerical_failure_class(tmp_path, monkeypatch):
+    root, _, archive = _project(tmp_path)
+    (archive / "v4_task_spec.json").write_text(
+        json.dumps({"run_mode": "formal"}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        v4_experiment_design_gate,
+        "_load_validate_archive",
+        lambda path: (
+            lambda *args, **kwargs: {
+                "gate": "FAIL_NUMERICAL",
+                "errors": ["selected rerun value mismatch"],
+                "recommendation_status": "RECOMMEND_TWO",
+                "rerun_evidence": [],
+            }
+        ),
+    )
+
+    checks = v4_experiment_design_gate.run(
+        archive,
+        validator_config={
+            "project_root": str(root),
+            "task_spec": "config/experiment-design/v4.json",
+            "rerun_selected_formal": True,
+        },
+    )
+
+    assert checks[0].passed is False
+    assert checks[0].name == "numerical:v4_experiment_design_gate"
+
+
+def test_v4_gate_marks_unstable_linearity_as_scientific_failure(
+    tmp_path,
+    monkeypatch,
+):
+    root, _, archive = _project(tmp_path)
+    (archive / "v4_task_spec.json").write_text(
+        json.dumps({"run_mode": "formal"}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        v4_experiment_design_gate,
+        "_load_validate_archive",
+        lambda path: (
+            lambda *args, **kwargs: {
+                "gate": "PASS",
+                "errors": [],
+                "recommendation_status": "LOCAL_LINEARITY_UNSTABLE",
+                "rerun_evidence": [{} for _ in range(8)],
+            }
+        ),
+    )
+
+    checks = v4_experiment_design_gate.run(
+        archive,
+        validator_config={
+            "project_root": str(root),
+            "task_spec": "config/experiment-design/v4.json",
+            "rerun_selected_formal": True,
+        },
+    )
+
+    assert checks[0].passed is False
+    assert checks[0].name == "scientific:v4_experiment_design_gate"
+
+
 def test_v4_workflow_example_freezes_runtime_contract():
     path = (
         Path(__file__).resolve().parents[1]
@@ -146,4 +213,7 @@ def test_v4_workflow_example_freezes_runtime_contract():
     assert model.smoke.args == ["--smoke"]
     assert model.env["OPENBLAS_NUM_THREADS"] == "1"
     assert model.validators[-1] == "v4_experiment_design_gate"
+    gate = model.validator_config["v4_experiment_design_gate"]
+    assert gate["execution"] == "remote_worktree"
+    assert gate["timeout_sec"] == 1800
     assert "forward_results.jsonl" in model.resume_required_files

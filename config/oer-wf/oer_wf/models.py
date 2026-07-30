@@ -132,6 +132,45 @@ class TaskSpec(BaseModel):
                 )
         return v
 
+    @field_validator("env")
+    @classmethod
+    def secret_free_environment(cls, v: dict[str, str]) -> dict[str, str]:
+        secret_markers = ("TOKEN", "PASSWORD", "SECRET", "PRIVATE_KEY")
+        for key in v:
+            normalized = str(key).upper()
+            if any(marker in normalized for marker in secret_markers):
+                raise ValueError(
+                    f"env contains secret-like key that cannot be frozen: {key}"
+                )
+        return v
+
+    @field_validator("validator_config")
+    @classmethod
+    def valid_validator_runtime(
+        cls,
+        v: Optional[dict[str, Any]],
+    ) -> Optional[dict[str, Any]]:
+        for name, raw in (v or {}).items():
+            if not isinstance(raw, dict):
+                raise ValueError(f"validator_config.{name} must be a mapping")
+            execution = raw.get("execution", "local")
+            if execution not in {"local", "remote_worktree"}:
+                raise ValueError(
+                    f"validator_config.{name}.execution must be "
+                    "local or remote_worktree"
+                )
+            timeout = raw.get("timeout_sec", 600)
+            if (
+                isinstance(timeout, bool)
+                or not isinstance(timeout, int)
+                or not 1 <= timeout <= 3600
+            ):
+                raise ValueError(
+                    f"validator_config.{name}.timeout_sec must be an integer "
+                    "from 1 to 3600"
+                )
+        return v
+
     @staticmethod
     def _assert_relative(name: str, value: str) -> str:
         """Reject absolute paths and parent-directory escapes."""

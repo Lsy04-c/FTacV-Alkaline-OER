@@ -232,6 +232,8 @@ def test_v2_workflow_example_freezes_runtime_contract() -> None:
     ]
     assert model.validator_config == {
         "conditional_reachability_gate": {
+            "execution": "remote_worktree",
+            "timeout_sec": 1800,
             "project_root": ".",
             "task_spec": "config/reachability/v2-conditional-reachability.json",
             "rerun_best_smoke": False,
