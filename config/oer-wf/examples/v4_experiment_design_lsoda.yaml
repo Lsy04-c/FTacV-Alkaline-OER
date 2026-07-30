@@ -1,5 +1,5 @@
 task_name: "v4_experiment_design_lsoda"
-commit: "6c2084a2acfc8ea2f52956f924a9193366fbf4e6"
+commit: "fbbba8df521292776e080606a0cc27963466cfb6"
 description: "V4 model-conditional FTacV acquisition protocol ranking"
 
 python:

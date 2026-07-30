@@ -11,7 +11,7 @@ from oer_wf.models import TaskSpec
 from oer_wf.validators import v4_experiment_design_gate
 
 
-COMPUTE_COMMIT = "6c2084a2acfc8ea2f52956f924a9193366fbf4e6"
+COMPUTE_COMMIT = "fbbba8df521292776e080606a0cc27963466cfb6"
 
 
 def _project(tmp_path: Path) -> tuple[Path, Path, Path]:
