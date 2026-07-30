@@ -1,6 +1,6 @@
 # oer-wf 可复用计算工作流 — 使用指南
 
-> 版本：0.7.0 | 132 个工作流测试通过 | 冻结远端科学验收 | 2026-07-30
+> 版本：0.7.0 | 133 个工作流测试通过 | 冻结远端科学验收 | 2026-07-30
 
 ## 1. 这是什么
 
@@ -44,7 +44,7 @@ pip install -e ".[dev]" --trusted-host pypi.org --trusted-host files.pythonhoste
 验证：
 ```bash
 wf --version   # 0.7.0
-pytest -q      # 132 passed
+pytest -q      # 133 passed
 ```
 
 远程 Legion 端（`wf run/smoke` 依赖）：

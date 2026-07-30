@@ -1713,3 +1713,23 @@ H1-H7压力测试：
 - 结论边界：V4 PASS 只发布条件模型下的采集协议优先级，不估计真实参数，
   不改变 A1 `FAIL_METADATA`、A3 `FAIL`、A6 `FAIL_RECOVERY`。下一步
   在恢复实验后按该协议补数据和独立约束，再重开 A6-v2。
+
+## 50. oer-wf 0.7.0 冻结远端验收闭环（2026-07-30）
+
+- 修复提交为 `b41aeaa`，真实 Git 状态解析回归修复为 `4492648`；均已
+  推送至 `codex/oer-wf-remote-verify`。
+- Mac 负责同步归档的文件、schema、有限值、provenance 和哈希检查；
+  V2/V3/V4 科学 validator 回到 snapshot 指定的 Legion 冻结 worktree，
+  恢复完整 commit、Python 和线程环境后执行。
+- 计算归档保持只读；每次完成的验证在
+  `~/OER-FTAcV-archive/verifications/` 外置追加 receipt，不覆盖历史结论。
+- 本地验证：oer-wf 133 项、项目 Python 466 项、Web 3 项通过；Web 仅有
+  既有 Starlette 弃用警告。Legion 部署 `oer-wf 0.7.0`，133 项通过。
+- 新 V4 smoke
+  `_smoke_20260730_124405` 为 `SUCCESS`；Mac 本地完整性检查和 Legion
+  `fbbba8d` 冻结科学门共同 `PASS`，环境键恢复证据完整。
+- receipt：
+  `~/OER-FTAcV-archive/verifications/fbbba8d/v4_experiment_design_lsoda/_smoke_20260730_124405/20260730T124710.829867Z-24af0876ed738efaaa220eda146e530b8cf95de88508c4927241b5db0f7a82ed.json`。
+- smoke 计算归档验证前后内容哈希均为
+  `df961e77bc49f25e044dc0456da5a91eb8cb1aae313363b9abad325ab0661e8a`。
+  本阶段未修改任何科学阈值或既有 Gate 结论。
