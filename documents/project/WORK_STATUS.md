@@ -1673,3 +1673,43 @@ H1-H7压力测试：
   `RUNNING`，PID 14126；本项目未创建自动定时检查。
 - 待完成：正式任务终态、结果同步、独立 formal 验收、项目科学结论和
   正式证据归档。验收前不得发布唯一协议优先级。
+
+## 49. V4 首轮失败、V4.1 修复与正式验收（2026-07-30）
+
+- 首轮计算提交 `6c2084a2acfc8ea2f52956f924a9193366fbf4e6` 完成
+  792 个主任务，其中 782 成功、10 失败。失败全部集中于
+  `FT8 / candidate 505 / rank 1 / existing_ft2`。
+- 失败 baseline 在累计 50000 s 后 RHS 为 `3.24787198706e-7`，高于
+  冻结 `1e-8` 门；独立复算得到 `3.24787198707e-7`，排除并发偶发故障。
+- 工程失败同时包含两层根因：
+  1. 稳态 `RuntimeError` 被误标为 `FAIL_INFRA`；
+  2. 聚合器在失败行前比较空特征名并崩溃。
+  旧 job hash 还只绑定配置、未绑定 source commit。
+- 稳态诊断证明不是“无稳态”：直接松弛和从 FT8 起始电位跳转在
+  500000 s 均达到约 `7.1e-13`，并收敛到相同覆盖度和表面电位。该
+  500000 s 是模型数值松弛上限，不代表实验预处理时长。
+- V4.1 计算提交
+  `fbbba8df521292776e080606a0cc27963466cfb6` 增加 500000 s 端点，
+  保持 RHS `1e-8` 门不变；同时修复失败分类、聚合器和绑定 source
+  commit/dirty hash 的 run/job hash。部署提交为 `d2fe81e`。
+- V4.1 TaskSpec hash：
+  `sha256:da9e7e59995c77feb59a94965361d4411b9b54d306a5929bf614b6bf1a8de80b`。
+  Legion smoke 为 22/22 成功，工作流与独立 validator 均 `PASS`。
+- 正式任务 `fbbba8d/v4_experiment_design_lsoda` 于
+  `2026-07-30T11:07:14Z` 至 `11:44:32Z` 运行，8 workers；792 个
+  主任务、80 个半步长任务共 872/872 成功，72 个敏感矩阵完整。
+- 推荐状态为 `RECOMMEND_TWO`：
+  `candidate_5hz_amp_008` 排第一，随后为
+  `candidate_10hz_matched_scan`。
+- 首次 Mac `wf verify` 因当前部署提交与计算提交不同被 provenance 门
+  拒绝；冻结 Mac worktree 又因跨平台线性代数产生约 `1e-14` 的派生
+  矩阵末位差异。未恢复正式单线程变量的 Legion 复算也产生最大相对
+  `4.55e-5` 漂移。没有调整容差。
+- 在冻结提交、Legion 数值环境及
+  `OMP/OPENBLAS/MKL/NUMEXPR_NUM_THREADS=1` 下重跑正式 validator：
+  结构、哈希和排序重建通过，8 条独立 LSODA baseline 复算 8/8 通过，
+  最终 Gate 为 `PASS`。
+- 正式证据：`results/formal/experiment_design/v4-fbbba8d/`。
+- 结论边界：V4 PASS 只发布条件模型下的采集协议优先级，不估计真实参数，
+  不改变 A1 `FAIL_METADATA`、A3 `FAIL`、A6 `FAIL_RECOVERY`。下一步
+  在恢复实验后按该协议补数据和独立约束，再重开 A6-v2。

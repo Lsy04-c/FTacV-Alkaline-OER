@@ -1,0 +1,37 @@
+args:
+- --task-spec
+- config/experiment-design/v4-computational-design.json
+commit: fbbba8df521292776e080606a0cc27963466cfb6
+expected_files:
+- v4_task_spec.json
+- condition_catalog.csv
+- job_plan.json
+- forward_results.jsonl
+- sensitivity_matrices.jsonl
+- portfolio_gain.csv
+- linearity_check.csv
+- recommendation.json
+- run_manifest.json
+- STATUS.json
+- task_spec.snapshot.yaml
+is_smoke: false
+output_dir: results/experiment_design/v4
+resume_required_files:
+- v4_task_spec.json
+- job_plan.json
+- forward_results.jsonl
+script: code/python/scripts/run_v4_experiment_design.py
+supports_resume: true
+task_name: v4_experiment_design_lsoda
+validator_config:
+  v4_experiment_design_gate:
+    project_root: .
+    rerun_selected_formal: true
+    rerun_selected_smoke: false
+    task_spec: config/experiment-design/v4-computational-design.json
+validators:
+- schema_check
+- finite_check
+- provenance
+- v4_experiment_design_gate
+workers: 8

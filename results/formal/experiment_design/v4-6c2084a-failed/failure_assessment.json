@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v4-computational-experiment-design",
+  "task_id": "6c2084a/v4_experiment_design_lsoda",
+  "compute_commit": "6c2084a2acfc8ea2f52956f924a9193366fbf4e6",
+  "run_timestamp": "20260730_101301",
+  "workflow_status": "FAIL_INFRA",
+  "corrected_gate": "FAIL_NUMERICAL",
+  "forward_job_count": 792,
+  "successful_forward_job_count": 782,
+  "failed_forward_job_count": 10,
+  "sensitivity_matrix_count": 72,
+  "successful_sensitivity_matrix_count": 71,
+  "failed_group": {
+    "dataset_id": "FT8",
+    "candidate_id": 505,
+    "selection_rank": 1,
+    "condition_id": "existing_ft2",
+    "failed_job_count": 10,
+    "failure_class": "ODE_INITIALIZATION",
+    "frozen_steady_state_limit_s": 50000,
+    "frozen_rhs_max": 1e-8,
+    "baseline_final_rhs_norm": 3.24787198706e-7,
+    "independent_baseline_rerun_rhs_norm": 3.24787198707e-7
+  },
+  "engineering_defects": [
+    "Steady-state RuntimeError was mislabeled as INFRA.",
+    "Sensitivity aggregation compared feature names before handling failed jobs."
+  ],
+  "recommendation_status": "FAIL_NUMERICAL",
+  "selected_conditions": [],
+  "recommendation_publication_allowed": false,
+  "thresholds_changed": false,
+  "full_rerun_performed": false,
+  "full_rerun_reason": "A deterministic required-job failure already triggers the frozen numerical exit; rerunning the other 791 jobs cannot restore recommendation eligibility."
+}

@@ -1,0 +1,23 @@
+{
+  "status": "FAIL_INFRA",
+  "exit_code": 1,
+  "pid": 14126,
+  "started_at": "2026-07-30T10:13:04Z",
+  "finished_at": "2026-07-30T10:44:44Z",
+  "commit": "6c2084a",
+  "task_id": "6c2084a/v4_experiment_design_lsoda",
+  "spec_hash": "sha256:17fd47ce5774074d1eea2c45f892eef1572e933ba51b82b3e648a1435156fe05",
+  "command": [
+    "/home/lsy/OER-FTAcV/.venv/bin/python",
+    "/home/lsy/OER-FTAcV/worktrees/6c2084a/v4_experiment_design_lsoda/code/python/scripts/run_v4_experiment_design.py",
+    "--task-spec",
+    "config/experiment-design/v4-computational-design.json",
+    "--output",
+    "/home/lsy/OER-FTAcV/worktrees/6c2084a/v4_experiment_design_lsoda/results/experiment_design/v4/20260730_101301",
+    "--workers",
+    "8"
+  ],
+  "output_dir": "/home/lsy/OER-FTAcV/worktrees/6c2084a/v4_experiment_design_lsoda/results/experiment_design/v4/20260730_101301",
+  "error_msg": null,
+  "extra": {}
+}

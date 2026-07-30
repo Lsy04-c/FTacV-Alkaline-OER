@@ -1,0 +1,59 @@
+{
+  "gate": "PASS",
+  "run_mode": "formal",
+  "primary_job_count": 792,
+  "linearity_job_count": 80,
+  "sensitivity_matrix_count": 72,
+  "recommendation_status": "RECOMMEND_TWO",
+  "rerun_evidence": [
+    {
+      "job_id": "v4:FT2:000289:candidate_10hz_matched_scan:baseline",
+      "dataset_id": "FT2",
+      "condition_id": "candidate_10hz_matched_scan",
+      "solver_backend_used": "LSODA"
+    },
+    {
+      "job_id": "v4:FT2:000289:candidate_5hz_amp_008:baseline",
+      "dataset_id": "FT2",
+      "condition_id": "candidate_5hz_amp_008",
+      "solver_backend_used": "LSODA"
+    },
+    {
+      "job_id": "v4:FT3:000484:candidate_10hz_matched_scan:baseline",
+      "dataset_id": "FT3",
+      "condition_id": "candidate_10hz_matched_scan",
+      "solver_backend_used": "LSODA"
+    },
+    {
+      "job_id": "v4:FT3:000484:candidate_5hz_amp_008:baseline",
+      "dataset_id": "FT3",
+      "condition_id": "candidate_5hz_amp_008",
+      "solver_backend_used": "LSODA"
+    },
+    {
+      "job_id": "v4:FT4:000249:candidate_10hz_matched_scan:baseline",
+      "dataset_id": "FT4",
+      "condition_id": "candidate_10hz_matched_scan",
+      "solver_backend_used": "LSODA"
+    },
+    {
+      "job_id": "v4:FT4:000249:candidate_5hz_amp_008:baseline",
+      "dataset_id": "FT4",
+      "condition_id": "candidate_5hz_amp_008",
+      "solver_backend_used": "LSODA"
+    },
+    {
+      "job_id": "v4:FT8:000226:candidate_10hz_matched_scan:baseline",
+      "dataset_id": "FT8",
+      "condition_id": "candidate_10hz_matched_scan",
+      "solver_backend_used": "LSODA"
+    },
+    {
+      "job_id": "v4:FT8:000226:candidate_5hz_amp_008:baseline",
+      "dataset_id": "FT8",
+      "condition_id": "candidate_5hz_amp_008",
+      "solver_backend_used": "LSODA"
+    }
+  ],
+  "errors": []
+}

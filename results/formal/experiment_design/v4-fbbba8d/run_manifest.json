@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v4-computational-experiment-design",
+  "run_mode": "formal",
+  "task_spec_hash": "e1d5083c07dee874c494663a4709a44fb7f5991719efc5ac9a070775a4863e19",
+  "configuration_hash": "fa0d542322d6ab3bdfa80adf659b92ee709da7d4547b21103d5be5d248d32f31",
+  "source_state": {
+    "source_commit": "fbbba8df521292776e080606a0cc27963466cfb6",
+    "dirty": false,
+    "dirty_paths": [],
+    "ignored_workflow_paths": [
+      ".wf_lock",
+      "results/experiment_design/"
+    ],
+    "dirty_content_sha256": null
+  },
+  "input_hashes": {
+    "v2": {
+      "task_spec.json": "b900fb66a5d42b07db4fb298bdd3b1a6b5c78c0b6507dd1224eab38fbac98201"
+    },
+    "v3": {
+      "v3_task_spec.json": "3adc17f22069c7a7d5ec135c9d86bc5ff68e2360932a733528b7ddba6ad59f48",
+      "selection.json": "e18d83ee52583255a8ddd818ba1e4fd03c6561a8377af0a329ec4c01f8aac318",
+      "residual_curves.jsonl": "7074b767fade549fe0e997d6fe9a2a9c6c58fcf62e0d3a54cdd48e9a8e2cbde6",
+      "run_manifest.json": "f747497dc165085b36ad9de14b41453022a2d932c992b3796497b94957ab19b1"
+    },
+    "parameter_roles": "ebb4c22604b0b19ba16508e3880ddeeda9a03cf62f8b8bdfa86a258a734867e3"
+  },
+  "primary_job_count": 792,
+  "linearity_job_count": 80,
+  "job_count": 872,
+  "success_count": 872,
+  "workers": 8,
+  "artifact_sha256": {
+    "condition_catalog.csv": "3f5274ea4f8099ab866368ee38f209e8f4e6215353d5c73c0a8fe2a474ef982c",
+    "forward_results.jsonl": "f721838389139381f06b6bbbff97f590774f49df91642c84c90d5fcb877dd295",
+    "job_plan.json": "c5bc8f0a88779a1f6b5eba172105b4318ca35bfc9ee1e158073f631bdfb41526",
+    "linearity_check.csv": "50ff5d8ba8fe15c3e661571b1d89c4d0ae13bf03b145482b68911c04db358134",
+    "portfolio_gain.csv": "453c98d7ba8b334b0f0db00a8f3b90ed59490f64d30ea3ca5989f348ab74c41a",
+    "recommendation.json": "1acc00aabfc409cb6c45e172a4e43e5bdfa0bf31af1408d37d1ffdaeebf1ab03",
+    "sensitivity_matrices.jsonl": "402dccc29a1ca54fd67fb0fce449d26b447be219423eb69a8aacb7074a01e2ba",
+    "v4_task_spec.json": "ef9742b5083a05e4555ebcb01250126150a9426c47296fc190f66571d6bb5f62"
+  }
+}
