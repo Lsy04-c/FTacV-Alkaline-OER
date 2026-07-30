@@ -11,7 +11,10 @@ import shutil
 import pytest
 
 import scripts.run_v4_experiment_design as runner
-from scripts.validate_v4_experiment_design import validate_archive
+from scripts.validate_v4_experiment_design import (
+    _selected_rerun_required,
+    validate_archive,
+)
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -125,3 +128,20 @@ def test_validator_is_read_only_on_missing_archive(tmp_path):
 
     assert result["gate"] == "FAIL_STRUCTURE"
     assert not archive.exists()
+
+
+def test_selected_rerun_policy_allows_formal_no_recommendation():
+    assert (
+        _selected_rerun_required(
+            "NO_ROBUST_RECOMMENDATION",
+            [],
+        )
+        is False
+    )
+    assert (
+        _selected_rerun_required(
+            "RECOMMEND_TWO",
+            ["candidate-a", "candidate-b"],
+        )
+        is True
+    )

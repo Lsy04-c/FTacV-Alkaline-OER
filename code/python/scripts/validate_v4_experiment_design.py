@@ -257,6 +257,32 @@ def _rerun_selected(
     return evidence
 
 
+def _selected_rerun_required(
+    recommendation_status: str,
+    selected: Sequence[str],
+) -> bool:
+    """Require reruns only when the frozen ranking produced two protocols."""
+    selected_count = len(selected)
+    if recommendation_status in {
+        "RECOMMEND_TWO",
+        "LOCAL_LINEARITY_UNSTABLE",
+    }:
+        if selected_count != 2:
+            raise ValueError(
+                "two-protocol recommendation must contain two selections"
+            )
+        return True
+    if recommendation_status == "NO_ROBUST_RECOMMENDATION":
+        if selected_count != 0:
+            raise ValueError(
+                "no-recommendation status must not contain selections"
+            )
+        return False
+    raise NumericalValidationError(
+        f"cannot rerun selected protocols for status: {recommendation_status}"
+    )
+
+
 def validate_archive(
     root: str | Path,
     spec_path: str | Path,
@@ -525,13 +551,17 @@ def validate_archive(
         if rerun_selected:
             if run_mode != "formal":
                 raise ValueError("selected rerun is formal-only")
-            rerun_evidence = _rerun_selected(
-                spec,
-                inputs,
-                primary_jobs,
-                primary_rows,
+            if _selected_rerun_required(
+                recommendation["status"],
                 recommendation["selected"],
-            )
+            ):
+                rerun_evidence = _rerun_selected(
+                    spec,
+                    inputs,
+                    primary_jobs,
+                    primary_rows,
+                    recommendation["selected"],
+                )
     except NumericalValidationError as exc:
         errors.append(str(exc))
         gate = "FAIL_NUMERICAL"
