@@ -119,6 +119,12 @@ def select_feature_modes(value: str) -> tuple[str, ...]:
     return tuple(mode for mode in FEATURE_MODES if mode in selected)
 
 
+def effective_portfolio_stage(args: argparse.Namespace) -> str | None:
+    if args.pre_experiment_spec is not None and args.smoke:
+        return "S0"
+    return args.portfolio_stage
+
+
 def build_config(
     args: argparse.Namespace,
     *,
@@ -162,14 +168,15 @@ def build_jobs(args: argparse.Namespace) -> list[dict]:
             raise ValueError("free-parameter override is forbidden in portfolio mode")
         if args.feature_modes != ",".join(FEATURE_MODES):
             raise ValueError("feature-mode override is forbidden in portfolio mode")
-        if args.max_jobs is not None and args.portfolio_stage != "S0":
+        portfolio_stage = effective_portfolio_stage(args)
+        if args.max_jobs is not None and portfolio_stage != "S0":
             raise ValueError("--max-jobs is only allowed for S0")
         spec = load_pre_experiment_spec(args.pre_experiment_spec)
         spec_path = args.pre_experiment_spec.resolve()
         spec_sha256 = hashlib.sha256(spec_path.read_bytes()).hexdigest()
         eligible_pairs = None
         s1_summary_sha256 = None
-        if args.portfolio_stage == "S2":
+        if portfolio_stage == "S2":
             if args.s1_summary is None or not args.s1_summary.is_file():
                 raise ValueError("S2 requires an existing --s1-summary")
             try:
@@ -190,7 +197,7 @@ def build_jobs(args: argparse.Namespace) -> list[dict]:
             s1_summary_sha256 = hashlib.sha256(s1_raw).hexdigest()
         jobs = build_portfolio_jobs(
             spec,
-            stage=args.portfolio_stage,
+            stage=portfolio_stage,
             backend=args.backend,
             eligible_pairs=eligible_pairs,
         )
@@ -379,7 +386,8 @@ def build_resume_metadata(
     provenance: dict,
     noise_evidence: dict | None,
 ) -> dict:
-    smoke_run = args.smoke or args.portfolio_stage == "S0"
+    portfolio_stage = effective_portfolio_stage(args)
+    smoke_run = args.smoke or portfolio_stage == "S0"
     job_hashes = {
         job["job_id"]: job_input_hash(job, smoke=smoke_run) for job in jobs
     }
@@ -389,7 +397,7 @@ def build_resume_metadata(
         "dirty": provenance["dirty"],
         "dirty_paths": sorted(provenance.get("dirty_paths", [])),
         "phase": args.phase,
-        "portfolio_stage": args.portfolio_stage,
+        "portfolio_stage": portfolio_stage,
         "pre_experiment_spec_sha256": (
             jobs[0].get("pre_experiment_spec_sha256") if jobs else None
         ),
@@ -798,11 +806,12 @@ def build_summary(
         row["success"] for row in rows
     )
     portfolio_mode = args.pre_experiment_spec is not None
+    portfolio_stage = effective_portfolio_stage(args)
     portfolio_recovery_summary = (
         summarize_portfolio_recovery(
             rows,
             spec=load_pre_experiment_spec(args.pre_experiment_spec),
-            stage=args.portfolio_stage,
+            stage=portfolio_stage,
         )
         if portfolio_mode
         else None
@@ -815,7 +824,7 @@ def build_summary(
             else list(select_feature_modes(args.feature_modes))
         ),
         "phase": args.phase,
-        "portfolio_stage": args.portfolio_stage,
+        "portfolio_stage": portfolio_stage,
         "execution_passed": execution_passed,
         "scientific_gate_passed": (
             portfolio_recovery_summary["scientific_gate_passed"]
@@ -948,7 +957,7 @@ def write_portfolio_evidence(
             ),
             "classification": (
                 "STRUCTURE_ONLY"
-                if args.portfolio_stage == "S0"
+                if effective_portfolio_stage(args) == "S0"
                 else "PENDING_INDEPENDENT_VALIDATION"
             ),
         }
@@ -1006,12 +1015,13 @@ def main(argv: list[str] | None = None) -> None:
         raise ValueError("--resume and --dry-run cannot be combined")
     validate_backend(args.backend)
     jobs = limit_jobs(build_jobs(args), args.max_jobs)
-    smoke_run = args.smoke or args.portfolio_stage == "S0"
+    portfolio_stage = effective_portfolio_stage(args)
+    smoke_run = args.smoke or portfolio_stage == "S0"
     provenance = git_state_full()
     noise_evidence = None
     if not smoke_run and not args.dry_run:
         if args.pre_experiment_spec is not None:
-            if args.portfolio_stage == "S2":
+            if portfolio_stage == "S2":
                 frozen_spec = load_pre_experiment_spec(args.pre_experiment_spec)
                 noise_path = ROOT / frozen_spec.noise_evidence
                 noise_evidence = validate_noise_evidence(
@@ -1042,7 +1052,7 @@ def main(argv: list[str] | None = None) -> None:
             else list(select_feature_modes(args.feature_modes))
         ),
         "phase": args.phase,
-        "portfolio_stage": args.portfolio_stage,
+        "portfolio_stage": portfolio_stage,
         "noise_fraction": args.noise_fraction,
         "workers": args.workers,
         "free_parameters": jobs[0]["free_parameters"] if jobs else [],

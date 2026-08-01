@@ -85,6 +85,26 @@ def test_pre_experiment_s0_uses_three_structural_jobs_and_allows_cn(tmp_path):
     assert {job["trials"] for job in jobs} == {3}
 
 
+def test_pre_experiment_s1_smoke_flag_routes_to_s0_matrix(tmp_path):
+    args = parse_args(
+        [
+            "--pre-experiment-spec",
+            str(PRE_EXPERIMENT_SPEC),
+            "--portfolio-stage",
+            "S1",
+            "--smoke",
+            "--output",
+            str(tmp_path / "smoke"),
+        ]
+    )
+
+    jobs = build_jobs(args)
+
+    assert len(jobs) == 3
+    assert {job["portfolio_stage"] for job in jobs} == {"S0"}
+    assert {job["trials"] for job in jobs} == {3}
+
+
 def test_pre_experiment_mode_rejects_scientific_cli_overrides(tmp_path):
     common = [
         "--pre-experiment-spec",
