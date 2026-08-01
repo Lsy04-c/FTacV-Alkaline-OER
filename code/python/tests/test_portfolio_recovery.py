@@ -225,3 +225,26 @@ def test_condition_config_rejects_formal_cn_backend() -> None:
             seed=7,
             smoke=False,
         )
+
+
+@pytest.mark.parametrize(
+    ("passes", "expected"),
+    [
+        ({"P0": True, "P1": True, "P2": True}, "BASELINE_SUFFICIENT"),
+        ({"P0": False, "P1": True, "P2": True}, "AMP_008_ADDS_RECOVERY"),
+        ({"P0": False, "P1": False, "P2": True}, "TEN_HZ_ADDS_RECOVERY"),
+        ({"P0": False, "P1": False, "P2": False}, "DESIGN_INSUFFICIENT"),
+        (
+            {"P0": True, "P1": False, "P2": True},
+            "NON_MONOTONIC_REQUIRES_REVIEW",
+        ),
+        (
+            {"P0": True, "P1": True, "P2": False},
+            "NON_MONOTONIC_REQUIRES_REVIEW",
+        ),
+    ],
+)
+def test_portfolio_classification_is_absolute_and_monotonic(
+    passes: dict[str, bool], expected: str
+) -> None:
+    assert portfolio_recovery.classify_portfolio_passes(passes) == expected

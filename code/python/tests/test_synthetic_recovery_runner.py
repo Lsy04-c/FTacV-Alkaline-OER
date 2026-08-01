@@ -22,6 +22,162 @@ from scripts.run_synthetic_recovery import (
 )
 
 REDUCED_FREE_PARAMETERS = ("k0_1", "k0_2", "k0_3", "G_OH", "G_O")
+PRE_EXPERIMENT_SPEC = (
+    recovery_runner.ROOT
+    / "config"
+    / "recovery"
+    / "pre-experiment-a6-v2.json"
+)
+
+
+def test_pre_experiment_s1_builds_frozen_81_job_matrix(tmp_path):
+    args = parse_args(
+        [
+            "--pre-experiment-spec",
+            str(PRE_EXPERIMENT_SPEC),
+            "--portfolio-stage",
+            "S1",
+            "--output",
+            str(tmp_path / "s1"),
+        ]
+    )
+
+    jobs = build_jobs(args)
+
+    assert len(jobs) == 81
+    assert len({job["job_id"] for job in jobs}) == 81
+    assert {job["portfolio_id"] for job in jobs} == {"P0", "P1", "P2"}
+    assert {tuple(job["free_parameters"]) for job in jobs} == {
+        ("k0_2", "k0_3"),
+        ("k0_3", "G_O"),
+        ("G_OH", "G_O"),
+    }
+    assert {job["truth_id"] for job in jobs} == {
+        "center",
+        "mixed_a",
+        "mixed_b",
+    }
+    assert {job["seed"] for job in jobs} == {7, 17, 27}
+    assert {job["trials"] for job in jobs} == {100}
+    assert {job["backend"] for job in jobs} == {"lsoda"}
+    assert {job["noise_fraction"] for job in jobs} == {0.0}
+
+
+def test_pre_experiment_s0_uses_three_structural_jobs_and_allows_cn(tmp_path):
+    args = parse_args(
+        [
+            "--pre-experiment-spec",
+            str(PRE_EXPERIMENT_SPEC),
+            "--portfolio-stage",
+            "S0",
+            "--backend",
+            "cn",
+            "--output",
+            str(tmp_path / "s0"),
+        ]
+    )
+
+    jobs = build_jobs(args)
+
+    assert len(jobs) == 3
+    assert [job["portfolio_id"] for job in jobs] == ["P0", "P1", "P2"]
+    assert {job["backend"] for job in jobs} == {"cn"}
+    assert {job["trials"] for job in jobs} == {3}
+
+
+def test_pre_experiment_mode_rejects_scientific_cli_overrides(tmp_path):
+    common = [
+        "--pre-experiment-spec",
+        str(PRE_EXPERIMENT_SPEC),
+        "--portfolio-stage",
+        "S1",
+        "--output",
+        str(tmp_path / "s1"),
+    ]
+    with pytest.raises(ValueError, match="override"):
+        build_jobs(parse_args([*common, "--trials", "5"]))
+    with pytest.raises(ValueError, match="max-jobs"):
+        build_jobs(parse_args([*common, "--max-jobs", "1"]))
+
+
+def test_pre_experiment_s0_job_runs_portfolio_objective(tmp_path):
+    args = parse_args(
+        [
+            "--pre-experiment-spec",
+            str(PRE_EXPERIMENT_SPEC),
+            "--portfolio-stage",
+            "S0",
+            "--backend",
+            "lsoda",
+            "--output",
+            str(tmp_path / "s0"),
+        ]
+    )
+    job = build_jobs(args)[0]
+
+    row = run_job(job, smoke=True)
+
+    assert row["success"] is True
+    assert row["portfolio_stage"] == "S0"
+    assert row["portfolio_id"] == "P0"
+    assert len(row["target_records"]) == 1
+    assert row["target_records"][0]["condition_id"] == job["condition_ids"][0]
+    assert len(row["target_records"][0]["target_sha256"]) == 64
+    assert row["condition_best_losses"].keys() == {
+        "baseline_5hz_amp_016"
+    }
+    assert row["configuration"]["solver_backend"] == "lsoda"
+    assert row["configuration"]["conditions"]["baseline_5hz_amp_016"][
+        "n_points"
+    ] == 256
+
+
+def test_pre_experiment_s0_main_writes_auditable_outputs(monkeypatch, tmp_path):
+    output = tmp_path / "s0"
+    monkeypatch.setattr(
+        recovery_runner,
+        "git_state_full",
+        lambda: {
+            "source_commit": "deadbeef",
+            "dirty": False,
+            "dirty_paths": [],
+            "ignored_workflow_paths": [],
+        },
+    )
+
+    main(
+        [
+            "--pre-experiment-spec",
+            str(PRE_EXPERIMENT_SPEC),
+            "--portfolio-stage",
+            "S0",
+            "--backend",
+            "lsoda",
+            "--workers",
+            "1",
+            "--output",
+            str(output),
+        ]
+    )
+
+    expected = {
+        "pre_experiment_recovery_spec.json",
+        "protocol_catalog.csv",
+        "job_plan.json",
+        "target_manifest.json",
+        "results.jsonl",
+        "portfolio_recovery.csv",
+        "summary.json",
+        "run_manifest.json",
+    }
+    assert expected <= {path.name for path in output.iterdir()}
+    targets = json.loads((output / "target_manifest.json").read_text())
+    assert targets["unique_target_count"] == 3
+    assert targets["target_record_count"] == 6
+    assert targets["reuse_conflicts"] == []
+    summary = json.loads((output / "summary.json").read_text())
+    assert summary["portfolio_stage"] == "S0"
+    assert summary["scientific_gate_passed"] is None
 
 
 def test_formal_runner_matches_frozen_a5_grid(tmp_path):

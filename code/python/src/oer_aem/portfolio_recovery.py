@@ -6,6 +6,7 @@ import json
 import hashlib
 import math
 from dataclasses import dataclass
+from itertools import product
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping, Sequence
@@ -440,3 +441,108 @@ def build_condition_config(
         seed=int(seed),
         fixed_params=fixed_params,
     )
+
+
+def build_portfolio_jobs(
+    spec: PreExperimentRecoverySpec,
+    *,
+    stage: str,
+    backend: str,
+    eligible_pairs: Sequence[Sequence[str]] | None = None,
+) -> list[dict[str, Any]]:
+    """Build the frozen S0/S1/S2 paired job matrix."""
+    from .inversion import DEFAULT_PARAM_SPECS
+    from .recovery import truth_library
+
+    if stage not in {"S0", "S1", "S2"}:
+        raise ValueError("portfolio stage must be S0, S1, or S2")
+    if stage != "S0" and backend != spec.formal_backend:
+        raise ValueError("formal backend must equal frozen lsoda backend")
+    if backend not in {"cn", "lsoda"}:
+        raise ValueError("backend must be cn or lsoda")
+
+    pairs = spec.parameter_pairs
+    if stage == "S2":
+        if eligible_pairs is None:
+            raise ValueError("S2 requires S1 eligible parameter pairs")
+        requested = tuple(tuple(str(name) for name in pair) for pair in eligible_pairs)
+        unknown = [pair for pair in requested if pair not in spec.parameter_pairs]
+        if unknown:
+            raise ValueError(f"S2 contains unknown parameter pairs: {unknown}")
+        pairs = tuple(pair for pair in spec.parameter_pairs if pair in requested)
+        if not pairs:
+            raise ValueError("S2 refused because no parameter pair passed S1 P2")
+
+    truths = {
+        item["truth_id"]: item["parameters"]
+        for item in truth_library(DEFAULT_PARAM_SPECS)
+        if item["truth_id"] in spec.truth_ids
+    }
+    noise_fraction = float(spec.noise_fractions["S2" if stage == "S2" else "S1"])
+    if stage == "S0":
+        combinations = (
+            (spec.parameter_pairs[0], portfolio_id, spec.truth_ids[0], spec.optimizer_seeds[0])
+            for portfolio_id in spec.portfolios
+        )
+        trials = 3
+    else:
+        combinations = product(
+            pairs,
+            spec.portfolios,
+            spec.truth_ids,
+            spec.optimizer_seeds,
+        )
+        trials = spec.trials
+
+    jobs: list[dict[str, Any]] = []
+    for pair, portfolio_id, truth_id, optimizer_seed in combinations:
+        condition_ids = spec.portfolios[portfolio_id]
+        identities = [
+            {
+                "condition_id": condition_id,
+                **target_identity(truth_id, noise_fraction, condition_id),
+            }
+            for condition_id in condition_ids
+        ]
+        pair_id = "-".join(pair)
+        jobs.append(
+            {
+                "job_id": (
+                    f"{stage}__{pair_id}__{portfolio_id}__{truth_id}"
+                    f"__noise-{noise_fraction:.17g}__seed-{optimizer_seed}"
+                    f"__trials-{trials}"
+                ),
+                "portfolio_stage": stage,
+                "parameter_pair_id": pair_id,
+                "portfolio_id": portfolio_id,
+                "condition_ids": list(condition_ids),
+                "target_identities": identities,
+                "feature_mode": spec.feature_mode,
+                "free_parameters": list(pair),
+                "truth_id": truth_id,
+                "truth_params": dict(truths[truth_id]),
+                "noise_fraction": noise_fraction,
+                "seed": int(optimizer_seed),
+                "trials": int(trials),
+                "backend": backend,
+            }
+        )
+    return jobs
+
+
+def classify_portfolio_passes(passes: Mapping[str, bool]) -> str:
+    """Classify absolute P0/P1/P2 gates after enforcing nested monotonicity."""
+    if set(passes) != {"P0", "P1", "P2"} or any(
+        not isinstance(value, bool) for value in passes.values()
+    ):
+        raise ValueError("passes must contain boolean P0, P1, and P2 values")
+    sequence = tuple(passes[name] for name in ("P0", "P1", "P2"))
+    if any(left and not right for left, right in zip(sequence, sequence[1:])):
+        return "NON_MONOTONIC_REQUIRES_REVIEW"
+    if sequence[0]:
+        return "BASELINE_SUFFICIENT"
+    if sequence[1]:
+        return "AMP_008_ADDS_RECOVERY"
+    if sequence[2]:
+        return "TEN_HZ_ADDS_RECOVERY"
+    return "DESIGN_INSUFFICIENT"

@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
+import io
 import json
 import math
 import os
@@ -24,6 +26,7 @@ sys.path.insert(0, str(ROOT / "code" / "python" / "src"))
 from oer_aem.inversion import (
     DEFAULT_PARAM_SPECS,
     InversionConfig,
+    InversionObjective,
     TPEInverter,
     make_synthetic_target,
 )
@@ -34,6 +37,14 @@ from oer_aem.recovery import (
     select_trial_budget,
     summarize_recovery,
     truth_library,
+)
+from oer_aem.portfolio_recovery import (
+    PortfolioObjective,
+    build_condition_config,
+    build_portfolio_jobs,
+    load_pre_experiment_spec,
+    target_sha256,
+    validate_target_reuse,
 )
 
 
@@ -53,9 +64,12 @@ WORKFLOW_UNTRACKED_PREFIXES = ("results/",)
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase", choices=("pilot", "formal"), required=True)
-    parser.add_argument("--noise-fraction", type=float, required=True)
+    parser.add_argument("--phase", choices=("pilot", "formal"))
+    parser.add_argument("--noise-fraction", type=float)
     parser.add_argument("--noise-evidence", type=Path)
+    parser.add_argument("--pre-experiment-spec", type=Path)
+    parser.add_argument("--portfolio-stage", choices=("S0", "S1", "S2"))
+    parser.add_argument("--s1-summary", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--backend", choices=("cn", "lsoda"), default="lsoda")
     parser.add_argument("--workers", type=int, default=8)
@@ -136,6 +150,43 @@ def validate_backend(backend: str) -> None:
 
 
 def build_jobs(args: argparse.Namespace) -> list[dict]:
+    if args.pre_experiment_spec is not None:
+        if args.portfolio_stage is None:
+            raise ValueError("--portfolio-stage is required with --pre-experiment-spec")
+        if args.phase is not None or args.noise_fraction is not None:
+            raise ValueError("legacy phase/noise override is forbidden in portfolio mode")
+        if args.trials is not None:
+            raise ValueError("trial override is forbidden in portfolio mode")
+        if args.free_parameters != ",".join(name for name, *_ in DEFAULT_PARAM_SPECS):
+            raise ValueError("free-parameter override is forbidden in portfolio mode")
+        if args.feature_modes != ",".join(FEATURE_MODES):
+            raise ValueError("feature-mode override is forbidden in portfolio mode")
+        if args.max_jobs is not None and args.portfolio_stage != "S0":
+            raise ValueError("--max-jobs is only allowed for S0")
+        spec = load_pre_experiment_spec(args.pre_experiment_spec)
+        eligible_pairs = None
+        if args.portfolio_stage == "S2":
+            if args.s1_summary is None or not args.s1_summary.is_file():
+                raise ValueError("S2 requires an existing --s1-summary")
+            try:
+                s1_summary = json.loads(args.s1_summary.read_text(encoding="utf-8"))
+                eligible_pairs = s1_summary["eligible_parameter_pairs"]
+            except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+                raise ValueError("S1 summary has no valid eligible_parameter_pairs") from exc
+        jobs = build_portfolio_jobs(
+            spec,
+            stage=args.portfolio_stage,
+            backend=args.backend,
+            eligible_pairs=eligible_pairs,
+        )
+        spec_path = args.pre_experiment_spec.resolve()
+        spec_sha256 = hashlib.sha256(spec_path.read_bytes()).hexdigest()
+        for job in jobs:
+            job["pre_experiment_spec"] = str(spec_path)
+            job["pre_experiment_spec_sha256"] = spec_sha256
+        return jobs
+    if args.phase is None or args.noise_fraction is None:
+        raise ValueError("legacy recovery requires --phase and --noise-fraction")
     free_specs = select_free_specs(args.free_parameters)
     free_parameters = [name for name, *_ in free_specs]
     feature_modes = select_feature_modes(args.feature_modes)
@@ -185,7 +236,16 @@ def prepare_output_directory(output: Path, *, resume: bool = False) -> None:
         and not entry.name.startswith("STATUS.json.tmp.")
     ]
     if resume:
-        allowed = {"job_plan.json", "results.jsonl", "summary.json"}
+        allowed = {
+            "job_plan.json",
+            "results.jsonl",
+            "summary.json",
+            "pre_experiment_recovery_spec.json",
+            "protocol_catalog.csv",
+            "target_manifest.json",
+            "portfolio_recovery.csv",
+            "run_manifest.json",
+        }
         unknown = [
             name
             for name in scientific_entries
@@ -246,6 +306,38 @@ def _canonical_json(value) -> str:
 
 def _job_input_payload(job: dict, *, smoke: bool) -> dict:
     clean_job = {key: value for key, value in job.items() if key != "job_input_hash"}
+    if "portfolio_stage" in clean_job:
+        spec_path = Path(clean_job["pre_experiment_spec"])
+        if hashlib.sha256(spec_path.read_bytes()).hexdigest() != clean_job.get(
+            "pre_experiment_spec_sha256"
+        ):
+            raise ValueError("pre-experiment spec hash mismatch")
+        spec = load_pre_experiment_spec(spec_path)
+        free_specs = select_free_specs(",".join(clean_job["free_parameters"]))
+        condition_configs = {}
+        for condition_id in clean_job["condition_ids"]:
+            config = build_condition_config(
+                spec,
+                spec.conditions[condition_id],
+                truth=clean_job["truth_params"],
+                free_specs=free_specs,
+                backend=clean_job["backend"],
+                seed=clean_job["seed"],
+                smoke=smoke,
+            )
+            condition_configs[condition_id] = {
+                "n_points": config.n_points,
+                "points_per_cycle": config.points_per_cycle,
+                "feature_grid_size": config.feature_grid_size,
+                "fit_harmonics": list(config.fit_harmonics),
+                "feature_mode": config.feature_mode,
+                "solver_backend": config.solver_backend,
+                "fixed_params": [list(item) for item in config.fixed_params],
+            }
+        return {
+            "job": clean_job,
+            "configuration": {"conditions": condition_configs},
+        }
     config, _ = build_recovery_problem(clean_job, smoke=smoke)
     return {
         "job": clean_job,
@@ -272,8 +364,9 @@ def build_resume_metadata(
     provenance: dict,
     noise_evidence: dict | None,
 ) -> dict:
+    smoke_run = args.smoke or args.portfolio_stage == "S0"
     job_hashes = {
-        job["job_id"]: job_input_hash(job, smoke=args.smoke) for job in jobs
+        job["job_id"]: job_input_hash(job, smoke=smoke_run) for job in jobs
     }
     fingerprint_payload = {
         "schema_version": 2,
@@ -281,7 +374,11 @@ def build_resume_metadata(
         "dirty": provenance["dirty"],
         "dirty_paths": sorted(provenance.get("dirty_paths", [])),
         "phase": args.phase,
-        "smoke": args.smoke,
+        "portfolio_stage": args.portfolio_stage,
+        "pre_experiment_spec_sha256": (
+            jobs[0].get("pre_experiment_spec_sha256") if jobs else None
+        ),
+        "smoke": smoke_run,
         "noise_fraction": args.noise_fraction,
         "noise_evidence_sha256": (
             noise_evidence.get("sha256") if noise_evidence else None
@@ -423,6 +520,8 @@ def build_inverter(job: dict, config: InversionConfig, free_specs):
 
 
 def run_job(job: dict, *, smoke: bool = False) -> dict:
+    if "portfolio_stage" in job:
+        return run_portfolio_job(job, smoke=smoke)
     config, free_specs = build_recovery_problem(job, smoke=smoke)
     started = time.perf_counter()
     target = make_synthetic_target(
@@ -455,6 +554,110 @@ def run_job(job: dict, *, smoke: bool = False) -> dict:
             "points_per_cycle": config.points_per_cycle,
             "feature_grid_size": config.feature_grid_size,
             "solver_backend": config.solver_backend,
+        },
+    }
+
+
+def run_portfolio_job(job: dict, *, smoke: bool = False) -> dict:
+    """Run one paired multi-condition recovery study."""
+    spec_path = Path(job["pre_experiment_spec"])
+    if hashlib.sha256(spec_path.read_bytes()).hexdigest() != job.get(
+        "pre_experiment_spec_sha256"
+    ):
+        raise ValueError("pre-experiment spec hash mismatch")
+    spec = load_pre_experiment_spec(spec_path)
+    free_specs = select_free_specs(",".join(job["free_parameters"]))
+    started = time.perf_counter()
+    objectives = []
+    target_records = []
+    configs = {}
+    identities = {
+        item["condition_id"]: item for item in job["target_identities"]
+    }
+    for condition_id in job["condition_ids"]:
+        condition = spec.conditions[condition_id]
+        config = build_condition_config(
+            spec,
+            condition,
+            truth=job["truth_params"],
+            free_specs=free_specs,
+            backend=job["backend"],
+            seed=job["seed"],
+            smoke=smoke,
+        )
+        identity = identities[condition_id]
+        target = make_synthetic_target(
+            job["truth_params"],
+            config=config,
+            noise_fraction=job["noise_fraction"],
+            seed=identity["target_seed"],
+        )
+        condition_objective = InversionObjective(
+            target,
+            config=config,
+            specs=free_specs,
+        )
+        target_records.append(
+            {
+                **identity,
+                "target_sha256": target_sha256(
+                    target,
+                    condition_objective.channel_contract.sha256,
+                ),
+                "channel_contract_sha256": (
+                    condition_objective.channel_contract.sha256
+                ),
+            }
+        )
+        objectives.append((condition_id, condition_objective))
+        configs[condition_id] = config
+    validate_target_reuse(target_records)
+    portfolio_objective = PortfolioObjective(
+        objectives,
+        failure_penalty=max(config.feature_fail_penalty for config in configs.values()),
+    )
+    inverter = TPEInverter(
+        config=next(iter(configs.values())),
+        specs=free_specs,
+        seed=job["seed"],
+    )
+    result = inverter.run_objective(
+        portfolio_objective,
+        n_trials=job["trials"],
+    )
+    metrics = recovery_metrics(
+        truth=job["truth_params"],
+        estimate=result.best_params,
+        specs=free_specs,
+    )
+    return {
+        **job,
+        "success": result.success,
+        "best_value": result.best_value,
+        "best_params": result.best_params,
+        "parameter_metrics": metrics,
+        "condition_best_losses": portfolio_objective.best_condition_losses,
+        "target_records": target_records,
+        "n_trials": result.n_trials,
+        "n_forward": result.n_forward,
+        "n_ode_fail": result.n_ode_fail,
+        "n_feature_fail": result.n_feature_fail,
+        "n_tafel_fail": result.n_tafel_fail,
+        "runtime_seconds": time.perf_counter() - started,
+        "configuration": {
+            "feature_mode": spec.feature_mode,
+            "fit_harmonics": list(spec.fit_harmonics),
+            "feature_grid_size": spec.feature_grid_size,
+            "solver_backend": job["backend"],
+            "conditions": {
+                condition_id: {
+                    "n_points": config.n_points,
+                    "points_per_cycle": config.points_per_cycle,
+                    "f": config.f,
+                    "dE": config.dE,
+                }
+                for condition_id, config in configs.items()
+            },
         },
     }
 
@@ -579,10 +782,16 @@ def build_summary(
     execution_passed = len(rows) == len(jobs) and all(
         row["success"] for row in rows
     )
+    portfolio_mode = args.pre_experiment_spec is not None
     summary = {
         "backend": args.backend,
-        "feature_modes": list(select_feature_modes(args.feature_modes)),
+        "feature_modes": (
+            ["hybrid"]
+            if portfolio_mode
+            else list(select_feature_modes(args.feature_modes))
+        ),
         "phase": args.phase,
+        "portfolio_stage": args.portfolio_stage,
         "execution_passed": execution_passed,
         "scientific_gate_passed": None,
         "passed": execution_passed,
@@ -599,14 +808,161 @@ def build_summary(
         "resumed": resumed,
         "reused_jobs": reused_jobs,
         "executed_jobs": executed_jobs,
-        "recovery_summary": summarize_recovery(
-            rows,
-            parameter_names=tuple(jobs[0]["free_parameters"]) if jobs else (),
+        "recovery_summary": (
+            {"group_count": 0, "groups": [], "scope": "structure_only"}
+            if portfolio_mode and args.portfolio_stage == "S0"
+            else summarize_recovery(
+                rows,
+                parameter_names=tuple(jobs[0]["free_parameters"])
+                if jobs else (),
+            )
         ),
     }
     if args.phase == "pilot":
         summary["budget_selection"] = select_trial_budget(rows)
     return summary
+
+
+def _csv_text(fieldnames: list[str], records: list[dict]) -> str:
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(records)
+    return buffer.getvalue()
+
+
+def write_portfolio_evidence(
+    *,
+    output: Path,
+    args: argparse.Namespace,
+    jobs: list[dict],
+    rows: list[dict],
+) -> None:
+    """Write deterministic portfolio evidence outside the checkpoint stream."""
+    spec_path = args.pre_experiment_spec.resolve()
+    spec = load_pre_experiment_spec(spec_path)
+    frozen_payload = json.loads(spec_path.read_text(encoding="utf-8"))
+    atomic_write_json(
+        output / "pre_experiment_recovery_spec.json",
+        frozen_payload,
+        prefix=".pre-experiment-spec.",
+    )
+    catalog_records = [
+        {
+            "condition_id": condition.condition_id,
+            "E_start": format(condition.E_start, ".17g"),
+            "E_end": format(condition.E_end, ".17g"),
+            "f": format(condition.f, ".17g"),
+            "dE": format(condition.dE, ".17g"),
+            "cycles": condition.cycles,
+            "points_per_cycle": condition.points_per_cycle,
+            "n_points": condition.n_points,
+        }
+        for condition in spec.conditions.values()
+    ]
+    _atomic_write_text(
+        output / "protocol_catalog.csv",
+        _csv_text(
+            [
+                "condition_id",
+                "E_start",
+                "E_end",
+                "f",
+                "dE",
+                "cycles",
+                "points_per_cycle",
+                "n_points",
+            ],
+            catalog_records,
+        ),
+        prefix=".protocol-catalog.",
+    )
+    target_records = [
+        {
+            **record,
+            "job_id": row["job_id"],
+            "portfolio_id": row["portfolio_id"],
+        }
+        for row in rows
+        for record in row["target_records"]
+    ]
+    unique_targets = validate_target_reuse(target_records)
+    atomic_write_json(
+        output / "target_manifest.json",
+        {
+            "schema_version": 1,
+            "target_record_count": len(target_records),
+            "unique_target_count": len(unique_targets),
+            "reuse_conflicts": [],
+            "records": target_records,
+        },
+        prefix=".target-manifest.",
+    )
+    recovery_records = [
+        {
+            "job_id": row["job_id"],
+            "portfolio_stage": row["portfolio_stage"],
+            "parameter_pair_id": row["parameter_pair_id"],
+            "portfolio_id": row["portfolio_id"],
+            "truth_id": row["truth_id"],
+            "optimizer_seed": row["seed"],
+            "success": str(bool(row["success"])).lower(),
+            "max_normalized_bound_error": format(
+                float(row["parameter_metrics"]["max_normalized_bound_error"]),
+                ".17g",
+            ),
+            "classification": (
+                "STRUCTURE_ONLY"
+                if args.portfolio_stage == "S0"
+                else "PENDING_INDEPENDENT_VALIDATION"
+            ),
+        }
+        for row in rows
+    ]
+    _atomic_write_text(
+        output / "portfolio_recovery.csv",
+        _csv_text(
+            [
+                "job_id",
+                "portfolio_stage",
+                "parameter_pair_id",
+                "portfolio_id",
+                "truth_id",
+                "optimizer_seed",
+                "success",
+                "max_normalized_bound_error",
+                "classification",
+            ],
+            recovery_records,
+        ),
+        prefix=".portfolio-recovery.",
+    )
+
+
+def write_run_manifest(output: Path, *, source_commit: str) -> None:
+    evidence_files = sorted(
+        path
+        for path in output.iterdir()
+        if path.is_file()
+        and path.name not in {"run_manifest.json", *WORKFLOW_OWNED_FILES}
+        and not path.name.startswith(".")
+    )
+    atomic_write_json(
+        output / "run_manifest.json",
+        {
+            "schema_version": 1,
+            "source_commit": source_commit,
+            "files": [
+                {
+                    "path": path.name,
+                    "size": path.stat().st_size,
+                    "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                }
+                for path in evidence_files
+            ],
+        },
+        prefix=".run-manifest.",
+    )
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -615,12 +971,21 @@ def main(argv: list[str] | None = None) -> None:
         raise ValueError("--resume and --dry-run cannot be combined")
     validate_backend(args.backend)
     jobs = limit_jobs(build_jobs(args), args.max_jobs)
+    smoke_run = args.smoke or args.portfolio_stage == "S0"
     provenance = git_state_full()
     noise_evidence = None
-    if not args.smoke and not args.dry_run:
-        noise_evidence = validate_noise_evidence(
-            args.noise_fraction, args.noise_evidence
-        )
+    if not smoke_run and not args.dry_run:
+        if args.pre_experiment_spec is not None:
+            if args.portfolio_stage == "S2":
+                frozen_spec = load_pre_experiment_spec(args.pre_experiment_spec)
+                noise_path = ROOT / frozen_spec.noise_evidence
+                noise_evidence = validate_noise_evidence(
+                    float(frozen_spec.noise_fractions["S2"]), noise_path
+                )
+        else:
+            noise_evidence = validate_noise_evidence(
+                args.noise_fraction, args.noise_evidence
+            )
     output = args.output.resolve()
     prepare_output_directory(output, resume=args.resume)
     provenance_record = {
@@ -636,12 +1001,17 @@ def main(argv: list[str] | None = None) -> None:
         job["job_input_hash"] = resume_metadata["job_input_hashes"][job["job_id"]]
     plan = {
         "backend": args.backend,
-        "feature_modes": list(select_feature_modes(args.feature_modes)),
+        "feature_modes": (
+            [jobs[0]["feature_mode"]]
+            if args.pre_experiment_spec is not None and jobs
+            else list(select_feature_modes(args.feature_modes))
+        ),
         "phase": args.phase,
+        "portfolio_stage": args.portfolio_stage,
         "noise_fraction": args.noise_fraction,
         "workers": args.workers,
         "free_parameters": jobs[0]["free_parameters"] if jobs else [],
-        "smoke": args.smoke,
+        "smoke": smoke_run,
         "job_count": len(jobs),
         "jobs": jobs,
         "noise_evidence": noise_evidence,
@@ -694,7 +1064,7 @@ def main(argv: list[str] | None = None) -> None:
     planned_ids = [job["job_id"] for job in jobs]
     remaining = [job for job in jobs if job["job_id"] not in rows_by_id]
     for row in iter_job_results(
-        remaining, workers=args.workers, smoke=args.smoke
+        remaining, workers=args.workers, smoke=smoke_run
     ):
         job_id = row.get("job_id")
         if job_id not in expected_hashes:
@@ -708,6 +1078,13 @@ def main(argv: list[str] | None = None) -> None:
         executed_jobs += 1
         atomic_write_checkpoint(results_path, rows_by_id, planned_ids)
     rows = [rows_by_id[job_id] for job_id in planned_ids]
+    if args.pre_experiment_spec is not None:
+        write_portfolio_evidence(
+            output=output,
+            args=args,
+            jobs=jobs,
+            rows=rows,
+        )
     summary = build_summary(
         args=args,
         jobs=jobs,
@@ -719,6 +1096,8 @@ def main(argv: list[str] | None = None) -> None:
         executed_jobs=executed_jobs,
     )
     atomic_write_json(output / "summary.json", summary, prefix=".summary.")
+    if args.pre_experiment_spec is not None:
+        write_run_manifest(output, source_commit=provenance_record["source_commit"])
     print(output)
 
 
