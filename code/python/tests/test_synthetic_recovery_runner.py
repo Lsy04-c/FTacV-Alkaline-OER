@@ -259,6 +259,26 @@ def test_pre_experiment_s0_main_writes_auditable_outputs(monkeypatch, tmp_path):
     assert summary["portfolio_stage"] == "S0"
     assert summary["scientific_gate_passed"] is None
 
+    main(
+        [
+            "--pre-experiment-spec",
+            str(PRE_EXPERIMENT_SPEC),
+            "--portfolio-stage",
+            "S0",
+            "--backend",
+            "lsoda",
+            "--workers",
+            "1",
+            "--output",
+            str(output),
+            "--resume",
+        ]
+    )
+    resumed = json.loads((output / "summary.json").read_text())
+    assert resumed["resumed"] is True
+    assert resumed["reused_jobs"] == 3
+    assert resumed["executed_jobs"] == 0
+
 
 def test_formal_runner_matches_frozen_a5_grid(tmp_path):
     args = parse_args(

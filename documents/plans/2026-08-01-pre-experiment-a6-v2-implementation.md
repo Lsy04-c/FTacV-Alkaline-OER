@@ -10,6 +10,20 @@
 
 ---
 
+## 执行状态（2026-08-01）
+
+| 任务 | 状态 | 已验证证据 |
+|---|---|---|
+| 1–3 冻结规格、组合目标、Optuna 共用循环 | 已完成 | 聚焦测试通过，提交 `7342058` |
+| 4 runner、checkpoint、resume 和输出 | 已完成 | S0 实跑与 3/3 job resume 通过，提交 `5045e40`、`21284b5` |
+| 5 独立 validator 与 oer-wf 桥接 | 已完成 | 篡改拒绝测试、S1 81 行重建测试通过，提交 `2cae743` |
+| 6 TaskSpec | S1 已完成；S2 条件等待 | S1 TaskSpec 提交 `eb35b92`；S2 只在 S1 验收且 eligibility 非空后冻结具体 S1 summary 路径 |
+| 7 本地验证 | 已完成 | CN S0 `PASS/STRUCTURE_ONLY`；Python 503、oer-wf 136、Web 3 tests 通过 |
+| 8 Legion 正式运行 | 待执行 | 下一步为推送、部署、远端 smoke 和 S1 LSODA |
+
+S2 TaskSpec 不提前写占位路径。这样可避免引用未知时间戳、未经独立验收或错误
+S1 归档；若 S1 三组参数对的 P2 全失败，则按冻结规则不创建 S2 正式任务。
+
 ## 0. 文件边界
 
 | 路径 | 责任 |
@@ -377,9 +391,9 @@ Run: `.venv/bin/pytest config/oer-wf/tests -q`
 
 Expected: oer-wf 全量测试全部 PASS。
 
-Run: `npm test --prefix code/web`
+Run: `.venv/bin/python -m pytest code/web/tests/backend -q`
 
-Expected: Web 3 tests PASS。
+Expected: Web 3 tests PASS；允许已知的 Starlette/httpx 弃用警告，但不得有测试失败。
 
 - [ ] **Step 5: 完成前审计**
 
