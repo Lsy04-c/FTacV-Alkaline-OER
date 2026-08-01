@@ -1,6 +1,6 @@
 # OER-FTAcV 项目总览、架构与交接
 
-更新日期：2026-07-30
+更新日期：2026-08-01
 负责人：刘拾玉
 当前分支：`codex/reclassify-project`
 
@@ -271,7 +271,7 @@ config/parameter-roles/gate-a6-parameter-roles.json
 
 ### 7.2 计算工作流
 
-`oer-wf 0.6.8` 已实现：
+`oer-wf 0.7.0` 已实现：
 
 ```text
 doctor → prepare → smoke → run → status → sync → verify → clean
@@ -413,6 +413,13 @@ Legion PASS；该可移植性缺陷已进入项目纠错，未调整科学阈值
 采集协议预注册，不是参数点估计，也未证明真实实验一定提高恢复精度。
 恢复实验后仍需补 EIS、面积、负载量、位点量和预处理记录，并用新数据
 重开 A6-v2。
+
+Bonke et al. (*JACS*, 2016, DOI `10.1021/jacs.6b10304`) 和 Zhang et al.
+(*Current Opinion in Electrochemistry*, 2018, DOI
+`10.1016/j.coelec.2018.04.016`) 只作为实验与解释边界的文献依据：独立
+约束电活性位点量，保存可评价 H4 以上谐波的原始时间序列，并设置空白基底
+和负载量对照。项目不新增 Bonke 风格三参数模型，也不把其有效参数映射为
+五步 AEM 的微观参数。文献要求不改变现有 Gate、参数角色或 V4 排序。
 
 ### 9.5 V5：计算加速
 
