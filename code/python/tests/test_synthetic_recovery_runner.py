@@ -100,6 +100,66 @@ def test_pre_experiment_mode_rejects_scientific_cli_overrides(tmp_path):
         build_jobs(parse_args([*common, "--max-jobs", "1"]))
 
 
+def test_pre_experiment_s2_requires_verified_s1_eligibility(tmp_path):
+    summary_path = tmp_path / "s1-summary.json"
+    spec_hash = hashlib.sha256(PRE_EXPERIMENT_SPEC.read_bytes()).hexdigest()
+    common = [
+        "--pre-experiment-spec",
+        str(PRE_EXPERIMENT_SPEC),
+        "--portfolio-stage",
+        "S2",
+        "--s1-summary",
+        str(summary_path),
+        "--output",
+        str(tmp_path / "s2"),
+    ]
+    summary_path.write_text(
+        json.dumps(
+            {
+                "portfolio_stage": "S1",
+                "stage_status": "DESIGN_INSUFFICIENT_NOISELESS",
+                "scientific_gate_passed": False,
+                "pre_experiment_spec_sha256": spec_hash,
+                "eligible_parameter_pairs": [],
+            }
+        )
+    )
+    with pytest.raises(ValueError, match="no parameter pair"):
+        build_jobs(parse_args(common))
+
+    summary_path.write_text(
+        json.dumps(
+            {
+                "portfolio_stage": "S1",
+                "stage_status": "S1_ELIGIBLE",
+                "scientific_gate_passed": True,
+                "pre_experiment_spec_sha256": "0" * 64,
+                "eligible_parameter_pairs": [["k0_2", "k0_3"]],
+            }
+        )
+    )
+    with pytest.raises(ValueError, match="spec hash"):
+        build_jobs(parse_args(common))
+
+    summary_path.write_text(
+        json.dumps(
+            {
+                "portfolio_stage": "S1",
+                "stage_status": "S1_ELIGIBLE",
+                "scientific_gate_passed": True,
+                "pre_experiment_spec_sha256": spec_hash,
+                "eligible_parameter_pairs": [["k0_2", "k0_3"]],
+            }
+        )
+    )
+    jobs = build_jobs(parse_args(common))
+    assert len(jobs) == 27
+    assert {tuple(job["free_parameters"]) for job in jobs} == {
+        ("k0_2", "k0_3")
+    }
+    assert {job["portfolio_id"] for job in jobs} == {"P0", "P1", "P2"}
+
+
 def test_pre_experiment_s0_job_runs_portfolio_objective(tmp_path):
     args = parse_args(
         [

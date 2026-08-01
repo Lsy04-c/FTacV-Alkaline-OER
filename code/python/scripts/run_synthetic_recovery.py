@@ -43,6 +43,7 @@ from oer_aem.portfolio_recovery import (
     build_condition_config,
     build_portfolio_jobs,
     load_pre_experiment_spec,
+    summarize_portfolio_recovery,
     target_sha256,
     validate_target_reuse,
 )
@@ -164,26 +165,40 @@ def build_jobs(args: argparse.Namespace) -> list[dict]:
         if args.max_jobs is not None and args.portfolio_stage != "S0":
             raise ValueError("--max-jobs is only allowed for S0")
         spec = load_pre_experiment_spec(args.pre_experiment_spec)
+        spec_path = args.pre_experiment_spec.resolve()
+        spec_sha256 = hashlib.sha256(spec_path.read_bytes()).hexdigest()
         eligible_pairs = None
+        s1_summary_sha256 = None
         if args.portfolio_stage == "S2":
             if args.s1_summary is None or not args.s1_summary.is_file():
                 raise ValueError("S2 requires an existing --s1-summary")
             try:
-                s1_summary = json.loads(args.s1_summary.read_text(encoding="utf-8"))
+                s1_raw = args.s1_summary.read_bytes()
+                s1_summary = json.loads(s1_raw.decode("utf-8"))
                 eligible_pairs = s1_summary["eligible_parameter_pairs"]
-            except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError) as exc:
                 raise ValueError("S1 summary has no valid eligible_parameter_pairs") from exc
+            if (
+                s1_summary.get("portfolio_stage") != "S1"
+                or s1_summary.get("stage_status")
+                not in {"S1_ELIGIBLE", "DESIGN_INSUFFICIENT_NOISELESS"}
+                or not isinstance(s1_summary.get("scientific_gate_passed"), bool)
+            ):
+                raise ValueError("S1 summary does not contain a verified S1 gate")
+            if s1_summary.get("pre_experiment_spec_sha256") != spec_sha256:
+                raise ValueError("S1 summary spec hash does not match S2 spec")
+            s1_summary_sha256 = hashlib.sha256(s1_raw).hexdigest()
         jobs = build_portfolio_jobs(
             spec,
             stage=args.portfolio_stage,
             backend=args.backend,
             eligible_pairs=eligible_pairs,
         )
-        spec_path = args.pre_experiment_spec.resolve()
-        spec_sha256 = hashlib.sha256(spec_path.read_bytes()).hexdigest()
         for job in jobs:
             job["pre_experiment_spec"] = str(spec_path)
             job["pre_experiment_spec_sha256"] = spec_sha256
+            if s1_summary_sha256 is not None:
+                job["s1_summary_sha256"] = s1_summary_sha256
         return jobs
     if args.phase is None or args.noise_fraction is None:
         raise ValueError("legacy recovery requires --phase and --noise-fraction")
@@ -783,6 +798,15 @@ def build_summary(
         row["success"] for row in rows
     )
     portfolio_mode = args.pre_experiment_spec is not None
+    portfolio_recovery_summary = (
+        summarize_portfolio_recovery(
+            rows,
+            spec=load_pre_experiment_spec(args.pre_experiment_spec),
+            stage=args.portfolio_stage,
+        )
+        if portfolio_mode
+        else None
+    )
     summary = {
         "backend": args.backend,
         "feature_modes": (
@@ -793,7 +817,10 @@ def build_summary(
         "phase": args.phase,
         "portfolio_stage": args.portfolio_stage,
         "execution_passed": execution_passed,
-        "scientific_gate_passed": None,
+        "scientific_gate_passed": (
+            portfolio_recovery_summary["scientific_gate_passed"]
+            if portfolio_mode else None
+        ),
         "passed": execution_passed,
         "passed_semantics": "deprecated alias of execution_passed",
         "job_count": len(jobs),
@@ -809,8 +836,8 @@ def build_summary(
         "reused_jobs": reused_jobs,
         "executed_jobs": executed_jobs,
         "recovery_summary": (
-            {"group_count": 0, "groups": [], "scope": "structure_only"}
-            if portfolio_mode and args.portfolio_stage == "S0"
+            portfolio_recovery_summary
+            if portfolio_mode
             else summarize_recovery(
                 rows,
                 parameter_names=tuple(jobs[0]["free_parameters"])
@@ -818,6 +845,14 @@ def build_summary(
             )
         ),
     }
+    if portfolio_mode:
+        summary["pre_experiment_spec_sha256"] = jobs[0][
+            "pre_experiment_spec_sha256"
+        ]
+        summary["eligible_parameter_pairs"] = portfolio_recovery_summary[
+            "eligible_parameter_pairs"
+        ]
+        summary["stage_status"] = portfolio_recovery_summary["stage_status"]
     if args.phase == "pilot":
         summary["budget_selection"] = select_trial_budget(rows)
     return summary

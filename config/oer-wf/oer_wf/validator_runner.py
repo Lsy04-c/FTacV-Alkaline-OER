@@ -12,6 +12,7 @@ from oer_wf.validators import (
     manifest_hash,
     optimizer_benchmark_gate,
     optimizer_confirmation_gate,
+    pre_experiment_recovery_gate,
     provenance,
     recovery_gate,
     schema_check,
@@ -28,6 +29,7 @@ VALIDATOR_MAP = {
     "manifest_hash": manifest_hash.run,
     "optimizer_benchmark_gate": optimizer_benchmark_gate.run,
     "optimizer_confirmation_gate": optimizer_confirmation_gate.run,
+    "pre_experiment_recovery_gate": pre_experiment_recovery_gate.run,
     "recovery_gate": recovery_gate.run,
     "v3_residual_attribution_gate": v3_residual_attribution_gate.run,
     "v4_experiment_design_gate": v4_experiment_design_gate.run,
@@ -38,6 +40,7 @@ _CONFIGURED_VALIDATORS = {
     "recovery_gate",
     "optimizer_benchmark_gate",
     "optimizer_confirmation_gate",
+    "pre_experiment_recovery_gate",
     "v3_residual_attribution_gate",
     "v4_experiment_design_gate",
 }

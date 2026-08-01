@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import hashlib
 import math
+import statistics
 from dataclasses import dataclass
 from itertools import product
 from pathlib import Path
@@ -546,3 +547,162 @@ def classify_portfolio_passes(passes: Mapping[str, bool]) -> str:
     if sequence[2]:
         return "TEN_HZ_ADDS_RECOVERY"
     return "DESIGN_INSUFFICIENT"
+
+
+def summarize_portfolio_recovery(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    spec: PreExperimentRecoverySpec,
+    stage: str,
+) -> dict[str, Any]:
+    """Rebuild absolute recovery gates from job rows."""
+    if stage == "S0":
+        return {
+            "group_count": 0,
+            "groups": [],
+            "parameter_pair_results": [],
+            "eligible_parameter_pairs": [],
+            "stage_status": "STRUCTURE_ONLY",
+            "scientific_gate_passed": None,
+        }
+    if stage not in {"S1", "S2"}:
+        raise ValueError("scientific portfolio summary requires S1 or S2")
+    grouped: dict[tuple[str, str, str], list[Mapping[str, Any]]] = {}
+    pair_names: dict[str, tuple[str, str]] = {}
+    for row in rows:
+        if row.get("portfolio_stage") != stage:
+            raise ValueError("row portfolio stage mismatch")
+        pair = tuple(str(name) for name in row.get("free_parameters", ()))
+        if len(pair) != 2 or pair not in spec.parameter_pairs:
+            raise ValueError("row contains an invalid parameter pair")
+        pair_id = str(row.get("parameter_pair_id"))
+        if pair_id in pair_names and pair_names[pair_id] != pair:
+            raise ValueError("parameter_pair_id maps to multiple pairs")
+        pair_names[pair_id] = pair
+        key = (pair_id, str(row.get("portfolio_id")), str(row.get("truth_id")))
+        grouped.setdefault(key, []).append(row)
+
+    groups = []
+    group_passes: dict[tuple[str, str, str], bool] = {}
+    thresholds = spec.thresholds
+    for key in sorted(grouped):
+        members = grouped[key]
+        pair_id, portfolio_id, truth_id = key
+        seeds = sorted(int(row["seed"]) for row in members)
+        if seeds != list(spec.optimizer_seeds):
+            raise ValueError(f"{key} optimizer seed coverage mismatch")
+        parameter_results = {}
+        failures = []
+        all_success = all(row.get("success") is True for row in members)
+        if not all_success:
+            failures.append("study_success")
+        for name in pair_names[pair_id]:
+            metrics = [row["parameter_metrics"][name] for row in members]
+            errors = [float(item["normalized_bound_error"]) for item in metrics]
+            signed = [
+                -error
+                if float(item["estimate"]) < float(item["truth"])
+                else error
+                if float(item["estimate"]) > float(item["truth"])
+                else 0.0
+                for error, item in zip(errors, metrics)
+            ]
+            boundaries = [bool(item["boundary_hit"]) for item in metrics]
+            if not all(math.isfinite(value) and value >= 0.0 for value in errors):
+                raise ValueError(f"{key}.{name} has invalid normalized errors")
+            median_error = float(statistics.median(errors))
+            max_error = float(max(errors))
+            dispersion = float(max(signed) - min(signed))
+            boundary_rate = float(sum(boundaries) / len(boundaries))
+            parameter_results[name] = {
+                "median_normalized_bound_error": median_error,
+                "max_normalized_bound_error": max_error,
+                "seed_normalized_bound_dispersion": dispersion,
+                "boundary_hit_rate": boundary_rate,
+            }
+            if median_error > float(
+                thresholds["max_median_normalized_bound_error"]
+            ):
+                failures.append(f"{name}.median_error")
+            if max_error > float(thresholds["max_normalized_bound_error"]):
+                failures.append(f"{name}.max_error")
+            if dispersion > float(
+                thresholds["max_seed_normalized_bound_dispersion"]
+            ):
+                failures.append(f"{name}.dispersion")
+            if boundary_rate > float(thresholds["max_boundary_hit_rate"]):
+                failures.append(f"{name}.boundary_rate")
+        passed = not failures
+        group_passes[key] = passed
+        groups.append(
+            {
+                "parameter_pair_id": pair_id,
+                "free_parameters": list(pair_names[pair_id]),
+                "portfolio_id": portfolio_id,
+                "truth_id": truth_id,
+                "seeds": seeds,
+                "all_success": all_success,
+                "parameters": parameter_results,
+                "passed": passed,
+                "failures": failures,
+            }
+        )
+
+    expected_keys = {
+        (pair_id, portfolio_id, truth_id)
+        for pair_id in pair_names
+        for portfolio_id in spec.portfolios
+        for truth_id in spec.truth_ids
+    }
+    if set(grouped) != expected_keys:
+        raise ValueError(
+            "portfolio recovery group coverage mismatch: "
+            f"missing={len(expected_keys - set(grouped))} "
+            f"extra={len(set(grouped) - expected_keys)}"
+        )
+
+    pair_results = []
+    eligible_pairs = []
+    for pair in spec.parameter_pairs:
+        pair_id = "-".join(pair)
+        if pair_id not in pair_names:
+            continue
+        portfolio_passes = {
+            portfolio_id: all(
+                group_passes[(pair_id, portfolio_id, truth_id)]
+                for truth_id in spec.truth_ids
+            )
+            for portfolio_id in spec.portfolios
+        }
+        classification = classify_portfolio_passes(portfolio_passes)
+        if portfolio_passes["P2"] and classification != "NON_MONOTONIC_REQUIRES_REVIEW":
+            eligible_pairs.append(list(pair))
+        pair_results.append(
+            {
+                "parameter_pair_id": pair_id,
+                "free_parameters": list(pair),
+                "portfolio_passes": portfolio_passes,
+                "classification": classification,
+            }
+        )
+    scientific_passed = bool(eligible_pairs)
+    if stage == "S1":
+        stage_status = (
+            "S1_ELIGIBLE"
+            if scientific_passed
+            else "DESIGN_INSUFFICIENT_NOISELESS"
+        )
+    else:
+        stage_status = (
+            "PASS_CONDITIONAL_SYNTHETIC_RECOVERY"
+            if scientific_passed
+            else "FAIL_RECOVERY"
+        )
+    return {
+        "group_count": len(groups),
+        "groups": groups,
+        "parameter_pair_results": pair_results,
+        "eligible_parameter_pairs": eligible_pairs,
+        "stage_status": stage_status,
+        "scientific_gate_passed": scientific_passed,
+    }

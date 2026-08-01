@@ -9,7 +9,7 @@ import pytest
 
 from oer_aem import portfolio_recovery
 from oer_aem.inversion import DEFAULT_PARAM_SPECS
-from oer_aem.recovery import truth_library
+from oer_aem.recovery import recovery_metrics, truth_library
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -248,3 +248,49 @@ def test_portfolio_classification_is_absolute_and_monotonic(
     passes: dict[str, bool], expected: str
 ) -> None:
     assert portfolio_recovery.classify_portfolio_passes(passes) == expected
+
+
+def test_s1_summary_rebuilds_all_groups_and_eligible_pairs() -> None:
+    spec = portfolio_recovery.load_pre_experiment_spec(SPEC_PATH)
+    jobs = portfolio_recovery.build_portfolio_jobs(
+        spec,
+        stage="S1",
+        backend="lsoda",
+    )
+    rows = []
+    for job in jobs:
+        free_specs = tuple(
+            item
+            for item in DEFAULT_PARAM_SPECS
+            if item[0] in set(job["free_parameters"])
+        )
+        rows.append(
+            {
+                **job,
+                "success": True,
+                "parameter_metrics": recovery_metrics(
+                    truth=job["truth_params"],
+                    estimate=job["truth_params"],
+                    specs=free_specs,
+                ),
+            }
+        )
+
+    summary = portfolio_recovery.summarize_portfolio_recovery(
+        rows,
+        spec=spec,
+        stage="S1",
+    )
+
+    assert summary["group_count"] == 27
+    assert len(summary["parameter_pair_results"]) == 3
+    assert summary["eligible_parameter_pairs"] == [
+        ["k0_2", "k0_3"],
+        ["k0_3", "G_O"],
+        ["G_OH", "G_O"],
+    ]
+    assert {item["classification"] for item in summary["parameter_pair_results"]} == {
+        "BASELINE_SUFFICIENT"
+    }
+    assert summary["stage_status"] == "S1_ELIGIBLE"
+    assert summary["scientific_gate_passed"] is True
