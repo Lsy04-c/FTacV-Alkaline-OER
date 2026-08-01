@@ -406,6 +406,72 @@ def test_tpe_inverter_runs_small_budget():
     assert 'message' in result.fit_quality
 
 
+def test_tpe_run_delegates_to_common_objective_loop(monkeypatch):
+    config = InversionConfig(
+        n_points=64,
+        points_per_cycle=32,
+        feature_grid_size=16,
+        fit_harmonics=(1, 2, 3),
+        feature_mode="legacy",
+    )
+    inverter = TPEInverter(config=config, specs=(DEFAULT_PARAM_SPECS[4],))
+    target = _channel_contract_target(config)
+    sentinel = object()
+    seen = {}
+
+    def fake_run_objective(objective, n_trials):
+        seen["objective"] = objective
+        seen["n_trials"] = n_trials
+        return sentinel
+
+    monkeypatch.setattr(inverter, "run_objective", fake_run_objective, raising=False)
+
+    assert inverter.run(target, n_trials=7) is sentinel
+    assert isinstance(seen["objective"], InversionObjective)
+    assert seen["n_trials"] == 7
+
+
+def test_common_objective_loop_supports_portfolio_protocol():
+    pytest.importorskip("optuna")
+
+    class QuadraticObjective:
+        def __init__(self):
+            self.n_calls = 0
+            self.n_forward = 0
+            self.n_ode_fail = 0
+            self.n_feature_fail = 0
+            self.n_tafel_fail = 0
+            self.best_value = float("inf")
+            self.best_x = None
+            self.best_components = {}
+
+        def __call__(self, x):
+            self.n_calls += 1
+            self.n_forward += 2
+            value = float((np.asarray(x)[0] - 1.3) ** 2)
+            if value < self.best_value:
+                self.best_value = value
+                self.best_x = np.asarray(x, dtype=float).copy()
+                self.best_components = {"portfolio": value}
+            return value
+
+    objective = QuadraticObjective()
+    inverter = TPEInverter(
+        specs=(("G_OH", "linear", 0.8, 1.8),),
+        seed=17,
+        n_startup_trials=2,
+    )
+    result = inverter.run_objective(objective, n_trials=4)
+
+    assert result.success
+    assert result.n_trials == 4
+    assert result.n_calls == 4
+    assert result.n_forward == 8
+    assert result.channel_contract == {}
+    assert result.channel_contract_sha256 == ""
+    assert result.loss_components == objective.best_components
+
+
 def test_assess_fit_quality_marks_review_ready():
     excellent = assess_fit_quality(best_value=0.0, feature_grid_size=32)
     acceptable = assess_fit_quality(best_value=8.0, feature_grid_size=32)

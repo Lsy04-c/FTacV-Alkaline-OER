@@ -1314,10 +1314,16 @@ class TPEInverter:
         return denormalize_vector(z_values, self.specs)
 
     def run(self, target: Mapping[str, Any], n_trials: int = 100) -> InversionResult:
+        objective = InversionObjective(target, self.config, self.specs)
+        return self.run_objective(objective, n_trials=n_trials)
+
+    def run_objective(self, objective: Any, n_trials: int = 100) -> InversionResult:
+        """Run the frozen Optuna loop for any inversion-objective protocol."""
         import optuna
 
+        if n_trials < 1:
+            raise ValueError("n_trials must be positive")
         optuna.logging.set_verbosity(optuna.logging.WARNING)
-        objective = InversionObjective(target, self.config, self.specs)
         sampler = optuna.samplers.TPESampler(
             seed=self.seed,
             n_startup_trials=min(self.n_startup_trials, max(1, n_trials)),
@@ -1355,6 +1361,17 @@ class TPEInverter:
         if best_x is None:
             best_z = np.asarray([study.best_params[f"z_{name}"] for name, _, _, _ in self.specs], dtype=float)
             best_x = denormalize_vector(best_z, self.specs)
+        channel_contract_object = getattr(objective, "channel_contract", None)
+        if channel_contract_object is not None:
+            channel_contract = channel_contract_object.to_evidence()
+            channel_contract_sha256 = str(channel_contract_object.sha256)
+            normalization_weight_sum = float(
+                channel_contract_object.normalization_weight_sum
+            )
+        else:
+            channel_contract = {}
+            channel_contract_sha256 = ""
+            normalization_weight_sum = 0.0
         return InversionResult(
             success=bool(len(study.trials) == n_trials and np.isfinite(study.best_value)),
             best_value=float(study.best_value),
@@ -1373,9 +1390,7 @@ class TPEInverter:
                 self.config.fit_harmonics,
             ),
             loss_components=dict(objective.best_components),
-            channel_contract=objective.channel_contract.to_evidence(),
-            channel_contract_sha256=objective.channel_contract.sha256,
-            normalization_weight_sum=float(
-                objective.channel_contract.normalization_weight_sum
-            ),
+            channel_contract=channel_contract,
+            channel_contract_sha256=channel_contract_sha256,
+            normalization_weight_sum=normalization_weight_sum,
         )
