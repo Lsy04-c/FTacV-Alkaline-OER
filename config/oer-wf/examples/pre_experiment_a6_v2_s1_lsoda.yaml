@@ -1,0 +1,74 @@
+task_name: "pre_experiment_a6_v2_s1_lsoda"
+commit: "21284b53c0221f103a9248a9b794bc2d8fdda022"
+description: "A6-v2 paired P0/P1/P2 noiseless synthetic recovery"
+
+python:
+  source: "main_repo"
+  path: ".venv/bin/python"
+
+worktree_root: "worktrees"
+
+env:
+  PYTHONPATH: "code/python/src"
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+  NUMEXPR_NUM_THREADS: "1"
+
+build:
+  required: false
+
+script: "code/python/scripts/run_synthetic_recovery.py"
+supports_resume: true
+resume_required_files:
+  - "pre_experiment_recovery_spec.json"
+  - "job_plan.json"
+  - "results.jsonl"
+args:
+  - "--pre-experiment-spec"
+  - "config/recovery/pre-experiment-a6-v2.json"
+  - "--portfolio-stage"
+  - "S1"
+workers: 8
+output_dir: "results/pre_experiment_recovery/a6-v2-s1"
+
+smoke:
+  enabled: true
+  args:
+    - "--smoke"
+  overrides: {}
+  expected_files:
+    - "pre_experiment_recovery_spec.json"
+    - "protocol_catalog.csv"
+    - "job_plan.json"
+    - "target_manifest.json"
+    - "results.jsonl"
+    - "portfolio_recovery.csv"
+    - "summary.json"
+    - "run_manifest.json"
+    - "STATUS.json"
+
+expected_files:
+  - "pre_experiment_recovery_spec.json"
+  - "protocol_catalog.csv"
+  - "job_plan.json"
+  - "target_manifest.json"
+  - "results.jsonl"
+  - "portfolio_recovery.csv"
+  - "summary.json"
+  - "run_manifest.json"
+  - "STATUS.json"
+  - "task_spec.snapshot.yaml"
+
+validators:
+  - "schema_check"
+  - "finite_check"
+  - "provenance"
+  - "pre_experiment_recovery_gate"
+
+validator_config:
+  pre_experiment_recovery_gate:
+    execution: "remote_worktree"
+    timeout_sec: 1800
+    project_root: "."
+    task_spec: "config/recovery/pre-experiment-a6-v2.json"
