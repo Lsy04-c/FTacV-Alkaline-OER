@@ -531,6 +531,9 @@ Bonke et al. (*JACS*, 2016, DOI `10.1021/jacs.6b10304`) 和 Zhang et al.
 `UNVALIDATED_SEED`；该状态仍不代表Gate A1 PASS。当前固定证据位于
 `results/smoke/experiment_intake/template-v1/`。
 
+完整实验执行矩阵、CV/预氧化参数、EIS、FTacV、对照、文件和安全要求见
+`documents/plans/2026-08-02-co3o4-alkaline-oer-complete-experiment-plan.md`。
+
 ### 10.1 E1：原始实验记录
 
 保存仪器方法、参比电极、RHE 换算、pH、温度、电流归一化、iR 补偿、
