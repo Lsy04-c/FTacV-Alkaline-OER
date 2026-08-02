@@ -1,6 +1,6 @@
 # OER-FTAcV 项目总览、架构与交接
 
-更新日期：2026-08-01
+更新日期：2026-08-02
 负责人：刘拾玉
 当前分支：`codex/reclassify-project`
 
@@ -17,14 +17,17 @@ V1 已登记负责人声明的列序、单位和 RHE 标尺；V2 已证明冻结
 数据均未达到预注册特征门；V3 已完成正式残差归因；V4.1 已在冻结条件模型
 下通过实验信息设计门，优先建议 `5 Hz / 0.08 V` 振幅协议，再增加
 `10 Hz` 匹配扫描协议。待补实验信息继续留到恢复实验后；V4 PASS 不改变
-A1 `FAIL_METADATA`、A3 `FAIL` 或 A6 `FAIL_RECOVERY`。
+A1 `FAIL_METADATA`、A3 `FAIL` 或 A6 `FAIL_RECOVERY`。单协议六参数恢复及
+三协议联合恢复均未通过；`mixed_a`附近的`G_OH-log10(k0_1)`组合仅登记为
+`LOCAL_ONLY`，不得外推为全局降维坐标。恢复实验接入契约已实施，空模板
+固定为`WAITING_FOR_DATA`，当前不会生成A1种子或启动反演。
 
 当前主线：
 
 ```text
 休假期间：现有数据的条件模型可达性与残差归因
 → 形成解除参数耦合的实验设计
-→ 恢复实验后补齐独立约束与结构化数据
+→ 恢复实验后按接入契约补齐独立约束与结构化数据
 → 重开 A6-v2 合成恢复
 → 通过后再做正式联合反演和置信度
 ```
@@ -95,7 +98,7 @@ LSODA/BDF            DC / H1–H7 / lock-in
 ### 3.2 Gate 依赖
 
 ```text
-A1 数据 → A2 物理 → A3 求解器 → A4 信号 → A5 特征
+实验接入 → 新批次 A1 数据 → A2 物理 → A3 求解器 → A4 信号 → A5 特征
 → A6 参数恢复 → A7 证据链 → 正式反演 → 不确定度/机理
 ```
 
@@ -129,6 +132,7 @@ Gate 不是简单的全部 PASS 串联：失败 Gate 会改变允许路线。例
 
 | 模块 | 主入口 | 输入 | 输出 | 状态/限制 |
 |---|---|---|---|---|
+| 恢复实验接入 | `experiment_intake.validate_intake` / `validate_post_experiment_intake.py` | 版本化清单、原始文件、方法文件 | 四状态、验收说明、条件式非正式A1 seed | 已实施；当前`WAITING_FOR_DATA`，READY不等于A1 PASS |
 | 严格数据读取 | `data_contract.read_strict_experimental_trace` | 三列文本文件 | `ExperimentalTrace`、文件事实 | 已验证；不静默排序、裁剪或插值 |
 | 采样诊断 | `data_contract.derive_sampling_diagnostics` | 电位、电流、时间 | 频率、振幅、采样率、扫描速率、缺口 | 已验证量化时间戳 |
 | 默认参数 | `defaults.py` | 无或覆盖值 | 统一参数字典 | 已实现 |
@@ -154,6 +158,7 @@ Gate 不是简单的全部 PASS 串联：失败 Gate 会改变允许路线。例
 
 | Gate | Runner / validator |
 |---|---|
+| A1前接入 | `validate_post_experiment_intake.py` |
 | A1 | `audit_experimental_contracts.py` / `validate_gate_a1_contracts.py` |
 | A2 | `audit_physics_invariants.py` / `validate_gate_a2_physics.py` |
 | A2-R | `audit_gate_a2r.py` / `validate_gate_a2r.py` |
@@ -252,7 +257,7 @@ config/parameter-roles/gate-a6-parameter-roles.json
 | 参数对 | 证据 | 当前处理 |
 |---|---|---|
 | `k0_3`–`scaling_OOH_OH` | 局部相关约 −0.99995 | 不同时自由拟合 |
-| `gamma`–`A` | 局部相关约 +0.9895 | 至少独立固定一个 |
+| `A/Cdl/gamma` | `gamma`–`A`局部相关约+0.9895；当前方程另有精确尺度对称性 | 新schema按观测口径改为`CdlA/GammaA`或面参数 |
 | `k0_1`–`k0_pre` | complex 模式约 +0.9881 | `k0_1` 仅诊断 |
 | `G_OH`–`G_O` | complex 模式约 −0.9848 | 需新电位/条件信息 |
 | `k0_2`–`k0_3`–`G_O` | 多参数恢复失稳 | 不报告联合点估计 |
@@ -292,14 +297,98 @@ FastAPI 和静态前端已支持数据分析、正演、TPE 接口和曲线显�
 | 1 | 条件模型可达性（已完成） | A2-R、A4、A5 | 四组均为 `NOT_REACHED_WITHIN_LIBRARY` |
 | 2 | DC/H1–H3 残差归因（已完成） | 目标 1 | 48/48 job 与冻结 Legion validator 通过 |
 | 3 | 实验信息设计（已完成） | 目标 1–2 | V4.1 正式门和 8 条独立复算通过 |
-| 4 | 原始方法和独立测量 | 恢复实验条件 | A1 元数据和固定输入具备一手来源 |
-| 5 | 结构化新 FTacV 数据 | 目标 3–4 | 多条件、可追溯、预注册数据集 |
-| 6 | A6-v2 合成恢复 | 新条件敏感性/profile | 至少一个参数集通过锁定恢复门 |
-| 7 | 正式真实数据联合反演 | A1 与 A6-v2 通过 | 参数具备正式反演资格 |
-| 8 | 不确定度和机理结论 | 目标 7 | 数值、优化和实验置信度完整 |
-| 9 | Web 最终交付 | 科学输出 schema 冻结 | 前端只展示合格结论和限制 |
+| 4 | 恢复实验接入接口（已完成） | 目标 3 | 模板、四状态validator和空模板验收固定 |
+| 5 | 原始方法和独立测量 | 恢复实验条件 | 接入状态不再为`FAIL_METADATA` |
+| 6 | 结构化新 FTacV 数据 | 目标 3–5 | 三条件齐全并达到`READY_FOR_A1_AUDIT` |
+| 7 | A6-v2 合成恢复 | 新条件敏感性/profile | 至少一个参数集通过锁定恢复门 |
+| 8 | 正式真实数据联合反演 | A1 与 A6-v2 通过 | 参数具备正式反演资格 |
+| 9 | 不确定度和机理结论 | 目标 8 | 数值、优化和实验置信度完整 |
+| 10 | Web 最终交付 | 科学输出 schema 冻结 | 前端只展示合格结论和限制 |
 
 依赖顺序不能通过增加优化预算绕过。
+
+### 8.1 物理约束有效维数路线（已批准启动）
+
+- **物理约束有效维数反演：** 候选方案见
+  `documents/specifications/2026-08-02-physics-constrained-effective-dimension-inversion-design.md`。
+  网络压力测试发现当前M0存在`A/Cdl/gamma`解析结构不辨识，后续必须先改为
+  `CdlA/GammaA`组合参数，再做模型充分性、白化敏感性、profile和多盆地优化。
+  A1用户声明与配套CHI文件头支持条件分支按总电流处理；预处理历史未闭合，
+  因此该重参数化不解除正式真实反演禁令。
+  梯度多起点成为首个优化基线，TuRBO/CMA-ES仅作固定预算对照；降维、优化器
+  和求解器仍分别验证。网络审计见
+  `documents/research/2026-08-02-network-literature-physical-pressure-test.md`。
+  2026-08-02已完成G1第一切片：新增`CdlA/GammaA`组合参数解析API，旧输入与
+  canonical-only输入的全轨迹、DC和H1-H3在`1e-12`绝对门内等价；开发版schema
+  保持`development_only`。第二切片证明四独立覆盖度在内部状态与五状态
+  RHS和短轨迹等价，同时确认现有RHS会隐藏归一化离开守恒流形的输入。
+  将内部守恒重建与输出物理验收分离后，边界初值四/五状态也在不截断、
+  不归一化、不放宽门下等价。长协议与灵敏度方向尚未验收，故未切换正式路径。
+  G1仍未完成，不改变A6-v2 S1冻结设计，
+  也不解除真实反演禁令。
+  有效维数核心已开始实施：新增协方差白化、多锚点加权Gramian和活跃方向分解；
+  不从特征值谱自动选维。旧敏感性列混用原始单位与`log10`坐标，现已强制
+  按schema边界映射到无量纲`[0,1]`坐标；`CdlA/GammaA`边界未有来源，因此在
+  schema中显式保持`unresolved`，不伪造范围以启动全参数分解。
+  开发smoke已进一步冻结3/2/1训练、selection和holdout锚点，并将实验量化
+  分辨率下限传播到134个结构可观测特征。96个lock-in窗外固定零行已按有效
+  掩码排除，未用方差下限伪造信息。12/24/48个噪声seed下selection门均要求
+  保留全部7个候选参数；48-seed结果中r6丢弃方向仍为`712.16σ`。因此当前
+  G3不支持线性降维，也不具备启动低维优化器竞赛的资格；holdout结果不能
+  反向用于挑选维数。证据见
+  `results/smoke/effective_dimension/dev-20260802-seed17-v9/summary.json`。
+  随后按预注册seed 23扩展到12/4/2锚点；18个锚点、270次敏感性正演全部
+  成功。training局部有效秩跨2–6变化，前1–6维相对全局基的最坏主角约
+  `54.67°–86.50°`；selection和holdout继续否决固定r6。故当前默认路线已从
+  “单一全局线性降维”转为“保留完整7维、先做固定预算多盆地全局—局部恢复
+  基线”。分区局部子空间只保留为待验证假设，不能事后按holdout分组。扩展
+  证据见
+  `results/smoke/effective_dimension/dev-partitioned-seed23-v1/summary.json`。
+  完整7维固定预算最小恢复也已执行：Sobol四盆地和Sobol/Powell混合均未进入
+  TPE的较好盆地；`192 TPE + 64 Powell`把loss从`2.8505`降至`0.1481`，但
+  最大参数误差保持`0.4266`，中位误差由`0.1672`变差到`0.1782`。因此当前
+  没有新优化器获得默认资格，且“更低loss”已被实证否决为参数恢复证据。
+  下一步转向真值点局部秩和objective profile，不再扩充优化器名单。
+  真值点诊断随后确认局部有效秩仅为6；唯一低于1σ的方向由`k0_4`
+  （载荷`0.99999`）主导，且其±0.10条件objective切片均为0。故七参数单点
+  恢复资格已失败。后续仅可把`k0_4`作为条件未分辨固定输入传播，不能报告其
+  点估计。求解器收敛检查确认`rtol=1e-6`的约`2.5e-7 A`数值地板高于原始
+  电流等价阈值；在独立`rtol=1e-8`验收下，既有默认值与真值电流差收敛为
+  `5.47e-9 A`，未修改`1e-8 A`门。六参数同预算恢复随后仍失败：TPE与
+  TPE+Powell最大无量纲误差分别为`0.4076/0.4041`。因此固定最弱`k0_4`
+  不能解除其余参数补偿。补参数重优化profile随后用CN搜索、LSODA逐候选确认：
+  `k0_2/k0_3/G_OH/G_O/scaling`在真值±0.10附近均存在`Δloss<1`补偿解；
+  `k0_1`仅低侧loss升至`3.99–8.04`，高侧仍可补偿到`<0.05`。因此当前六参数
+  都不具备独立点估计资格，最多保留`k0_1`单侧约束假设。优化器路线暂停，
+  后续转向可恢复组合和新协议设计。LSODA确认的低-loss补偿位移进一步给出
+  首个留出稳定候选：`G_OH-0.1132*log10(k0_1)`（忽略常数）。其系数接近
+  `a=0.5, 298.15 K`下冻结M0正向BV尺度
+  `RT ln(10)/((1-a)F)=0.1183 eV/dec`，但当时只在单真值/单协议成立；后续
+  `a` holdout未全过门，故该接近不能升级为机制标度。
+  压力测试确认该组合仅在`mixed_a`局部闭合，移到`center`后仍有`loss<1`
+  补偿解；`mixed_b`甚至不能把`k0_4`固定为默认值。因此不存在统一六维线性
+  降维。将V4.1推荐的低振幅5 Hz和匹配扫描10 Hz加入联合目标后，`mixed_a`
+  最大误差由约`0.404`改善到`0.300`，但`center`仍为`0.373`，六参数恢复门
+ 仍失败。独立协议重提取显示该局部方向在baseline/lowamp/highfreq间只旋转
+ `1.25°/6.82°`，但转移系数holdout中`a=0.35`的经验系数相对冻结M0正向BV
+ 预测`RT ln(10)/((1-a)F)`偏差`17.79%`，未过预注册`10%`门。因此该组合只
+ 是有限区域内的经验补偿坐标，不是全局物理标度；温度扰动已停止。V4.1采集
+ 排序保留，参数点估计资格不变。机器可读登记已冻结为`LOCAL_ONLY`并绑定6个
+ 来源哈希：`results/smoke/scaling_validation/dev-local-combination-registry-v1/summary.json`；
+ 后续Agent只能追加独立证据，不能把该登记解释成区域分类器或正式反演授权。
+
+### 8.2 工程待办
+
+- **桌面计算平台方案与压力测试：** 按
+  `documents/specifications/2026-08-02-desktop-compute-platform-client-brief.md`
+  先审计 React/Tauri、PySide6/Qt 和 MATLAB 备选路线，再决定是否实施。
+  本地与远程计算必须共用任务和验收契约；本项不阻塞 A6-v2，也不授权重写
+  已验证的科学核心。
+- **封装 `oer-ftacv-workflow` Skill（本轮 A6-v2 S1 验收后实施）：**
+  采用薄封装，只规定 `oer-wf` 调用顺序、JSON 状态推进、失败停止条件、
+  环境配置读取和科学验收边界；不复制 CLI 实现、项目工作流指南或 validator
+  的科学逻辑。完成信号为 Skill 结构校验通过，并由一个无当前对话背景的
+  Agent 完成一次 `doctor → status/verify` 接续演练且未绕过冻结 Gate。
 
 ## 9. 休假期间路线
 
@@ -428,6 +517,14 @@ Bonke et al. (*JACS*, 2016, DOI `10.1021/jacs.6b10304`) 和 Zhang et al.
 
 ## 10. 恢复实验后的路线
 
+### 10.0 接入契约
+
+复制`config/data-contracts/post-experiment-intake-v1.template.json`建立新批次，
+在查看特征或反演结果前冻结`training/selection/holdout`角色，再运行
+`validate_post_experiment_intake.py`。只有`READY_FOR_A1_AUDIT`可生成
+`UNVALIDATED_SEED`；该状态仍不代表Gate A1 PASS。当前固定证据位于
+`results/smoke/experiment_intake/template-v1/`。
+
 ### 10.1 E1：原始实验记录
 
 保存仪器方法、参比电极、RHE 换算、pH、温度、电流归一化、iR 补偿、
@@ -435,8 +532,8 @@ Bonke et al. (*JACS*, 2016, DOI `10.1021/jacs.6b10304`) 和 Zhang et al.
 
 ### 10.2 E2：独立固定输入
 
-优先独立约束 `Ru`、`Cdl`、几何面积、负载量和有效位点量；若不能独立
-获得 `gamma`，明确其组合口径。
+先确认数据是总电流还是电流密度，再独立约束 `Ru`、总/面电容、几何面积、
+负载量和总/面有效位点量；只报告观测口径支持的`CdlA/GammaA`或面参数。
 
 ### 10.3 E3：结构化 FTacV 条件矩阵
 
