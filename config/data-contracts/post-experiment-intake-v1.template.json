@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "intake_id": "post-experiment-intake-template-v1",
+  "manifest_state": "planned",
+  "role_freeze": {
+    "frozen_at": null,
+    "frozen_by": null,
+    "role_table_version": "v1",
+    "roles": {
+      "baseline_5hz_amp016": "training",
+      "lowamp_5hz_amp008": "selection",
+      "highfreq_10hz_amp016": "holdout"
+    }
+  },
+  "batch": {
+    "collection_date": null,
+    "operator": null,
+    "electrode_batch": null,
+    "catalyst_batch": null,
+    "substrate": null,
+    "electrolyte_batch": null
+  },
+  "datasets": [
+    {
+      "collection_state": "planned",
+      "dataset_id": "planned-baseline-5hz-amp016",
+      "condition_id": "baseline_5hz_amp016",
+      "analysis_role": "training",
+      "experiment_id": "planned-experiment-baseline",
+      "batch_id": "planned-batch",
+      "sample_role": "formal_sample",
+      "raw_file": {"path": "", "sha256": "", "size_bytes": null},
+      "method_file": {"path": "", "sha256": "", "size_bytes": null},
+      "metadata": {
+        "column_contract": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "original_reference_electrode": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "rhe_conversion": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "ph": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "temperature_K": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "electrolyte": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "ir_compensation": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "instrument_preprocessing": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "current_basis": {"value": null, "source_kind": "unresolved", "source_note": "not collected"}
+      }
+    },
+    {
+      "collection_state": "planned",
+      "dataset_id": "planned-lowamp-5hz-amp008",
+      "condition_id": "lowamp_5hz_amp008",
+      "analysis_role": "selection",
+      "experiment_id": "planned-experiment-lowamp",
+      "batch_id": "planned-batch",
+      "sample_role": "formal_sample",
+      "raw_file": {"path": "", "sha256": "", "size_bytes": null},
+      "method_file": {"path": "", "sha256": "", "size_bytes": null},
+      "metadata": {
+        "column_contract": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "original_reference_electrode": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "rhe_conversion": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "ph": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "temperature_K": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "electrolyte": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "ir_compensation": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "instrument_preprocessing": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "current_basis": {"value": null, "source_kind": "unresolved", "source_note": "not collected"}
+      }
+    },
+    {
+      "collection_state": "planned",
+      "dataset_id": "planned-highfreq-10hz-amp016",
+      "condition_id": "highfreq_10hz_amp016",
+      "analysis_role": "holdout",
+      "experiment_id": "planned-experiment-highfreq",
+      "batch_id": "planned-batch",
+      "sample_role": "formal_sample",
+      "raw_file": {"path": "", "sha256": "", "size_bytes": null},
+      "method_file": {"path": "", "sha256": "", "size_bytes": null},
+      "metadata": {
+        "column_contract": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "original_reference_electrode": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "rhe_conversion": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "ph": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "temperature_K": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "electrolyte": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "ir_compensation": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "instrument_preprocessing": {"value": null, "source_kind": "unresolved", "source_note": "not collected"},
+        "current_basis": {"value": null, "source_kind": "unresolved", "source_note": "not collected"}
+      }
+    }
+  ],
+  "independent_inputs": {
+    "Ru": null,
+    "Cdl": null,
+    "geometric_area": null,
+    "catalyst_loading": null,
+    "active_site_amount": null
+  }
+}

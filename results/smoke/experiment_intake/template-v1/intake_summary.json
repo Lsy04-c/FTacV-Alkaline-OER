@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "intake_id": "post-experiment-intake-template-v1",
+  "source_manifest": "config/data-contracts/post-experiment-intake-v1.template.json",
+  "source_manifest_sha256": "1a891c8283498b09eaa57f698e66e8e7e3ded9a0acb815b063889ab4f3805521",
+  "status": "WAITING_FOR_DATA",
+  "structure_errors": [],
+  "metadata_errors": [],
+  "missing_conditions": [
+    "baseline_5hz_amp016",
+    "lowamp_5hz_amp008",
+    "highfreq_10hz_amp016"
+  ],
+  "reporting_restrictions": [
+    "no_site_normalized_turnover"
+  ],
+  "next_action": "await_collection"
+}
