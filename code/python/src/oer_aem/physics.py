@@ -21,6 +21,11 @@ from typing import Dict, Any, Tuple, List
 import numpy as np
 from scipy.integrate import solve_ivp
 
+from .coverage_coordinates import (
+    reconstruct_conserved_coverages,
+    validate_full_coverages,
+)
+from .electrode_scale import canonicalize_electrode_scale
 from .thermodynamics import apply_alkaline_aem
 
 
@@ -172,7 +177,7 @@ def pack_parameters(params: Dict[str, Any]) -> np.ndarray:
 
 def initialize_system(params: Dict[str, Any]) -> Dict[str, Any]:
     """填充默认值并计算派生物理常数。"""
-    params = dict(params)
+    params = canonicalize_electrode_scale(params)
 
     # 默认值
     params.setdefault('a', 0.5)
@@ -191,8 +196,8 @@ def initialize_system(params: Dict[str, Any]) -> Dict[str, Any]:
 
     # 衍生常数
     params['RTF'] = params['F'] / (params['R'] * params['T'])
-    params['invRC'] = 1.0 / (params['Ru'] * params['Cdl'] * params['A'])
-    params['gammaF_Cdl'] = params['gamma'] * params['F'] / params['Cdl']
+    params['invRC'] = 1.0 / (params['Ru'] * params['CdlA'])
+    params['gammaF_Cdl'] = params['GammaA'] * params['F'] / params['CdlA']
     params['omega'] = 2 * np.pi * params['f']
 
     return params
@@ -318,6 +323,7 @@ def elementary_rates(
     params: Dict[str, Any],
     *,
     validate: bool = True,
+    coverage_policy: str = "legacy_normalize",
 ) -> ElementaryRates:
     """Evaluate the existing five-step BV kinetics without state derivatives."""
     if validate:
@@ -327,8 +333,21 @@ def elementary_rates(
         raise ValueError("physics state must contain six values")
     coverage = state[:5].copy()
     coverage_sum = float(np.sum(coverage))
-    if coverage_sum > 1e-12:
-        coverage /= coverage_sum
+    if coverage_policy == "legacy_normalize":
+        if coverage_sum > 1e-12:
+            coverage /= coverage_sum
+    elif coverage_policy == "strict":
+        coverage = validate_full_coverages(coverage)
+    elif coverage_policy == "conserved_trial":
+        if not np.all(np.isfinite(coverage)):
+            raise ValueError("conserved trial coverages must be finite")
+        if abs(coverage_sum - 1.0) > 1e-12:
+            raise ValueError("conserved trial coverage sum must be one")
+    else:
+        raise ValueError(
+            "coverage_policy must be 'legacy_normalize', 'strict', "
+            "or 'conserved_trial'"
+        )
     theta_star, theta_ox, theta_OH, theta_O, theta_OOH = coverage
     phi_s = float(state[5])
 
@@ -499,6 +518,36 @@ def _oer_model_rhs(t: float, y: np.ndarray, params: Dict[str, Any]) -> np.ndarra
     return np.concatenate([dtheta, [dphi_s]])
 
 
+def _reduced_oer_model_rhs(
+    t: float,
+    y: np.ndarray,
+    params: Dict[str, Any],
+) -> np.ndarray:
+    """Development RHS using four independent coverages plus potential."""
+
+    state = np.asarray(y, dtype=float)
+    if state.shape != (5,) or not np.all(np.isfinite(state)):
+        raise ValueError(
+            "reduced physics state must contain five finite values"
+        )
+    coverage = reconstruct_conserved_coverages(state[:4])
+    full_state = np.concatenate([coverage, [state[4]]])
+    rates = elementary_rates(
+        t,
+        full_state,
+        params,
+        validate=False,
+        coverage_policy="conserved_trial",
+    )
+    full_derivative = coverage_derivatives(rates.net)
+    potential_derivative = _surface_potential_derivative(
+        rates,
+        float(state[4]),
+        params,
+    )
+    return np.concatenate([full_derivative[1:], [potential_derivative]])
+
+
 class OERPhysics:
     """碱性 OER 物理模型入口类（对应 MATLAB OER_Physics）。"""
 
@@ -521,6 +570,16 @@ class OERPhysics:
     @staticmethod
     def oer_model(t: float, y: np.ndarray, params: Dict[str, Any]) -> np.ndarray:
         return _oer_model_rhs(t, y, params)
+
+    @staticmethod
+    def reduced_oer_model(
+        t: float,
+        y: np.ndarray,
+        params: Dict[str, Any],
+    ) -> np.ndarray:
+        """Evaluate the development-only four-coverage-coordinate RHS."""
+
+        return _reduced_oer_model_rhs(t, y, params)
 
     @staticmethod
     def solve_ode_system_detailed(params: Dict[str, Any]) -> ODESolution:
@@ -546,6 +605,9 @@ class OERPhysics:
         attempts = []
         successful = None
         backend_used = ""
+        dynamic_rtol = float(params.get("dynamic_rtol", 1e-6))
+        if not np.isfinite(dynamic_rtol) or dynamic_rtol <= 0.0:
+            raise ValueError("dynamic_rtol must be finite and positive")
         for backend in ("LSODA", "BDF"):
             kwargs = {
                 "fun": lambda t, y: _oer_model_rhs(t, y, params),
@@ -553,7 +615,7 @@ class OERPhysics:
                 "y0": y0.copy(),
                 "t_eval": t_eval,
                 "method": backend,
-                "rtol": 1e-6,
+                "rtol": dynamic_rtol,
                 "atol": DYNAMIC_ATOL.copy(),
                 "max_step": min(
                     t_span[1] / 50.0,

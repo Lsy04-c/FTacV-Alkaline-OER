@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "model_version": "M0",
+  "status": "development_only",
+  "current_basis": "total",
+  "current_basis_source": {
+    "kind": "externally_declared",
+    "value": "A",
+    "supporting_evidence": "Project-owner declaration; paired CHI CV headers state Current/A"
+  },
+  "unresolved_metadata": [
+    "instrument_preprocessing"
+  ],
+  "forward_parameters": [
+    "CdlA",
+    "GammaA",
+    "Ru",
+    "E0_pre",
+    "k0_pre",
+    "k0_1",
+    "k0_2",
+    "k0_3",
+    "k0_4",
+    "G_OH",
+    "G_O",
+    "scaling_OOH_OH"
+  ],
+  "parameters": {
+    "CdlA": {
+      "unit": "F",
+      "role": "calibrated_input",
+      "transform": "log10",
+      "bounds": null,
+      "bounds_status": "unresolved",
+      "bounds_reason": "requires total-capacitance calibration or preregistered stress range"
+    },
+    "GammaA": {
+      "unit": "mol",
+      "role": "coupling_control",
+      "transform": "log10",
+      "bounds": null,
+      "bounds_status": "unresolved",
+      "bounds_reason": "requires loading or active-site prior in total-amount units"
+    },
+    "Ru": {
+      "unit": "ohm",
+      "role": "calibrated_input",
+      "transform": "log10",
+      "bounds": [0.1, 500.0],
+      "bounds_source": "legacy_development_sensitivity_bounds"
+    },
+    "E0_pre": {
+      "unit": "V_vs_RHE",
+      "role": "calibrated_input",
+      "transform": "linear",
+      "bounds": [1.0, 2.0],
+      "bounds_source": "legacy_development_sensitivity_bounds"
+    },
+    "k0_pre": {
+      "unit": "s^-1",
+      "role": "effective_rate",
+      "transform": "log10",
+      "bounds": [0.01, 1000000.0],
+      "bounds_source": "legacy_development_sensitivity_bounds"
+    },
+    "k0_1": {
+      "unit": "s^-1",
+      "role": "diagnostic_only",
+      "transform": "log10",
+      "bounds": [0.001, 1000000.0],
+      "bounds_source": "legacy_development_sensitivity_bounds"
+    },
+    "k0_2": {
+      "unit": "s^-1",
+      "role": "diagnostic_only",
+      "transform": "log10",
+      "bounds": [0.001, 1000000.0],
+      "bounds_source": "legacy_development_sensitivity_bounds"
+    },
+    "k0_3": {
+      "unit": "s^-1",
+      "role": "diagnostic_only",
+      "transform": "log10",
+      "bounds": [0.001, 1000000.0],
+      "bounds_source": "legacy_development_sensitivity_bounds"
+    },
+    "k0_4": {
+      "unit": "s^-1",
+      "role": "low_sensitivity_fixed",
+      "transform": "log10",
+      "bounds": [0.001, 1000000.0],
+      "bounds_source": "legacy_development_sensitivity_bounds"
+    },
+    "G_OH": {
+      "unit": "eV",
+      "role": "diagnostic_only",
+      "transform": "linear",
+      "bounds": [0.5, 2.2],
+      "bounds_source": "legacy_development_sensitivity_bounds"
+    },
+    "G_O": {
+      "unit": "eV",
+      "role": "diagnostic_only",
+      "transform": "linear",
+      "bounds": [1.5, 4.0],
+      "bounds_source": "legacy_development_sensitivity_bounds"
+    },
+    "scaling_OOH_OH": {
+      "unit": "eV",
+      "role": "model_prior",
+      "transform": "linear",
+      "bounds": [2.4, 3.8],
+      "bounds_source": "legacy_development_sensitivity_bounds"
+    }
+  },
+  "reporting_inputs": {
+    "A": {
+      "unit": "cm^2",
+      "role": "reporting_input",
+      "used_for": [
+        "Cdl",
+        "gamma"
+      ]
+    }
+  },
+  "legacy_mapping": {
+    "CdlA": "A*Cdl",
+    "GammaA": "A*gamma"
+  },
+  "condition_scope": {
+    "temperature_K": 298.15,
+    "potential_reference": "RHE",
+    "pH": "unresolved",
+    "electrolyte_activity": "unresolved",
+    "oxygen_activity": "unresolved"
+  },
+  "frozen_workflows": [
+    "A6-v2-S1"
+  ],
+  "eligible_for_real_inversion": false,
+  "prohibited_claims": [
+    "A_Cdl_gamma_are_independently_recovered",
+    "effective_rates_are_cross_condition_material_constants",
+    "real_data_point_estimates_are_formally_eligible"
+  ]
+}

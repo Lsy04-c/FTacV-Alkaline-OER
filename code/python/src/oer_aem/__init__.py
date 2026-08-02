@@ -18,6 +18,20 @@ from .io import OERIO
 from .core import OERCore
 from .defaults import initialize_oer_parameters
 from .calibration import calibrate, derive_per_area
+from .electrode_scale import canonicalize_electrode_scale
+from .coverage_coordinates import (
+    expand_independent_coverages,
+    reconstruct_conserved_coverages,
+    reduce_full_coverages,
+    validate_full_coverages,
+    validate_reduced_trajectory,
+)
+from .anchor_design import (
+    ParameterAnchor,
+    generate_parameter_anchors,
+    inactive_direction_probe_points,
+    unit_coordinates_to_parameters,
+)
 from .inversion import (
     DEFAULT_PARAM_SPECS,
     InversionConfig,
@@ -47,6 +61,16 @@ __all__ = [
     "initialize_oer_parameters",
     "calibrate",
     "derive_per_area",
+    "canonicalize_electrode_scale",
+    "expand_independent_coverages",
+    "reconstruct_conserved_coverages",
+    "reduce_full_coverages",
+    "validate_full_coverages",
+    "validate_reduced_trajectory",
+    "ParameterAnchor",
+    "generate_parameter_anchors",
+    "inactive_direction_probe_points",
+    "unit_coordinates_to_parameters",
     "DEFAULT_PARAM_SPECS",
     "InversionConfig",
     "InversionObjective",

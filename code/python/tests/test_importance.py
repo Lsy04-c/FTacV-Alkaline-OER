@@ -280,6 +280,27 @@ def test_full_analysis_returns_valid_structure():
     assert scores == sorted(scores, reverse=True)
 
 
+def test_analysis_can_freeze_a_preregistered_parameter_subset():
+    cfg = InversionConfig(n_points=256, points_per_cycle=32, feature_grid_size=32)
+    base = initialize_oer_parameters()
+
+    result = analyze_parameter_importance(
+        base,
+        cfg,
+        parameter_names=["k0_1", "G_OH"],
+    )
+
+    assert result["success"]
+    assert result["metadata"]["param_order"] == ["k0_1", "G_OH"]
+    assert result["metadata"]["n_forward_runs"] == 4
+    assert {row["name"] for row in result["parameter_importance"]} == {
+        "k0_1",
+        "G_OH",
+    }
+    for row in result["signed_feature_sensitivity_matrix"]:
+        assert set(row["changes"]) == {"k0_1", "G_OH"}
+
+
 # ========== Test 7: ODE 失败不崩溃 ==========
 def test_ode_failure_handled_gracefully():
     cfg = InversionConfig(n_points=256, points_per_cycle=32, feature_grid_size=32)
@@ -325,6 +346,48 @@ def test_feature_distance_resolves_report_labels():
     assert _feature_distance(changed, base, "H1 shape") > 0
     assert _feature_distance(changed, base, "H1 peak amplitude") > 0
     assert _feature_distance(changed, base, "Tafel") > 0
+
+
+def test_feature_vector_reconstructs_expanded_sensitivity_rows():
+    from oer_aem.importance import feature_vector_from_rows
+
+    features = {
+        "dc": np.array([0.1, 0.2, 0.3]),
+        "Complex H1 real": 0.4,
+    }
+
+    vector = feature_vector_from_rows(
+        features,
+        ["DC shape[1]", "Complex H1 real"],
+    )
+
+    np.testing.assert_allclose(vector, [0.2, 0.4])
+
+
+def test_feature_vector_rejects_missing_or_short_rows():
+    from oer_aem.importance import feature_vector_from_rows
+
+    with pytest.raises(ValueError, match="missing"):
+        feature_vector_from_rows({}, ["DC shape[0]"])
+    with pytest.raises(ValueError, match="index"):
+        feature_vector_from_rows(
+            {"dc": np.array([0.1])},
+            ["DC shape[2]"],
+        )
+
+
+def test_feature_scale_vector_matches_sensitivity_block_normalization():
+    from oer_aem.importance import feature_scale_vector_from_rows
+
+    scales = feature_scale_vector_from_rows(
+        {
+            "dc": np.array([0.0, 2.0]),
+            "Complex H1 real": -4.0,
+        },
+        ["DC shape[0]", "DC shape[1]", "Complex H1 real"],
+    )
+
+    np.testing.assert_allclose(scales, [2.0, 2.0, 4.0])
 
 
 # ========== Test 9: 正负方向变化对称性 ==========

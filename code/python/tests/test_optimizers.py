@@ -135,6 +135,142 @@ def test_sobol_pattern_rejects_budget_drift() -> None:
         )
 
 
+def test_sobol_multibasin_uses_64_global_and_four_local_basins() -> None:
+    result = run_optimizer(
+        "sobol_multibasin_pattern",
+        sphere,
+        dimension=7,
+        budget=256,
+        seed=23,
+    )
+
+    assert result.optimization_calls == 256
+    assert len(result.evaluations) == 256
+    assert {row.phase for row in result.evaluations[:64]} == {
+        "sobol_global"
+    }
+    local_phases = {row.phase for row in result.evaluations[64:]}
+    assert {f"pattern_basin_{index}" for index in range(4)} <= local_phases
+    assert result.best_loss < 0.05
+    assert all(
+        0.0 <= coordinate <= 1.0
+        for row in result.evaluations
+        for coordinate in row.unit
+    )
+
+
+def test_sobol_multibasin_same_seed_replays_exact_trace() -> None:
+    left = run_optimizer(
+        "sobol_multibasin_pattern",
+        sphere,
+        dimension=7,
+        budget=256,
+        seed=31,
+    )
+    right = run_optimizer(
+        "sobol_multibasin_pattern",
+        sphere,
+        dimension=7,
+        budget=256,
+        seed=31,
+    )
+
+    assert left.evaluations == right.evaluations
+
+
+def test_sobol_multibasin_hybrid_splits_local_budget_across_methods() -> None:
+    result = run_optimizer(
+        "sobol_multibasin_hybrid",
+        sphere,
+        dimension=7,
+        budget=256,
+        seed=23,
+    )
+
+    assert result.optimization_calls == 256
+    assert {row.phase for row in result.evaluations[:64]} == {"sobol_global"}
+    phases = {row.phase for row in result.evaluations[64:]}
+    assert {"pattern_basin_0", "pattern_basin_1"} <= phases
+    assert {"powell_basin_2", "powell_basin_3"} <= phases
+    assert result.best_loss < 0.01
+
+
+def test_sobol_multibasin_hybrid_is_deterministic() -> None:
+    left = run_optimizer(
+        "sobol_multibasin_hybrid",
+        sphere,
+        dimension=7,
+        budget=256,
+        seed=41,
+    )
+    right = run_optimizer(
+        "sobol_multibasin_hybrid",
+        sphere,
+        dimension=7,
+        budget=256,
+        seed=41,
+    )
+
+    assert left.evaluations == right.evaluations
+
+
+def test_tpe_powell_hybrid_uses_192_global_and_64_local_calls() -> None:
+    result = run_optimizer(
+        "tpe_powell_hybrid",
+        sphere,
+        dimension=7,
+        budget=256,
+        seed=23,
+    )
+
+    assert result.optimization_calls == 256
+    assert {row.phase for row in result.evaluations[:192]} == {"tpe_global"}
+    assert {row.phase for row in result.evaluations[192:]} <= {
+        "powell_local",
+        "sobol_fallback",
+    }
+    assert "powell_local" in {row.phase for row in result.evaluations[192:]}
+    assert result.best_loss < 0.01
+
+
+def test_tpe_powell_hybrid_is_deterministic() -> None:
+    left = run_optimizer(
+        "tpe_powell_hybrid",
+        sphere,
+        dimension=7,
+        budget=256,
+        seed=43,
+    )
+    right = run_optimizer(
+        "tpe_powell_hybrid",
+        sphere,
+        dimension=7,
+        budget=256,
+        seed=43,
+    )
+
+    assert left.evaluations == right.evaluations
+
+
+@pytest.mark.parametrize(
+    ("dimension", "budget", "message"),
+    ((4, 256, "dimension between 5 and 8"), (7, 255, "budget=256")),
+)
+def test_sobol_multibasin_rejects_contract_drift(
+    dimension: int,
+    budget: int,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        run_optimizer(
+            "sobol_multibasin_pattern",
+            sphere,
+            dimension=dimension,
+            budget=budget,
+            seed=23,
+        )
+
+
 def test_de_fixed_uses_20_points_and_four_generations() -> None:
     result = run_optimizer(
         "de_fixed",

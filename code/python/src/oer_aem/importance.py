@@ -9,6 +9,7 @@
 """
 
 import copy
+import re
 import warnings
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -247,6 +248,55 @@ def _resolve_feature(features: Dict[str, Any], name: str) -> Any:
     return features.get(name)
 
 
+def feature_vector_from_rows(
+    features: Dict[str, Any],
+    row_names: Sequence[str],
+) -> np.ndarray:
+    """Flatten forward features using a frozen expanded-row contract."""
+
+    values: list[float] = []
+    for row_name in row_names:
+        match = re.fullmatch(r"(.+)\[(\d+)\]", str(row_name))
+        base_name = match.group(1) if match else str(row_name)
+        resolved = _resolve_feature(features, base_name)
+        if resolved is None:
+            raise ValueError(f"feature row {row_name} is missing")
+        array = np.asarray(resolved, dtype=float).reshape(-1)
+        if match:
+            index = int(match.group(2))
+            if index >= array.size:
+                raise ValueError(f"feature row {row_name} index is unavailable")
+            value = float(array[index])
+        else:
+            if array.size != 1:
+                raise ValueError(f"feature row {row_name} requires an index")
+            value = float(array[0])
+        if not np.isfinite(value):
+            raise ValueError(f"feature row {row_name} is non-finite")
+        values.append(value)
+    return np.asarray(values, dtype=float)
+
+
+def feature_scale_vector_from_rows(
+    features: Dict[str, Any],
+    row_names: Sequence[str],
+) -> np.ndarray:
+    """Return frozen baseline block scales used by sensitivity responses."""
+
+    scales: list[float] = []
+    for row_name in row_names:
+        match = re.fullmatch(r"(.+)\[(\d+)\]", str(row_name))
+        base_name = match.group(1) if match else str(row_name)
+        resolved = _resolve_feature(features, base_name)
+        if resolved is None:
+            raise ValueError(f"feature row {row_name} is missing")
+        array = np.asarray(resolved, dtype=float).reshape(-1)
+        if not np.all(np.isfinite(array)):
+            raise ValueError(f"feature row {row_name} is non-finite")
+        scales.append(max(float(np.max(np.abs(array))), 1e-30))
+    return np.asarray(scales, dtype=float)
+
+
 def _feature_distance(fa: Dict[str, Any], fb: Dict[str, Any], name: str) -> float:
     """计算两个特征 dict 在指定特征上的归一化距离。"""
     a, b = _resolve_feature(fa, name), _resolve_feature(fb, name)
@@ -405,9 +455,11 @@ def _compute_feature_weights(harmonic_quality: Dict[str, Any]) -> Dict[str, floa
 def _compute_scores(base_features: Dict[str, Any],
                     perturbed: Dict[str, Dict[str, Any]],
                     weights: Dict[str, float],
-                    active_names: List[str]) -> Dict[str, Dict[str, Any]]:
+                    active_names: List[str],
+                    parameter_names: Optional[Sequence[str]] = None,
+                    ) -> Dict[str, Dict[str, Any]]:
     """逐参数计算敏感性分数。perturbed: {(param, dir): features}"""
-    names = list(PERTURBATION_RULES.keys())
+    names = list(parameter_names or PERTURBATION_RULES)
     result = {}
     for name in names:
         plus_key = (name, "plus")
@@ -478,7 +530,7 @@ def _coupling_warnings(scores: Dict[str, Dict]) -> List[str]:
         w.append("G_OH 同时影响 Tafel 斜率和 onset 电位，是核心机理解释参数。")
     # k0_4 弱影响
     k4 = scores.get("k0_4", {}).get("score", 0)
-    if k4 < 0.05:
+    if "k0_4" in scores and k4 < 0.05:
         w.append("k0_4 在当前实验条件下影响极弱，不应自由反演，建议固定或给窄边界。")
     # 预氧化耦合
     ep = scores.get("E0_pre", {}).get("per_feature_changes", {})
@@ -497,6 +549,7 @@ def analyze_parameter_importance(
     feature_weights: Optional[Dict[str, float]] = None,
     exp_harmonic_quality: Optional[Dict[str, Any]] = None,
     fit_harmonics: Optional[List[int]] = None,
+    parameter_names: Optional[Sequence[str]] = None,
 ) -> Dict[str, Any]:
     """运行局部单参数敏感性分析，返回结构化重要性报告。
 
@@ -520,6 +573,28 @@ def analyze_parameter_importance(
           parameter_importance, feature_weights, feature_sensitivity_matrix,
           metadata, warnings
     """
+    if parameter_names is None:
+        selected_parameters = [
+            name for name in PARAMETER_LIST if name in base_params
+        ]
+    else:
+        selected_parameters = [str(name) for name in parameter_names]
+        if len(selected_parameters) != len(set(selected_parameters)):
+            raise ValueError("parameter_names must be unique")
+        unknown = [
+            name for name in selected_parameters
+            if name not in PERTURBATION_RULES
+        ]
+        missing = [
+            name for name in selected_parameters if name not in base_params
+        ]
+        if unknown:
+            raise ValueError(f"unsupported parameters: {unknown}")
+        if missing:
+            raise ValueError(f"parameters missing from base_params: {missing}")
+        if not selected_parameters:
+            raise ValueError("parameter_names must not be empty")
+
     if config is None:
         config = InversionConfig(
             E_start=base_params.get("E_start", 0.924),
@@ -575,9 +650,7 @@ def analyze_parameter_importance(
     n_forward = 0
     n_ode_fail = 0
 
-    for name in PARAMETER_LIST:
-        if name not in base_params:
-            continue
+    for name in selected_parameters:
         base_val = base_params[name]
         rule, delta = PERTURBATION_RULES[name]
         plus_val, minus_val, flags = _clamped_perturbation(base_val, delta, rule, name)
@@ -594,12 +667,18 @@ def analyze_parameter_importance(
                 perturbed[(name, direction)] = feat
 
     # ---- 评分 ----
-    raw_scores = _compute_scores(base_features, perturbed, feature_weights, active_names)
+    raw_scores = _compute_scores(
+        base_features,
+        perturbed,
+        feature_weights,
+        active_names,
+        selected_parameters,
+    )
     signed_features, signed_matrix = _build_signed_sensitivity_matrix(
         base_features=base_features,
         perturbed=perturbed,
         base_params=base_params,
-        parameter_names=[name for name in PARAMETER_LIST if name in base_params],
+        parameter_names=selected_parameters,
         perturbation_rules=PERTURBATION_RULES,
         active_names=active_names,
     )
@@ -615,7 +694,7 @@ def analyze_parameter_importance(
     ]
 
     param_importance = []
-    for name in PARAMETER_LIST:
+    for name in selected_parameters:
         s = raw_scores.get(name, {"score": 0.0, "per_feature_changes": {}, "ode_failures": 2})
         score = s["score"]
         pf = s["per_feature_changes"]
@@ -661,9 +740,7 @@ def analyze_parameter_importance(
                 "feature": feature,
                 "changes": {
                     parameter: float(signed_matrix[row_index, parameter_index])
-                    for parameter_index, parameter in enumerate(
-                        [name for name in PARAMETER_LIST if name in base_params]
-                    )
+                    for parameter_index, parameter in enumerate(selected_parameters)
                 },
             }
             for row_index, feature in enumerate(signed_features)
@@ -672,7 +749,7 @@ def analyze_parameter_importance(
         "metadata": {
             "n_forward_runs": n_forward,
             "n_ode_failures": n_ode_fail,
-            "param_order": PARAMETER_LIST,
+            "param_order": selected_parameters,
             "config": {
                 "E_start": config.E_start, "E_end": config.E_end,
                 "f": config.f, "dE": config.dE,

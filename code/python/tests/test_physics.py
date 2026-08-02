@@ -25,6 +25,10 @@ from oer_aem.physics import (
     validate_steady_state,
     validate_physics_parameters,
 )
+from oer_aem.coverage_coordinates import (
+    reduce_full_coverages,
+    validate_reduced_trajectory,
+)
 
 
 def test_aem_thermodynamics():
@@ -176,6 +180,39 @@ def test_dynamic_solver_uses_state_aware_absolute_tolerances(monkeypatch):
     assert result.steady_state_elapsed_s is None
     assert result.steady_state_rhs_norm is None
     assert result.steady_state_attempts == ()
+
+
+def test_dynamic_solver_allows_explicit_rtol_for_convergence_diagnostics(monkeypatch):
+    captured = {}
+
+    def fake_solve_ivp(**kwargs):
+        captured.update(kwargs)
+        t_eval = np.asarray(kwargs["t_eval"], dtype=float)
+        y0 = np.asarray(kwargs["y0"], dtype=float)
+        return SimpleNamespace(
+            success=True,
+            t=t_eval,
+            y=np.repeat(y0[:, None], len(t_eval), axis=1),
+            message="ok",
+            nfev=7,
+        )
+
+    monkeypatch.setattr(physics_module, "solve_ivp", fake_solve_ivp)
+    params = initialize_oer_parameters()
+    params.update(
+        {
+            "n_points": 8,
+            "points_per_cycle": 8,
+            "total_time": 1.0,
+            "t_span": np.linspace(0.0, 1.0, 8),
+            "use_steady_state": False,
+            "dynamic_rtol": 1e-8,
+        }
+    )
+
+    OERPhysics.solve_ode_system_detailed(params)
+
+    assert captured["rtol"] == pytest.approx(1e-8)
 
 
 def test_detailed_solver_propagates_steady_state_provenance(monkeypatch):
@@ -417,6 +454,109 @@ def test_coverage_derivatives_are_generated_by_stoichiometry():
         abs=0.0,
     )
     assert np.sum(actual) == pytest.approx(0.0, abs=1e-12)
+
+
+def test_strict_rates_reject_off_manifold_state_hidden_by_legacy_normalization():
+    params = initialize_oer_parameters()
+    off_manifold = np.array([0.30, 0.50, 0.40, 0.36, 0.44, 1.45])
+
+    legacy = elementary_rates(0.17, off_manifold, params)
+
+    assert legacy.original_coverage_sum == pytest.approx(2.0)
+    with pytest.raises(ValueError, match="sum"):
+        elementary_rates(
+            0.17,
+            off_manifold,
+            params,
+            coverage_policy="strict",
+        )
+
+
+def test_reduced_rhs_matches_full_rhs_on_conservation_manifold():
+    params = initialize_oer_parameters()
+    full = np.array([0.15, 0.25, 0.20, 0.18, 0.22, 1.45])
+    reduced = np.r_[reduce_full_coverages(full[:5]), full[5]]
+
+    full_rhs = OERPhysics.oer_model(0.17, full, params)
+    reduced_rhs = OERPhysics.reduced_oer_model(0.17, reduced, params)
+
+    np.testing.assert_allclose(
+        reduced_rhs[:4], full_rhs[1:5], rtol=0.0, atol=1e-12
+    )
+    assert reduced_rhs[4] == pytest.approx(full_rhs[5], abs=1e-12)
+
+
+def test_reduced_rhs_accepts_conserved_solver_trial_below_boundary():
+    params = initialize_oer_parameters()
+    reduced = np.array([-9.26e-8, 0.0, 0.0, 0.0, params["E_start"]])
+
+    derivative = OERPhysics.reduced_oer_model(0.0, reduced, params)
+
+    assert derivative.shape == (5,)
+    assert np.all(np.isfinite(derivative))
+
+
+def test_reduced_and_full_short_trajectories_and_currents_agree():
+    params = initialize_oer_parameters()
+    params.update(
+        {
+            "use_steady_state": False,
+            "v": 0.01,
+            "dE": 0.02,
+        }
+    )
+    params = OERPhysics.initialize_system(params)
+    times = np.linspace(0.0, 0.02, 81)
+    full_initial = np.array([1.0, 0.0, 0.0, 0.0, 0.0, params["E_start"]])
+    reduced_initial = np.r_[
+        reduce_full_coverages(full_initial[:5]), full_initial[5]
+    ]
+
+    full_solution = physics_module.solve_ivp(
+        fun=lambda t, y: OERPhysics.oer_model(t, y, params),
+        t_span=(times[0], times[-1]),
+        y0=full_initial,
+        t_eval=times,
+        method="LSODA",
+        rtol=1e-9,
+        atol=1e-11,
+    )
+    reduced_solution = physics_module.solve_ivp(
+        fun=lambda t, y: OERPhysics.reduced_oer_model(t, y, params),
+        t_span=(times[0], times[-1]),
+        y0=reduced_initial,
+        t_eval=times,
+        method="LSODA",
+        rtol=1e-9,
+        atol=1e-11,
+    )
+
+    assert full_solution.success
+    assert reduced_solution.success
+    reduced_full_states = validate_reduced_trajectory(reduced_solution.y.T)
+    np.testing.assert_allclose(
+        reduced_full_states,
+        full_solution.y.T,
+        rtol=0.0,
+        atol=1e-7,
+    )
+
+    full_current = np.array(
+        [
+            current_components(t, state, params).solution
+            for t, state in zip(times, full_solution.y.T)
+        ]
+    )
+    reduced_current = np.array(
+        [
+            current_components(t, state, params).solution
+            for t, state in zip(times, reduced_full_states)
+        ]
+    )
+    assert np.all(np.isfinite(reduced_current))
+    np.testing.assert_allclose(
+        reduced_current, full_current, rtol=0.0, atol=1e-7
+    )
 
 
 def test_elementary_rate_is_linear_only_in_its_own_k0():
@@ -707,6 +847,80 @@ def test_full_m0_output_ignores_disabled_reconstruction_parameters():
     changed_output = OERPhysics.solve_ode_system(changed)
     for expected, actual in zip(base_output, changed_output):
         assert expected == pytest.approx(actual, rel=0.0, abs=0.0)
+
+
+def test_canonical_total_scale_matches_legacy_full_output_and_harmonics():
+    legacy = initialize_oer_parameters()
+    legacy.update(
+        {
+            "A": 2.0,
+            "Cdl": 1e-5,
+            "gamma": 2.5e-8,
+            "n_points": 256,
+            "points_per_cycle": 64,
+            "total_time": 4.0 / legacy["f"],
+            "use_steady_state": False,
+        }
+    )
+    legacy["v"] = (
+        legacy["E_end"] - legacy["E_start"]
+    ) / legacy["total_time"]
+    legacy["t_span"] = np.linspace(0.0, legacy["total_time"], 256)
+    legacy = OERPhysics.initialize_system(legacy)
+
+    canonical = {
+        key: value
+        for key, value in legacy.items()
+        if key
+        not in {
+            "A",
+            "Cdl",
+            "gamma",
+            "invRC",
+            "gammaF_Cdl",
+            "_electrode_scale_source",
+        }
+    }
+    canonical.update(
+        {"current_basis": "total", "CdlA": 2e-5, "GammaA": 5e-8}
+    )
+    canonical = OERPhysics.initialize_system(canonical)
+
+    legacy_t, legacy_y, legacy_e, legacy_current = (
+        OERPhysics.solve_ode_system(legacy)
+    )
+    canonical_t, canonical_y, canonical_e, canonical_current = (
+        OERPhysics.solve_ode_system(canonical)
+    )
+
+    np.testing.assert_allclose(canonical_t, legacy_t, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(canonical_y, legacy_y, rtol=0.0, atol=1e-12)
+    np.testing.assert_allclose(canonical_e, legacy_e, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(
+        canonical_current, legacy_current, rtol=0.0, atol=1e-12
+    )
+
+    sampling_frequency = OERSignal.safe_df(legacy_t)
+    legacy_dc = OERSignal.extract_dc_fft(
+        legacy_current, sampling_frequency, legacy
+    )
+    canonical_dc = OERSignal.extract_dc_fft(
+        canonical_current, sampling_frequency, canonical
+    )
+    np.testing.assert_allclose(canonical_dc, legacy_dc, rtol=0.0, atol=1e-12)
+
+    legacy_harmonics = OERSignal.extract_harmonics(
+        legacy_current, sampling_frequency, legacy
+    )
+    canonical_harmonics = OERSignal.extract_harmonics(
+        canonical_current, sampling_frequency, canonical
+    )
+    np.testing.assert_allclose(
+        canonical_harmonics[:, :3],
+        legacy_harmonics[:, :3],
+        rtol=0.0,
+        atol=1e-12,
+    )
 
 
 def test_boundary_rhs_remains_stoichiometric():
