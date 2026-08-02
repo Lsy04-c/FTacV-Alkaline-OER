@@ -1,0 +1,211 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_low_loss_compensation_geometry",
+  "eligible_for_formal_conclusions": false,
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "parameter_names": [
+    "k0_1",
+    "k0_2",
+    "k0_3",
+    "G_OH",
+    "G_O",
+    "scaling_OOH_OH"
+  ],
+  "truth_unit": [
+    0.25,
+    0.7,
+    0.4,
+    0.35,
+    0.65,
+    0.45
+  ],
+  "loss_inclusion_threshold": 1.0,
+  "split_rule": "abs(offset)<=0.05 train; abs(offset)>0.05 selection",
+  "training_candidate_count": 11,
+  "selection_candidate_count": 11,
+  "training_geometry": {
+    "singular_values": [
+      0.6433280588627942,
+      0.18169294193318258,
+      0.12040741609072378,
+      0.09292179414069343,
+      0.029599460677518927,
+      0.001879592668338806
+    ],
+    "directions": [
+      [
+        -0.06861983460221296,
+        -0.16781739201653378,
+        0.7010089603968899,
+        0.24707540025018915,
+        -0.20881595213504886,
+        -0.6091508215576397
+      ],
+      [
+        0.9884041003893063,
+        -0.13825876046557178,
+        0.04461531416451287,
+        0.018049018619545644,
+        -0.04031082963051244,
+        -0.0007701762799077749
+      ],
+      [
+        0.11453588948662592,
+        0.9432088765431897,
+        0.11591922910577182,
+        0.1995882316047739,
+        -0.20925576719050962,
+        0.01333563855068709
+      ],
+      [
+        -0.05291512699672853,
+        -0.14204232638881178,
+        0.5424033065603571,
+        0.18399624921651206,
+        -0.14271885371790977,
+        0.7928425625236489
+      ],
+      [
+        0.04927909030451387,
+        0.1964175633714455,
+        0.3995871003742427,
+        -0.30779803687844925,
+        0.8393027265942314,
+        -0.012375899876374183
+      ],
+      [
+        0.0013203203996071818,
+        -0.06574930885343443,
+        -0.1982106095941718,
+        0.8776094040579708,
+        0.4314918550458147,
+        -0.0020862218911923583
+      ]
+    ],
+    "sample_count": 11,
+    "parameter_count": 6
+  },
+  "direction_validation": [
+    {
+      "direction": 1,
+      "training_singular_value": 0.6433280588627942,
+      "loadings": {
+        "k0_1": -0.06861983460221296,
+        "k0_2": 0.9884041003893063,
+        "k0_3": 0.11453588948662592,
+        "G_OH": -0.05291512699672853,
+        "G_O": 0.04927909030451387,
+        "scaling_OOH_OH": 0.0013203203996071818
+      },
+      "training_maximum_absolute_motion": 0.3131705581050158,
+      "selection_maximum_absolute_motion": 0.3310227846872707,
+      "selection_rms_motion": 0.2202602570416095
+    },
+    {
+      "direction": 2,
+      "training_singular_value": 0.18169294193318258,
+      "loadings": {
+        "k0_1": -0.16781739201653378,
+        "k0_2": -0.13825876046557178,
+        "k0_3": 0.9432088765431897,
+        "G_OH": -0.14204232638881178,
+        "G_O": 0.1964175633714455,
+        "scaling_OOH_OH": -0.06574930885343443
+      },
+      "training_maximum_absolute_motion": 0.10987475022471968,
+      "selection_maximum_absolute_motion": 0.23852284909392135,
+      "selection_rms_motion": 0.1272915157888371
+    },
+    {
+      "direction": 3,
+      "training_singular_value": 0.12040741609072378,
+      "loadings": {
+        "k0_1": 0.7010089603968899,
+        "k0_2": 0.04461531416451287,
+        "k0_3": 0.11591922910577182,
+        "G_OH": 0.5424033065603571,
+        "G_O": 0.3995871003742427,
+        "scaling_OOH_OH": -0.1982106095941718
+      },
+      "training_maximum_absolute_motion": 0.0674713446618499,
+      "selection_maximum_absolute_motion": 0.16681008264861005,
+      "selection_rms_motion": 0.07834961226737797
+    },
+    {
+      "direction": 4,
+      "training_singular_value": 0.09292179414069343,
+      "loadings": {
+        "k0_1": 0.24707540025018915,
+        "k0_2": 0.018049018619545644,
+        "k0_3": 0.1995882316047739,
+        "G_OH": 0.18399624921651206,
+        "G_O": -0.30779803687844925,
+        "scaling_OOH_OH": 0.8776094040579708
+      },
+      "training_maximum_absolute_motion": 0.058600534563884664,
+      "selection_maximum_absolute_motion": 0.11299824055179916,
+      "selection_rms_motion": 0.05204011414619027
+    },
+    {
+      "direction": 5,
+      "training_singular_value": 0.029599460677518927,
+      "loadings": {
+        "k0_1": -0.20881595213504886,
+        "k0_2": -0.04031082963051244,
+        "k0_3": -0.20925576719050962,
+        "G_OH": -0.14271885371790977,
+        "G_O": 0.8393027265942314,
+        "scaling_OOH_OH": 0.4314918550458147
+      },
+      "training_maximum_absolute_motion": 0.015626223695505315,
+      "selection_maximum_absolute_motion": 0.03387001409251682,
+      "selection_rms_motion": 0.016247531064335786
+    },
+    {
+      "direction": 6,
+      "training_singular_value": 0.001879592668338806,
+      "loadings": {
+        "k0_1": -0.6091508215576397,
+        "k0_2": -0.0007701762799077749,
+        "k0_3": 0.01333563855068709,
+        "G_OH": 0.7928425625236489,
+        "G_O": -0.012375899876374183,
+        "scaling_OOH_OH": -0.0020862218911923583
+      },
+      "training_maximum_absolute_motion": 0.0011924494306918623,
+      "selection_maximum_absolute_motion": 0.0035153231040929486,
+      "selection_rms_motion": 0.0013287566475995328
+    }
+  ],
+  "sources": [
+    {
+      "path": "results/smoke/scaling_validation/dev-mixed-a-a060-truthk04-k01-lsoda-confirm-v2/summary.json",
+      "sha256": "6107bb00f6d584b978eaffaba38f163ce77077cb573bac537aa949dedebd60f8"
+    },
+    {
+      "path": "results/smoke/scaling_validation/dev-mixed-a-a060-truthk04-k02-lsoda-confirm-v2/summary.json",
+      "sha256": "90d1d312894e4faa20990051f071b4780015f7d97f079a0e0d427332542d8843"
+    },
+    {
+      "path": "results/smoke/scaling_validation/dev-mixed-a-a060-truthk04-k03-lsoda-confirm-v2/summary.json",
+      "sha256": "db0995ab500a8f82aa149dbf271aa958dd7ed6cba80ea48a05b7bfe7e6ea6429"
+    },
+    {
+      "path": "results/smoke/scaling_validation/dev-mixed-a-a060-truthk04-goh-lsoda-confirm-v2/summary.json",
+      "sha256": "0be7f93b79767f587a1aafd70675aff60ed1172623c3a99e84698c6c00ffca68"
+    },
+    {
+      "path": "results/smoke/scaling_validation/dev-mixed-a-a060-truthk04-go-lsoda-confirm-v2/summary.json",
+      "sha256": "5dc0324ddbb01f8c4789ec456b72be330378c779c6b316af8340f86f097469fa"
+    },
+    {
+      "path": "results/smoke/scaling_validation/dev-mixed-a-a060-truthk04-scaling-lsoda-confirm-v2/summary.json",
+      "sha256": "677d6c3cc6bee13d356ee88f323123d7a07a96c1f2022eb8ce3be443d13e5603"
+    }
+  ],
+  "prohibited_claims": [
+    "automatic_effective_dimension_selected",
+    "candidate_direction_is_globally_invariant",
+    "physical_parameter_combination_identified"
+  ]
+}

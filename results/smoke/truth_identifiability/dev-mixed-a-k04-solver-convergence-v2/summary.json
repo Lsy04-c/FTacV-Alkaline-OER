@@ -1,0 +1,120 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_k0_4_solver_convergence",
+  "eligible_for_formal_conclusions": false,
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "schema_path": "config/parameter-schemas/m0-total-current-effective-v1.json",
+  "schema_sha256": "a8dbcb8c06b2eb8b06f65f081dd2caf4420a589feefb2e5ca48977ba4c840b41",
+  "truth_id": "mixed_a",
+  "truth_k0_4_s^-1": 251.18864315095772,
+  "model_default_k0_4_s^-1": 5000.0,
+  "rtols": [
+    1e-06,
+    3e-07,
+    1e-07,
+    3e-08,
+    1e-08
+  ],
+  "rows": [
+    {
+      "rtol": 1e-06,
+      "truth_vs_default": {
+        "maximum_absolute_difference_A": 5.2156036010019e-07,
+        "rms_difference_A": 4.56716747105154e-08,
+        "relative_to_reference_peak": 1.2930989037544605e-05
+      },
+      "truth_vs_tightest": {
+        "maximum_absolute_difference_A": 2.771680515552266e-07,
+        "rms_difference_A": 3.19636376415554e-08,
+        "relative_to_reference_peak": 6.871788325740652e-06
+      },
+      "default_vs_tightest": {
+        "maximum_absolute_difference_A": 2.452258144759051e-07,
+        "rms_difference_A": 2.5410139057819526e-08,
+        "relative_to_reference_peak": 6.079849136890583e-06
+      }
+    },
+    {
+      "rtol": 3e-07,
+      "truth_vs_default": {
+        "maximum_absolute_difference_A": 1.2114439191385218e-07,
+        "rms_difference_A": 1.0350906234104466e-08,
+        "relative_to_reference_peak": 3.0035143805112464e-06
+      },
+      "truth_vs_tightest": {
+        "maximum_absolute_difference_A": 6.385518738077911e-08,
+        "rms_difference_A": 6.933645949136899e-09,
+        "relative_to_reference_peak": 1.5831526350856767e-06
+      },
+      "default_vs_tightest": {
+        "maximum_absolute_difference_A": 5.4129748551512424e-08,
+        "rms_difference_A": 5.66506161725646e-09,
+        "relative_to_reference_peak": 1.3420312446076238e-06
+      }
+    },
+    {
+      "rtol": 1e-07,
+      "truth_vs_default": {
+        "maximum_absolute_difference_A": 3.057816697624779e-08,
+        "rms_difference_A": 3.6196121467112535e-09,
+        "relative_to_reference_peak": 7.581200897658714e-07
+      },
+      "truth_vs_tightest": {
+        "maximum_absolute_difference_A": 2.9466345186069092e-08,
+        "rms_difference_A": 3.2913917618436037e-09,
+        "relative_to_reference_peak": 7.305549312617215e-07
+      },
+      "default_vs_tightest": {
+        "maximum_absolute_difference_A": 2.4063102913030043e-08,
+        "rms_difference_A": 2.7914837762238405e-09,
+        "relative_to_reference_peak": 5.965931269893687e-07
+      }
+    },
+    {
+      "rtol": 3e-08,
+      "truth_vs_default": {
+        "maximum_absolute_difference_A": 1.1942206404325084e-08,
+        "rms_difference_A": 1.5088329199422901e-09,
+        "relative_to_reference_peak": 2.960814768976623e-07
+      },
+      "truth_vs_tightest": {
+        "maximum_absolute_difference_A": 1.2398841266192395e-08,
+        "rms_difference_A": 1.5855910083208633e-09,
+        "relative_to_reference_peak": 3.074027189917866e-07
+      },
+      "default_vs_tightest": {
+        "maximum_absolute_difference_A": 4.282383403615697e-09,
+        "rms_difference_A": 7.916374442488395e-10,
+        "relative_to_reference_peak": 1.0617252957626806e-07
+      }
+    },
+    {
+      "rtol": 1e-08,
+      "truth_vs_default": {
+        "maximum_absolute_difference_A": 5.466582830718561e-09,
+        "rms_difference_A": 8.264900536970084e-10,
+        "relative_to_reference_peak": 1.355322154448999e-07
+      },
+      "truth_vs_tightest": {
+        "maximum_absolute_difference_A": 0.0,
+        "rms_difference_A": 0.0,
+        "relative_to_reference_peak": 0.0
+      },
+      "default_vs_tightest": {
+        "maximum_absolute_difference_A": 0.0,
+        "rms_difference_A": 0.0,
+        "relative_to_reference_peak": 0.0
+      }
+    }
+  ],
+  "artifacts": {
+    "currents": {
+      "path": "results/smoke/truth_identifiability/dev-mixed-a-k04-solver-convergence-v2/currents.npz",
+      "sha256": "c86bdc2b2537054a10abc735e21bb61d37af8d444d6b265de2358665e05ee66b"
+    }
+  },
+  "prohibited_claims": [
+    "k0_4_recoverable",
+    "rtol_change_approved_for_formal_runs"
+  ]
+}

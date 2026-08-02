@@ -1,0 +1,211 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_low_loss_compensation_geometry",
+  "eligible_for_formal_conclusions": false,
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "parameter_names": [
+    "k0_1",
+    "k0_2",
+    "k0_3",
+    "G_OH",
+    "G_O",
+    "scaling_OOH_OH"
+  ],
+  "truth_unit": [
+    0.25,
+    0.7,
+    0.4,
+    0.35,
+    0.65,
+    0.45
+  ],
+  "loss_inclusion_threshold": 1.0,
+  "split_rule": "abs(offset)<=0.05 train; abs(offset)>0.05 selection",
+  "training_candidate_count": 11,
+  "selection_candidate_count": 9,
+  "training_geometry": {
+    "singular_values": [
+      0.5829395357754938,
+      0.35574540206628535,
+      0.14249024249326295,
+      0.12051246774869,
+      0.024648660762521722,
+      0.0012488225656862547
+    ],
+    "directions": [
+      [
+        -0.07750682660073652,
+        -0.022432063252147694,
+        0.8408545072484337,
+        0.031051551980939476,
+        -0.14538656110795758,
+        -0.5141514766849414
+      ],
+      [
+        0.9931723158904363,
+        0.010976306514260403,
+        0.08049404383466913,
+        0.062471105943519685,
+        -0.05572602479060934,
+        0.000975517557450456
+      ],
+      [
+        -0.004433480274518972,
+        0.9292944040394254,
+        -0.004989636140348368,
+        -0.2901337778340616,
+        -0.22844874155800254,
+        -0.0009601276748456749
+      ],
+      [
+        -0.0483063570462008,
+        -0.013418374414218748,
+        0.5018633343222557,
+        0.023182779508490015,
+        -0.0976548226652236,
+        0.8576396277600732
+      ],
+      [
+        0.06316367058360113,
+        0.05901279445496175,
+        0.17864961385054823,
+        -0.48543180713459794,
+        0.8513917998121084,
+        0.010006003938117333
+      ],
+      [
+        -0.035477226767289816,
+        0.3634909506071128,
+        0.05173991894389352,
+        0.8214463295662124,
+        0.4349299590896511,
+        0.0007309745485867092
+      ]
+    ],
+    "sample_count": 11,
+    "parameter_count": 6
+  },
+  "direction_validation": [
+    {
+      "direction": 1,
+      "training_singular_value": 0.5829395357754938,
+      "loadings": {
+        "k0_1": -0.07750682660073652,
+        "k0_2": 0.9931723158904363,
+        "k0_3": -0.004433480274518972,
+        "G_OH": -0.0483063570462008,
+        "G_O": 0.06316367058360113,
+        "scaling_OOH_OH": -0.035477226767289816
+      },
+      "training_maximum_absolute_motion": 0.3066768031574924,
+      "selection_maximum_absolute_motion": 0.2937599872266942,
+      "selection_rms_motion": 0.1579032644223165
+    },
+    {
+      "direction": 2,
+      "training_singular_value": 0.35574540206628535,
+      "loadings": {
+        "k0_1": -0.022432063252147694,
+        "k0_2": 0.010976306514260403,
+        "k0_3": 0.9292944040394254,
+        "G_OH": -0.013418374414218748,
+        "G_O": 0.05901279445496175,
+        "scaling_OOH_OH": 0.3634909506071128
+      },
+      "training_maximum_absolute_motion": 0.31581738143461,
+      "selection_maximum_absolute_motion": 0.5716014879062206,
+      "selection_rms_motion": 0.21587222048316768
+    },
+    {
+      "direction": 3,
+      "training_singular_value": 0.14249024249326295,
+      "loadings": {
+        "k0_1": 0.8408545072484337,
+        "k0_2": 0.08049404383466913,
+        "k0_3": -0.004989636140348368,
+        "G_OH": 0.5018633343222557,
+        "G_O": 0.17864961385054823,
+        "scaling_OOH_OH": 0.05173991894389352
+      },
+      "training_maximum_absolute_motion": 0.08643639244618434,
+      "selection_maximum_absolute_motion": 0.16470970877467978,
+      "selection_rms_motion": 0.08579783509195493
+    },
+    {
+      "direction": 4,
+      "training_singular_value": 0.12051246774869,
+      "loadings": {
+        "k0_1": 0.031051551980939476,
+        "k0_2": 0.062471105943519685,
+        "k0_3": -0.2901337778340616,
+        "G_OH": 0.023182779508490015,
+        "G_O": -0.48543180713459794,
+        "scaling_OOH_OH": 0.8214463295662124
+      },
+      "training_maximum_absolute_motion": 0.07301458610914628,
+      "selection_maximum_absolute_motion": 0.1302228302548668,
+      "selection_rms_motion": 0.07087190028842649
+    },
+    {
+      "direction": 5,
+      "training_singular_value": 0.024648660762521722,
+      "loadings": {
+        "k0_1": -0.14538656110795758,
+        "k0_2": -0.05572602479060934,
+        "k0_3": -0.22844874155800254,
+        "G_OH": -0.0976548226652236,
+        "G_O": 0.8513917998121084,
+        "scaling_OOH_OH": 0.4349299590896511
+      },
+      "training_maximum_absolute_motion": 0.017868303201532897,
+      "selection_maximum_absolute_motion": 0.031673254481394277,
+      "selection_rms_motion": 0.018585772849321447
+    },
+    {
+      "direction": 6,
+      "training_singular_value": 0.0012488225656862547,
+      "loadings": {
+        "k0_1": -0.5141514766849414,
+        "k0_2": 0.000975517557450456,
+        "k0_3": -0.0009601276748456749,
+        "G_OH": 0.8576396277600732,
+        "G_O": 0.010006003938117333,
+        "scaling_OOH_OH": 0.0007309745485867092
+      },
+      "training_maximum_absolute_motion": 0.0007274857178121152,
+      "selection_maximum_absolute_motion": 0.0039018161324652356,
+      "selection_rms_motion": 0.0015890345532767237
+    }
+  ],
+  "sources": [
+    {
+      "path": "results/smoke/truth_identifiability/dev-mixed-a-k01-cn192-candidates-lsoda-confirm-v1/summary.json",
+      "sha256": "587d0b7956c0243e3364c02c9ead2c9b1e7dc5a4b9fb2a76412ab63ecf3f9ce3"
+    },
+    {
+      "path": "results/smoke/truth_identifiability/dev-mixed-a-k02-cn192-candidates-lsoda-confirm-v1/summary.json",
+      "sha256": "2d29a2c412b132e4e5cdf67b2295299eb32934780f44b2c02626b1630ba4947f"
+    },
+    {
+      "path": "results/smoke/truth_identifiability/dev-mixed-a-k03-cn192-candidates-lsoda-confirm-v1/summary.json",
+      "sha256": "bd2fbb86cb14a9be513e20772d836a26a308e6c00dae965d985bc7b9513e5954"
+    },
+    {
+      "path": "results/smoke/truth_identifiability/dev-mixed-a-goh-cn192-candidates-lsoda-confirm-v1/summary.json",
+      "sha256": "59551e84e1fa9456ca5975b5aeb2f946994e85c6244bd2fe7c05990594e66481"
+    },
+    {
+      "path": "results/smoke/truth_identifiability/dev-mixed-a-go-cn192-candidates-lsoda-confirm-v1/summary.json",
+      "sha256": "4b696b452592027cbb0b8a8e645a0199fce4101ecaf7686b792a9f5a5e174344"
+    },
+    {
+      "path": "results/smoke/truth_identifiability/dev-mixed-a-scaling-cn192-candidates-lsoda-confirm-v1/summary.json",
+      "sha256": "83369e9fed98e1a0070331d97be56722bfd3f086ddf99a17bd70837dbc1bf92c"
+    }
+  ],
+  "prohibited_claims": [
+    "automatic_effective_dimension_selected",
+    "candidate_direction_is_globally_invariant",
+    "physical_parameter_combination_identified"
+  ]
+}

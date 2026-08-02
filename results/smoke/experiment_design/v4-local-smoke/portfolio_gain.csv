@@ -1,0 +1,2 @@
+stage,rank,condition_id,eligible,all_success,parameter_point_count,successful_point_count,q25_logdet_gain,median_correlation_reduction,q25_min_singular_gain,positive_gain_count,total_points
+1,1,candidate_5hz_amp_008,False,True,1,1,11.414736095142182,0.0003851312594991274,0.024851381516141628,1,256

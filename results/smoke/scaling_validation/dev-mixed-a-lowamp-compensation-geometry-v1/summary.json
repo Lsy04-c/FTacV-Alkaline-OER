@@ -1,0 +1,211 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_low_loss_compensation_geometry",
+  "eligible_for_formal_conclusions": false,
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "parameter_names": [
+    "k0_1",
+    "k0_2",
+    "k0_3",
+    "G_OH",
+    "G_O",
+    "scaling_OOH_OH"
+  ],
+  "truth_unit": [
+    0.25,
+    0.7,
+    0.4,
+    0.35,
+    0.65,
+    0.45
+  ],
+  "loss_inclusion_threshold": 1.0,
+  "split_rule": "abs(offset)<=0.05 train; abs(offset)>0.05 selection",
+  "training_candidate_count": 12,
+  "selection_candidate_count": 11,
+  "training_geometry": {
+    "singular_values": [
+      0.6072505204351143,
+      0.2226277132673753,
+      0.15136203165641865,
+      0.10052585572649074,
+      0.03255096077383669,
+      0.0019991900626637063
+    ],
+    "directions": [
+      [
+        -0.07812139774484694,
+        0.10889413992193245,
+        0.8072830155301081,
+        0.12218044033607199,
+        -0.1963553523088903,
+        -0.5261651470409308
+      ],
+      [
+        0.9933964347996715,
+        -0.027230103046078064,
+        0.07539620216820589,
+        0.057614035768225734,
+        -0.05842028052264256,
+        -0.002269629962432018
+      ],
+      [
+        0.03415941930462958,
+        0.9332114531600583,
+        -0.14774418239008247,
+        -0.20824944671661327,
+        -0.25042237053165,
+        0.006479090451728736
+      ],
+      [
+        -0.046127887163376464,
+        0.06390754132357968,
+        0.4997787736728324,
+        0.08867368554085518,
+        -0.1147383260262095,
+        0.8502830796900537
+      ],
+      [
+        0.06107528459206916,
+        0.13840079615356066,
+        0.2612155001327003,
+        -0.5177087980256126,
+        0.8005355461594548,
+        0.0013897872284825302
+      ],
+      [
+        -0.00597764605045593,
+        0.3054145007292382,
+        -0.05261978697804591,
+        0.8139406051816573,
+        0.4912211708146373,
+        -0.010948108987629754
+      ]
+    ],
+    "sample_count": 12,
+    "parameter_count": 6
+  },
+  "direction_validation": [
+    {
+      "direction": 1,
+      "training_singular_value": 0.6072505204351143,
+      "loadings": {
+        "k0_1": -0.07812139774484694,
+        "k0_2": 0.9933964347996715,
+        "k0_3": 0.03415941930462958,
+        "G_OH": -0.046127887163376464,
+        "G_O": 0.06107528459206916,
+        "scaling_OOH_OH": -0.00597764605045593
+      },
+      "training_maximum_absolute_motion": 0.29800911101813693,
+      "selection_maximum_absolute_motion": 0.3127789370689741,
+      "selection_rms_motion": 0.17882835353348786
+    },
+    {
+      "direction": 2,
+      "training_singular_value": 0.2226277132673753,
+      "loadings": {
+        "k0_1": 0.10889413992193245,
+        "k0_2": -0.027230103046078064,
+        "k0_3": 0.9332114531600583,
+        "G_OH": 0.06390754132357968,
+        "G_O": 0.13840079615356066,
+        "scaling_OOH_OH": 0.3054145007292382
+      },
+      "training_maximum_absolute_motion": 0.1782238410362103,
+      "selection_maximum_absolute_motion": 0.40608488118904723,
+      "selection_rms_motion": 0.15706879097368948
+    },
+    {
+      "direction": 3,
+      "training_singular_value": 0.15136203165641865,
+      "loadings": {
+        "k0_1": 0.8072830155301081,
+        "k0_2": 0.07539620216820589,
+        "k0_3": -0.14774418239008247,
+        "G_OH": 0.4997787736728324,
+        "G_O": 0.2612155001327003,
+        "scaling_OOH_OH": -0.05261978697804591
+      },
+      "training_maximum_absolute_motion": 0.0837706254084207,
+      "selection_maximum_absolute_motion": 0.2099615231163351,
+      "selection_rms_motion": 0.09434587000054628
+    },
+    {
+      "direction": 4,
+      "training_singular_value": 0.10052585572649074,
+      "loadings": {
+        "k0_1": 0.12218044033607199,
+        "k0_2": 0.057614035768225734,
+        "k0_3": -0.20824944671661327,
+        "G_OH": 0.08867368554085518,
+        "G_O": -0.5177087980256126,
+        "scaling_OOH_OH": 0.8139406051816573
+      },
+      "training_maximum_absolute_motion": 0.05777010541896798,
+      "selection_maximum_absolute_motion": 0.3409082301828382,
+      "selection_rms_motion": 0.13532944341795106
+    },
+    {
+      "direction": 5,
+      "training_singular_value": 0.03255096077383669,
+      "loadings": {
+        "k0_1": -0.1963553523088903,
+        "k0_2": -0.05842028052264256,
+        "k0_3": -0.25042237053165,
+        "G_OH": -0.1147383260262095,
+        "G_O": 0.8005355461594548,
+        "scaling_OOH_OH": 0.4912211708146373
+      },
+      "training_maximum_absolute_motion": 0.017184087584593527,
+      "selection_maximum_absolute_motion": 0.2512430490570959,
+      "selection_rms_motion": 0.09865721256853172
+    },
+    {
+      "direction": 6,
+      "training_singular_value": 0.0019991900626637063,
+      "loadings": {
+        "k0_1": -0.5261651470409308,
+        "k0_2": -0.002269629962432018,
+        "k0_3": 0.006479090451728736,
+        "G_OH": 0.8502830796900537,
+        "G_O": 0.0013897872284825302,
+        "scaling_OOH_OH": -0.010948108987629754
+      },
+      "training_maximum_absolute_motion": 0.0015333274335690983,
+      "selection_maximum_absolute_motion": 0.005841196510934926,
+      "selection_rms_motion": 0.0023918793563929624
+    }
+  ],
+  "sources": [
+    {
+      "path": "results/smoke/scaling_validation/dev-mixed-a-lowamp-k01-lsoda-confirm-v1/summary.json",
+      "sha256": "cc43063505b7dec2525b1ebc4f8fe01cdc2b2dc3d7f4133c030d47fbf875094e"
+    },
+    {
+      "path": "results/smoke/scaling_validation/dev-mixed-a-lowamp-k02-lsoda-confirm-v1/summary.json",
+      "sha256": "b96aeb7469625a5f65eccd5966bf13f0a37861307c6c103b51f4a52379151f08"
+    },
+    {
+      "path": "results/smoke/scaling_validation/dev-mixed-a-lowamp-k03-lsoda-confirm-v1/summary.json",
+      "sha256": "3814ae97bd944c9fe7f6249c362514ba7d86dc212169171c5067d3297a73294c"
+    },
+    {
+      "path": "results/smoke/scaling_validation/dev-mixed-a-lowamp-goh-lsoda-confirm-v1/summary.json",
+      "sha256": "a2ee37268c0dc9d2e52e2cbfbabd4135dbb33895e2b759a9b89ccb89308656e3"
+    },
+    {
+      "path": "results/smoke/scaling_validation/dev-mixed-a-lowamp-go-lsoda-confirm-v1/summary.json",
+      "sha256": "6c85ca45b1c8eec25e6dfd1ce8968b17a68b3e63850aedcad3745f8c4e963966"
+    },
+    {
+      "path": "results/smoke/scaling_validation/dev-mixed-a-lowamp-scaling-lsoda-confirm-v1/summary.json",
+      "sha256": "87cc8578dd493b32820fbda42c690a22193f0303379b2cf132daf158d12cd6a7"
+    }
+  ],
+  "prohibited_claims": [
+    "automatic_effective_dimension_selected",
+    "candidate_direction_is_globally_invariant",
+    "physical_parameter_combination_identified"
+  ]
+}

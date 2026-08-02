@@ -1,0 +1,57 @@
+{
+  "backend": "cn",
+  "feature_modes": [
+    "hybrid"
+  ],
+  "phase": null,
+  "portfolio_stage": "S0",
+  "execution_passed": true,
+  "scientific_gate_passed": null,
+  "passed": true,
+  "passed_semantics": "deprecated alias of execution_passed",
+  "job_count": 3,
+  "completed_jobs": 3,
+  "workers": 3,
+  "duration_seconds": 1.2539389170706272,
+  "n_ode_fail": 0,
+  "n_tafel_fail": 0,
+  "source_commit": "eb35b92f34b2ac38d4f37494a19aeadccfd1737d",
+  "dirty": false,
+  "provenance": {
+    "source_commit": "eb35b92f34b2ac38d4f37494a19aeadccfd1737d",
+    "dirty": false,
+    "dirty_paths": [],
+    "ignored_workflow_paths": [
+      "results/smoke/experiment_design/"
+    ],
+    "python": "3.13.3",
+    "command": [
+      "/Users/liushiyu/OER-FTAcV/.venv/bin/python",
+      "code/python/scripts/run_synthetic_recovery.py",
+      "--pre-experiment-spec",
+      "config/recovery/pre-experiment-a6-v2.json",
+      "--portfolio-stage",
+      "S0",
+      "--backend",
+      "cn",
+      "--workers",
+      "8",
+      "--output",
+      "results/smoke/pre_experiment_recovery/a6-v2-s0-20260801_215929"
+    ]
+  },
+  "resumed": false,
+  "reused_jobs": 0,
+  "executed_jobs": 3,
+  "recovery_summary": {
+    "group_count": 0,
+    "groups": [],
+    "parameter_pair_results": [],
+    "eligible_parameter_pairs": [],
+    "stage_status": "STRUCTURE_ONLY",
+    "scientific_gate_passed": null
+  },
+  "pre_experiment_spec_sha256": "a5284cbc58aafbeda49828523a3712ecd3614d972987527f364ef282a171b5f5",
+  "eligible_parameter_pairs": [],
+  "stage_status": "STRUCTURE_ONLY"
+}

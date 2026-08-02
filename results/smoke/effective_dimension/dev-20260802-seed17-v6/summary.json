@@ -1,0 +1,608 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_smoke",
+  "eligible_for_formal_conclusions": false,
+  "schema_path": "config/parameter-schemas/m0-total-current-effective-v1.json",
+  "schema_sha256": "a8dbcb8c06b2eb8b06f65f081dd2caf4420a589feefb2e5ca48977ba4c840b41",
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "dirty_worktree_expected": true,
+  "forward_reports_source": {
+    "path": "results/smoke/effective_dimension/dev-20260802-seed17-v2/anchor_reports.json",
+    "sha256": "5d547b1329b05ed2af2a4398182730ef9703b80e932dfe3292ffd720c4c32c94"
+  },
+  "seed": 17,
+  "split_counts": {
+    "train": 3,
+    "selection": 2,
+    "holdout": 1
+  },
+  "parameter_names": [
+    "k0_1",
+    "k0_2",
+    "k0_3",
+    "k0_4",
+    "G_OH",
+    "G_O",
+    "scaling_OOH_OH"
+  ],
+  "config": {
+    "E_start": 0.924097277474612,
+    "E_end": 1.9229037265531128,
+    "f": 5.0,
+    "dE": 0.16,
+    "n_points": 256,
+    "points_per_cycle": 32,
+    "fit_harmonics": [
+      1,
+      2,
+      3
+    ],
+    "feature_mode": "hybrid",
+    "solver_backend": "lsoda"
+  },
+  "decomposition": {
+    "training_anchor_ids": [
+      "train-00",
+      "train-01",
+      "train-02"
+    ],
+    "selection_anchor_ids": [
+      "selection-00",
+      "selection-01"
+    ],
+    "parameter_names": [
+      "k0_1",
+      "k0_2",
+      "k0_3",
+      "k0_4",
+      "G_OH",
+      "G_O",
+      "scaling_OOH_OH"
+    ],
+    "feature_names": [
+      "DC shape[0]",
+      "DC shape[1]",
+      "DC shape[2]",
+      "DC shape[3]",
+      "DC shape[4]",
+      "DC shape[5]",
+      "DC shape[6]",
+      "DC shape[7]",
+      "DC shape[8]",
+      "DC shape[9]",
+      "DC shape[10]",
+      "DC shape[11]",
+      "DC shape[12]",
+      "DC shape[13]",
+      "DC shape[14]",
+      "DC shape[15]",
+      "DC shape[16]",
+      "DC shape[17]",
+      "DC shape[18]",
+      "DC shape[19]",
+      "DC shape[20]",
+      "DC shape[21]",
+      "DC shape[22]",
+      "DC shape[23]",
+      "DC shape[24]",
+      "DC shape[25]",
+      "DC shape[26]",
+      "DC shape[27]",
+      "DC shape[28]",
+      "DC shape[29]",
+      "DC shape[30]",
+      "DC shape[31]",
+      "Complex H1 real",
+      "Complex H1 imag",
+      "Complex H2 real",
+      "Complex H2 imag",
+      "Complex H3 real",
+      "Complex H3 imag",
+      "Lockin H1 real[0]",
+      "Lockin H1 real[1]",
+      "Lockin H1 real[2]",
+      "Lockin H1 real[3]",
+      "Lockin H1 real[4]",
+      "Lockin H1 real[5]",
+      "Lockin H1 real[6]",
+      "Lockin H1 real[7]",
+      "Lockin H1 real[8]",
+      "Lockin H1 real[9]",
+      "Lockin H1 real[10]",
+      "Lockin H1 real[11]",
+      "Lockin H1 real[12]",
+      "Lockin H1 real[13]",
+      "Lockin H1 real[14]",
+      "Lockin H1 real[15]",
+      "Lockin H1 real[16]",
+      "Lockin H1 real[17]",
+      "Lockin H1 real[18]",
+      "Lockin H1 real[19]",
+      "Lockin H1 real[20]",
+      "Lockin H1 real[21]",
+      "Lockin H1 real[22]",
+      "Lockin H1 real[23]",
+      "Lockin H1 real[24]",
+      "Lockin H1 real[25]",
+      "Lockin H1 real[26]",
+      "Lockin H1 real[27]",
+      "Lockin H1 real[28]",
+      "Lockin H1 real[29]",
+      "Lockin H1 real[30]",
+      "Lockin H1 real[31]",
+      "Lockin H1 imag[0]",
+      "Lockin H1 imag[1]",
+      "Lockin H1 imag[2]",
+      "Lockin H1 imag[3]",
+      "Lockin H1 imag[4]",
+      "Lockin H1 imag[5]",
+      "Lockin H1 imag[6]",
+      "Lockin H1 imag[7]",
+      "Lockin H1 imag[8]",
+      "Lockin H1 imag[9]",
+      "Lockin H1 imag[10]",
+      "Lockin H1 imag[11]",
+      "Lockin H1 imag[12]",
+      "Lockin H1 imag[13]",
+      "Lockin H1 imag[14]",
+      "Lockin H1 imag[15]",
+      "Lockin H1 imag[16]",
+      "Lockin H1 imag[17]",
+      "Lockin H1 imag[18]",
+      "Lockin H1 imag[19]",
+      "Lockin H1 imag[20]",
+      "Lockin H1 imag[21]",
+      "Lockin H1 imag[22]",
+      "Lockin H1 imag[23]",
+      "Lockin H1 imag[24]",
+      "Lockin H1 imag[25]",
+      "Lockin H1 imag[26]",
+      "Lockin H1 imag[27]",
+      "Lockin H1 imag[28]",
+      "Lockin H1 imag[29]",
+      "Lockin H1 imag[30]",
+      "Lockin H1 imag[31]",
+      "Lockin H2 real[0]",
+      "Lockin H2 real[1]",
+      "Lockin H2 real[2]",
+      "Lockin H2 real[3]",
+      "Lockin H2 real[4]",
+      "Lockin H2 real[5]",
+      "Lockin H2 real[6]",
+      "Lockin H2 real[7]",
+      "Lockin H2 real[8]",
+      "Lockin H2 real[9]",
+      "Lockin H2 real[10]",
+      "Lockin H2 real[11]",
+      "Lockin H2 real[12]",
+      "Lockin H2 real[13]",
+      "Lockin H2 real[14]",
+      "Lockin H2 real[15]",
+      "Lockin H2 real[16]",
+      "Lockin H2 real[17]",
+      "Lockin H2 real[18]",
+      "Lockin H2 real[19]",
+      "Lockin H2 real[20]",
+      "Lockin H2 real[21]",
+      "Lockin H2 real[22]",
+      "Lockin H2 real[23]",
+      "Lockin H2 real[24]",
+      "Lockin H2 real[25]",
+      "Lockin H2 real[26]",
+      "Lockin H2 real[27]",
+      "Lockin H2 real[28]",
+      "Lockin H2 real[29]",
+      "Lockin H2 real[30]",
+      "Lockin H2 real[31]",
+      "Lockin H2 imag[0]",
+      "Lockin H2 imag[1]",
+      "Lockin H2 imag[2]",
+      "Lockin H2 imag[3]",
+      "Lockin H2 imag[4]",
+      "Lockin H2 imag[5]",
+      "Lockin H2 imag[6]",
+      "Lockin H2 imag[7]",
+      "Lockin H2 imag[8]",
+      "Lockin H2 imag[9]",
+      "Lockin H2 imag[10]",
+      "Lockin H2 imag[11]",
+      "Lockin H2 imag[12]",
+      "Lockin H2 imag[13]",
+      "Lockin H2 imag[14]",
+      "Lockin H2 imag[15]",
+      "Lockin H2 imag[16]",
+      "Lockin H2 imag[17]",
+      "Lockin H2 imag[18]",
+      "Lockin H2 imag[19]",
+      "Lockin H2 imag[20]",
+      "Lockin H2 imag[21]",
+      "Lockin H2 imag[22]",
+      "Lockin H2 imag[23]",
+      "Lockin H2 imag[24]",
+      "Lockin H2 imag[25]",
+      "Lockin H2 imag[26]",
+      "Lockin H2 imag[27]",
+      "Lockin H2 imag[28]",
+      "Lockin H2 imag[29]",
+      "Lockin H2 imag[30]",
+      "Lockin H2 imag[31]",
+      "Lockin H3 real[0]",
+      "Lockin H3 real[1]",
+      "Lockin H3 real[2]",
+      "Lockin H3 real[3]",
+      "Lockin H3 real[4]",
+      "Lockin H3 real[5]",
+      "Lockin H3 real[6]",
+      "Lockin H3 real[7]",
+      "Lockin H3 real[8]",
+      "Lockin H3 real[9]",
+      "Lockin H3 real[10]",
+      "Lockin H3 real[11]",
+      "Lockin H3 real[12]",
+      "Lockin H3 real[13]",
+      "Lockin H3 real[14]",
+      "Lockin H3 real[15]",
+      "Lockin H3 real[16]",
+      "Lockin H3 real[17]",
+      "Lockin H3 real[18]",
+      "Lockin H3 real[19]",
+      "Lockin H3 real[20]",
+      "Lockin H3 real[21]",
+      "Lockin H3 real[22]",
+      "Lockin H3 real[23]",
+      "Lockin H3 real[24]",
+      "Lockin H3 real[25]",
+      "Lockin H3 real[26]",
+      "Lockin H3 real[27]",
+      "Lockin H3 real[28]",
+      "Lockin H3 real[29]",
+      "Lockin H3 real[30]",
+      "Lockin H3 real[31]",
+      "Lockin H3 imag[0]",
+      "Lockin H3 imag[1]",
+      "Lockin H3 imag[2]",
+      "Lockin H3 imag[3]",
+      "Lockin H3 imag[4]",
+      "Lockin H3 imag[5]",
+      "Lockin H3 imag[6]",
+      "Lockin H3 imag[7]",
+      "Lockin H3 imag[8]",
+      "Lockin H3 imag[9]",
+      "Lockin H3 imag[10]",
+      "Lockin H3 imag[11]",
+      "Lockin H3 imag[12]",
+      "Lockin H3 imag[13]",
+      "Lockin H3 imag[14]",
+      "Lockin H3 imag[15]",
+      "Lockin H3 imag[16]",
+      "Lockin H3 imag[17]",
+      "Lockin H3 imag[18]",
+      "Lockin H3 imag[19]",
+      "Lockin H3 imag[20]",
+      "Lockin H3 imag[21]",
+      "Lockin H3 imag[22]",
+      "Lockin H3 imag[23]",
+      "Lockin H3 imag[24]",
+      "Lockin H3 imag[25]",
+      "Lockin H3 imag[26]",
+      "Lockin H3 imag[27]",
+      "Lockin H3 imag[28]",
+      "Lockin H3 imag[29]",
+      "Lockin H3 imag[30]",
+      "Lockin H3 imag[31]"
+    ],
+    "feature_count": 230,
+    "noise_model": "block_balanced_stability_proxy_not_formal_covariance",
+    "excluded_nonsmooth_features": [
+      "Tafel",
+      "onset"
+    ],
+    "included_feature_blocks": [
+      "DC shape",
+      "Complex H1 real",
+      "Complex H1 imag",
+      "Complex H2 real",
+      "Complex H2 imag",
+      "Complex H3 real",
+      "Complex H3 imag",
+      "Lockin H1 real",
+      "Lockin H1 imag",
+      "Lockin H2 real",
+      "Lockin H2 imag",
+      "Lockin H3 real",
+      "Lockin H3 imag"
+    ],
+    "gramian": [
+      [
+        512618.18686838856,
+        -1.4975541543511346,
+        1.3656845300743679,
+        2.67817457662588,
+        -808538.1845410665,
+        16.68589142580796,
+        -8.096253529963036
+      ],
+      [
+        -1.4975541543511346,
+        0.0004575833322009317,
+        8.411046774717183e-05,
+        -0.00033836058060756415,
+        3.763827193911241,
+        9.517850490159226e-05,
+        8.968614957761903e-05
+      ],
+      [
+        1.3656845300743679,
+        8.411046774717183e-05,
+        4.049629625838427e-05,
+        -3.4001949936183624e-05,
+        -2.3354494127621894,
+        5.0010748518249855e-05,
+        1.1683450775012657e-05
+      ],
+      [
+        2.67817457662588,
+        -0.00033836058060756415,
+        -3.4001949936183624e-05,
+        0.0002937693122440555,
+        -5.853196693240765,
+        -6.541401249159831e-05,
+        -6.345927257910507e-05
+      ],
+      [
+        -808538.1845410665,
+        3.763827193911241,
+        -2.3354494127621894,
+        -5.853196693240765,
+        1291085.2229166743,
+        -25.163780561216704,
+        12.469783017365415
+      ],
+      [
+        16.68589142580796,
+        9.517850490159226e-05,
+        5.0010748518249855e-05,
+        -6.541401249159831e-05,
+        -25.163780561216704,
+        0.000679432555394519,
+        -0.0002690685288886238
+      ],
+      [
+        -8.096253529963036,
+        8.968614957761903e-05,
+        1.1683450775012657e-05,
+        -6.345927257910507e-05,
+        12.469783017365415,
+        -0.0002690685288886238,
+        0.00016088522574386044
+      ]
+    ],
+    "eigenvalues": [
+      1799201.541136682,
+      4501.8697258166785,
+      0.0005025054562955531,
+      4.670872542529295e-05,
+      4.256187076207335e-06,
+      1.0718269917188587e-06,
+      1.8844739685052852e-07
+    ],
+    "directions": [
+      [
+        -0.5320907134820062,
+        0.846687312360338,
+        -0.00018791644846730157,
+        -0.00012341556034855029,
+        9.680077316209536e-05,
+        3.325882995194812e-05,
+        8.181506547269637e-05
+      ],
+      [
+        2.214104117503084e-06,
+        0.0001632071790030179,
+        0.8053916847094268,
+        -0.23122668379222702,
+        0.28029399767532664,
+        -0.16000958867551882,
+        -0.4401257032495953
+      ],
+      [
+        -1.5029241994266738e-06,
+        -1.9183829327829815e-05,
+        0.2585626678596676,
+        0.04772847725243575,
+        0.2018798982508198,
+        0.9109691623429326,
+        0.24545270587351747
+      ],
+      [
+        -3.546495090337335e-06,
+        -0.00018811187519703247,
+        -0.46458989100491765,
+        -0.09184509846404301,
+        0.834478797634989,
+        0.027298522000580378,
+        -0.2803936565968647
+      ],
+      [
+        0.846687352129906,
+        0.5320906909668616,
+        -0.00012138314532114767,
+        -5.841846703881613e-05,
+        6.23622761791383e-05,
+        2.5344866404263966e-05,
+        4.064056475849129e-05
+      ],
+      [
+        -1.6776476636953413e-05,
+        0.00016400282014321414,
+        0.12794407184928316,
+        0.9668192429936395,
+        0.12234649566274722,
+        -0.06795861868700565,
+        -0.1711835267268874
+      ],
+      [
+        8.262525652770607e-06,
+        -4.88551909735566e-05,
+        0.22863962604589586,
+        0.032881967441604536,
+        0.4115291479186956,
+        -0.3730529880410201,
+        0.7988228362350702
+      ]
+    ],
+    "column_norms": [
+      715.9735936948991,
+      0.02139119754013159,
+      0.006363670030602174,
+      0.017139699887805955,
+      1136.2593114763347,
+      0.026065927096393847,
+      0.012684053994833846
+    ],
+    "selection_residuals": [
+      {
+        "dimension": 1,
+        "worst_relative_frobenius": 0.03100947083319768,
+        "mean_relative_frobenius": 0.016718930916971814,
+        "worst_discarded_singular_value": 2.918028079106197
+      },
+      {
+        "dimension": 2,
+        "worst_relative_frobenius": 0.025262228366631678,
+        "mean_relative_frobenius": 0.012640955079496037,
+        "worst_discarded_singular_value": 2.9166108121229524
+      },
+      {
+        "dimension": 3,
+        "worst_relative_frobenius": 0.02480922159052122,
+        "mean_relative_frobenius": 0.01241429159291294,
+        "worst_discarded_singular_value": 2.874488585497819
+      },
+      {
+        "dimension": 4,
+        "worst_relative_frobenius": 0.005610790308944522,
+        "mean_relative_frobenius": 0.0028105940765107795,
+        "worst_discarded_singular_value": 0.6613916733895635
+      },
+      {
+        "dimension": 5,
+        "worst_relative_frobenius": 0.005605187221833804,
+        "mean_relative_frobenius": 0.0028076537654836446,
+        "worst_discarded_singular_value": 0.6610321767023173
+      },
+      {
+        "dimension": 6,
+        "worst_relative_frobenius": 0.003919642840162031,
+        "mean_relative_frobenius": 0.0019641815211975887,
+        "worst_discarded_singular_value": 0.46392780809220857
+      },
+      {
+        "dimension": 7,
+        "worst_relative_frobenius": 4.012942674739073e-16,
+        "mean_relative_frobenius": 4.0008605119580553e-16,
+        "worst_discarded_singular_value": 4.745718644329252e-14
+      }
+    ],
+    "dimension_selection_status": "not_run"
+  },
+  "holdout_inactive_probes": {
+    "holdout_anchor_ids": [
+      "holdout-00"
+    ],
+    "probe_maximum_step": 0.05,
+    "forward_runs": 15,
+    "per_anchor": [
+      {
+        "anchor_id": "holdout-00",
+        "directions": [
+          {
+            "direction_index": 0,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 1.0793043316367272,
+            "rms_normalized_feature_deviation": 0.10942204017545368
+          },
+          {
+            "direction_index": 1,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 0.8237170182499242,
+            "rms_normalized_feature_deviation": 0.07026879126700904
+          },
+          {
+            "direction_index": 2,
+            "step": 0.0010628760706645089,
+            "max_normalized_feature_deviation": 0.0035675472369864447,
+            "rms_normalized_feature_deviation": 0.00028378389213770243
+          },
+          {
+            "direction_index": 3,
+            "step": 0.007390542787971513,
+            "max_normalized_feature_deviation": 0.006269000141110949,
+            "rms_normalized_feature_deviation": 0.0005316846902676574
+          },
+          {
+            "direction_index": 4,
+            "step": 0.0005905185296325019,
+            "max_normalized_feature_deviation": 0.014578109079447411,
+            "rms_normalized_feature_deviation": 0.001212295649503859
+          },
+          {
+            "direction_index": 5,
+            "step": 0.0006514237792491372,
+            "max_normalized_feature_deviation": 0.00600766415371467,
+            "rms_normalized_feature_deviation": 0.00048758268667541577
+          },
+          {
+            "direction_index": 6,
+            "step": 0.00030421712588390765,
+            "max_normalized_feature_deviation": 0.004289288523118502,
+            "rms_normalized_feature_deviation": 0.00035509637745658075
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "dimension": 1,
+        "worst_normalized_feature_deviation": 0.8237170182499242,
+        "worst_rms_normalized_feature_deviation": 0.07026879126700904
+      },
+      {
+        "dimension": 2,
+        "worst_normalized_feature_deviation": 0.014578109079447411,
+        "worst_rms_normalized_feature_deviation": 0.001212295649503859
+      },
+      {
+        "dimension": 3,
+        "worst_normalized_feature_deviation": 0.014578109079447411,
+        "worst_rms_normalized_feature_deviation": 0.001212295649503859
+      },
+      {
+        "dimension": 4,
+        "worst_normalized_feature_deviation": 0.014578109079447411,
+        "worst_rms_normalized_feature_deviation": 0.001212295649503859
+      },
+      {
+        "dimension": 5,
+        "worst_normalized_feature_deviation": 0.00600766415371467,
+        "worst_rms_normalized_feature_deviation": 0.00048758268667541577
+      },
+      {
+        "dimension": 6,
+        "worst_normalized_feature_deviation": 0.004289288523118502,
+        "worst_rms_normalized_feature_deviation": 0.00035509637745658075
+      },
+      {
+        "dimension": 7,
+        "worst_normalized_feature_deviation": 0.0,
+        "worst_rms_normalized_feature_deviation": 0.0
+      }
+    ],
+    "dimension_selection_status": "not_selected_from_holdout"
+  },
+  "prohibited_claims": [
+    "effective_dimension_selected",
+    "real_data_parameters_identifiable",
+    "unit_noise_proxy_is_experimental_covariance"
+  ]
+}

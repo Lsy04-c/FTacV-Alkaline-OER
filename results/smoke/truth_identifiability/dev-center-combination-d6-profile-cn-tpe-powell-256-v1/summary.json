@@ -1,0 +1,136 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_combination_reoptimized_profile",
+  "eligible_for_formal_conclusions": false,
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "backend": "cn",
+  "truth_id": "center",
+  "direction": 6,
+  "direction_loadings": {
+    "k0_1": -0.5141514766849414,
+    "k0_2": 0.000975517557450456,
+    "k0_3": -0.0009601276748456749,
+    "G_OH": 0.8576396277600732,
+    "G_O": 0.010006003938117333,
+    "scaling_OOH_OH": 0.0007309745485867092
+  },
+  "pivot_parameter": "G_OH",
+  "truth_combination_coordinate": 0.17712025972222029,
+  "fixed_parameters": {
+    "k0_4": 5000.0
+  },
+  "per_coordinate_budget": 256,
+  "search": "tpe_powell_hybrid",
+  "confirmation_only": false,
+  "candidate_source": null,
+  "candidate_source_sha256": null,
+  "geometry_path": "results/smoke/truth_identifiability/dev-mixed-a-compensation-geometry-v1/summary.json",
+  "geometry_sha256": "5e49dc08103e86688f2a4251dc5318eed9945ae3db8be93036a67788abe59617",
+  "rows": [
+    {
+      "combination_coordinate": 0.07712025972222028,
+      "offset_from_truth": -0.1,
+      "minimum_loss": 0.3403655002323682,
+      "recovered_unit": [
+        0.9144513265656808,
+        0.6982358682869391,
+        0.7047359494075567,
+        0.6323553610050189,
+        0.46671275419912384,
+        0.3821045367733178
+      ],
+      "realized_combination_coordinate": 0.07712025972222031,
+      "attempted_calls": 256,
+      "valid_objective_calls": 256,
+      "ode_failures": 0,
+      "wall_seconds": 8.05807129200548,
+      "optimizer_success": true,
+      "optimizer_message": "budget_exhausted"
+    },
+    {
+      "combination_coordinate": 0.1271202597222203,
+      "offset_from_truth": -0.04999999999999999,
+      "minimum_loss": 0.06480067585739412,
+      "recovered_unit": [
+        0.6145539271131639,
+        0.4778974377455779,
+        0.7711366994720591,
+        0.5107018041227265,
+        0.4888099971042218,
+        0.655455454299592
+      ],
+      "realized_combination_coordinate": 0.1271202597222203,
+      "attempted_calls": 256,
+      "valid_objective_calls": 256,
+      "ode_failures": 0,
+      "wall_seconds": 8.539263375103474,
+      "optimizer_success": true,
+      "optimizer_message": "budget_exhausted"
+    },
+    {
+      "combination_coordinate": 0.17712025972222029,
+      "offset_from_truth": 0.0,
+      "minimum_loss": 0.0108795599770746,
+      "recovered_unit": [
+        0.5014368182446095,
+        0.5453651444671741,
+        0.37498952351188214,
+        0.5008854517936612,
+        0.49052991399372275,
+        0.3766316558239605
+      ],
+      "realized_combination_coordinate": 0.17712025972222034,
+      "attempted_calls": 256,
+      "valid_objective_calls": 256,
+      "ode_failures": 1,
+      "wall_seconds": 8.749743417138234,
+      "optimizer_success": true,
+      "optimizer_message": "budget_exhausted"
+    },
+    {
+      "combination_coordinate": 0.22712025972222027,
+      "offset_from_truth": 0.04999999999999999,
+      "minimum_loss": 0.7430587286502107,
+      "recovered_unit": [
+        0.4404955297725953,
+        0.9999501142031004,
+        0.4111076111816648,
+        0.5222166415499435,
+        0.48490817041188483,
+        0.40391912217258213
+      ],
+      "realized_combination_coordinate": 0.22712025972222039,
+      "attempted_calls": 256,
+      "valid_objective_calls": 256,
+      "ode_failures": 0,
+      "wall_seconds": 7.852421584073454,
+      "optimizer_success": true,
+      "optimizer_message": "budget_exhausted"
+    },
+    {
+      "combination_coordinate": 0.2771202597222203,
+      "offset_from_truth": 0.10000000000000003,
+      "minimum_loss": 2.497328052714465,
+      "recovered_unit": [
+        0.8111781900779502,
+        0.9999598741825003,
+        0.7581852677868264,
+        0.8028853865654932,
+        0.5072623177421907,
+        0.38196601125010493
+      ],
+      "realized_combination_coordinate": 0.2771202597222204,
+      "attempted_calls": 256,
+      "valid_objective_calls": 256,
+      "ode_failures": 0,
+      "wall_seconds": 7.4803442500997335,
+      "optimizer_success": true,
+      "optimizer_message": "budget_exhausted"
+    }
+  ],
+  "prohibited_claims": [
+    "confidence_interval",
+    "combination_globally_identifiable",
+    "real_data_combination_recoverable"
+  ]
+}

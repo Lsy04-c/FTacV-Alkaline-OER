@@ -1,0 +1,55 @@
+{
+  "status": "NO_ROBUST_RECOMMENDATION",
+  "selected": [],
+  "stages": [
+    {
+      "stage": 1,
+      "ranking": [
+        {
+          "condition_id": "candidate_5hz_amp_008",
+          "all_success": true,
+          "parameter_point_count": 1,
+          "successful_point_count": 1,
+          "q25_logdet_gain": 11.414736095142182,
+          "median_correlation_reduction": 0.0003851312594991274,
+          "q25_min_singular_gain": 0.024851381516141628,
+          "positive_gain_count": 1,
+          "total_points": 256,
+          "eligible": false,
+          "rank": 1
+        }
+      ]
+    }
+  ],
+  "first_stage_detail": [
+    {
+      "dataset_id": "FT2",
+      "candidate_id": 289,
+      "selection_rank": 0,
+      "condition_id": "candidate_5hz_amp_008",
+      "success": true,
+      "base_logdet": -0.9743127615311735,
+      "combined_logdet": 10.440423333611008,
+      "logdet_gain": 11.414736095142182,
+      "correlation_reduction": 0.0003851312594991274,
+      "min_singular_gain": 0.024851381516141628
+    }
+  ],
+  "parameter_estimation_enabled": false,
+  "experimental_validation_completed": false,
+  "linearity_order_preserved": null,
+  "analysis_id": "v4-computational-experiment-design",
+  "run_mode": "smoke",
+  "job_count": 22,
+  "successful_job_count": 22,
+  "duration_seconds": 3.7576894168742,
+  "deferred_experimental_inputs": [
+    "instrument_preprocessing",
+    "electrode_area",
+    "catalyst_loading",
+    "independent_Ru",
+    "independent_Cdl",
+    "independent_gamma",
+    "new_experimental_observations"
+  ]
+}

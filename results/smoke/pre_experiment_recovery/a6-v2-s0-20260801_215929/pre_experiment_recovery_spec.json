@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "design_id": "pre-experiment-a6-v2",
+  "model": {
+    "id": "M0",
+    "beta_recon": 0.0
+  },
+  "potential_window": {
+    "E_start": 0.924097277474612,
+    "E_end": 1.9229037265531128
+  },
+  "conditions": {
+    "baseline_5hz_amp_016": {
+      "f": 5.0,
+      "dE": 0.16,
+      "cycles": 256,
+      "points_per_cycle": 128
+    },
+    "candidate_5hz_amp_008": {
+      "f": 5.0,
+      "dE": 0.08,
+      "cycles": 256,
+      "points_per_cycle": 128
+    },
+    "candidate_10hz_matched_scan": {
+      "f": 10.0,
+      "dE": 0.16,
+      "cycles": 512,
+      "points_per_cycle": 128
+    }
+  },
+  "portfolios": {
+    "P0": [
+      "baseline_5hz_amp_016"
+    ],
+    "P1": [
+      "baseline_5hz_amp_016",
+      "candidate_5hz_amp_008"
+    ],
+    "P2": [
+      "baseline_5hz_amp_016",
+      "candidate_5hz_amp_008",
+      "candidate_10hz_matched_scan"
+    ]
+  },
+  "parameter_pairs": [
+    [
+      "k0_2",
+      "k0_3"
+    ],
+    [
+      "k0_3",
+      "G_O"
+    ],
+    [
+      "G_OH",
+      "G_O"
+    ]
+  ],
+  "truth_ids": [
+    "center",
+    "mixed_a",
+    "mixed_b"
+  ],
+  "optimizer_seeds": [
+    7,
+    17,
+    27
+  ],
+  "trials": 100,
+  "feature_mode": "hybrid",
+  "fit_harmonics": [
+    1,
+    2,
+    3
+  ],
+  "feature_grid_size": 128,
+  "formal_backend": "lsoda",
+  "noise_fractions": {
+    "S1": 0.0,
+    "S2": 0.001495726085983469
+  },
+  "noise_evidence": "results/formal/identifiability/gate-a6-d9299f8/noise_evidence.json",
+  "thresholds": {
+    "max_median_normalized_bound_error": 0.025,
+    "max_normalized_bound_error": 0.05,
+    "max_seed_normalized_bound_dispersion": 0.05,
+    "max_boundary_hit_rate": 0.0,
+    "require_all_studies_success": true
+  },
+  "stage_policy": {
+    "stop_s2_if_all_p2_fail_s1": true
+  }
+}

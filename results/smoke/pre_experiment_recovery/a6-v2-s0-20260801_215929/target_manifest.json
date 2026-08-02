@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "target_record_count": 6,
+  "unique_target_count": 3,
+  "reuse_conflicts": [],
+  "records": [
+    {
+      "condition_id": "baseline_5hz_amp_016",
+      "target_key": "center|0|baseline_5hz_amp_016",
+      "target_seed": 91219193,
+      "target_sha256": "34e5d10e0e607fd793c70ef70bdfdbfe901cd7ebf6f5d1d90d912749258898bc",
+      "channel_contract_sha256": "148243253a93ae84361be49af84894783f91b2f7396ac21d2f79e6a63651ddae",
+      "job_id": "S0__k0_2-k0_3__P0__center__noise-0__seed-7__trials-3",
+      "portfolio_id": "P0"
+    },
+    {
+      "condition_id": "baseline_5hz_amp_016",
+      "target_key": "center|0|baseline_5hz_amp_016",
+      "target_seed": 91219193,
+      "target_sha256": "34e5d10e0e607fd793c70ef70bdfdbfe901cd7ebf6f5d1d90d912749258898bc",
+      "channel_contract_sha256": "148243253a93ae84361be49af84894783f91b2f7396ac21d2f79e6a63651ddae",
+      "job_id": "S0__k0_2-k0_3__P1__center__noise-0__seed-7__trials-3",
+      "portfolio_id": "P1"
+    },
+    {
+      "condition_id": "candidate_5hz_amp_008",
+      "target_key": "center|0|candidate_5hz_amp_008",
+      "target_seed": 3022416617,
+      "target_sha256": "68eda6bb681661335d85666f7c55abd2b8f0fd438ed6c711a0e5b38f1c2fa67d",
+      "channel_contract_sha256": "60c8db86b5407d2d25c6e64fc40d025d90a31dba2c70ff6b15baefd605648ab6",
+      "job_id": "S0__k0_2-k0_3__P1__center__noise-0__seed-7__trials-3",
+      "portfolio_id": "P1"
+    },
+    {
+      "condition_id": "baseline_5hz_amp_016",
+      "target_key": "center|0|baseline_5hz_amp_016",
+      "target_seed": 91219193,
+      "target_sha256": "34e5d10e0e607fd793c70ef70bdfdbfe901cd7ebf6f5d1d90d912749258898bc",
+      "channel_contract_sha256": "148243253a93ae84361be49af84894783f91b2f7396ac21d2f79e6a63651ddae",
+      "job_id": "S0__k0_2-k0_3__P2__center__noise-0__seed-7__trials-3",
+      "portfolio_id": "P2"
+    },
+    {
+      "condition_id": "candidate_5hz_amp_008",
+      "target_key": "center|0|candidate_5hz_amp_008",
+      "target_seed": 3022416617,
+      "target_sha256": "68eda6bb681661335d85666f7c55abd2b8f0fd438ed6c711a0e5b38f1c2fa67d",
+      "channel_contract_sha256": "60c8db86b5407d2d25c6e64fc40d025d90a31dba2c70ff6b15baefd605648ab6",
+      "job_id": "S0__k0_2-k0_3__P2__center__noise-0__seed-7__trials-3",
+      "portfolio_id": "P2"
+    },
+    {
+      "condition_id": "candidate_10hz_matched_scan",
+      "target_key": "center|0|candidate_10hz_matched_scan",
+      "target_seed": 2002452712,
+      "target_sha256": "db858f0816a71542c8e473d3c4b04bd3a9cf9458a9b51685af9b8d439baccdad",
+      "channel_contract_sha256": "5dbb4c1377d5c583479a46052206ffd5540f59748cd6765ea41158283a6bad25",
+      "job_id": "S0__k0_2-k0_3__P2__center__noise-0__seed-7__trials-3",
+      "portfolio_id": "P2"
+    }
+  ]
+}

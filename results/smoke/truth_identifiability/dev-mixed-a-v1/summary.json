@@ -1,0 +1,591 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_truth_local_identifiability",
+  "eligible_for_formal_conclusions": false,
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "dirty_worktree_expected": true,
+  "schema_path": "config/parameter-schemas/m0-total-current-effective-v1.json",
+  "schema_sha256": "a8dbcb8c06b2eb8b06f65f081dd2caf4420a589feefb2e5ca48977ba4c840b41",
+  "truth_id": "mixed_a",
+  "truth_unit": [
+    0.25,
+    0.7,
+    0.4,
+    0.6,
+    0.35,
+    0.65,
+    0.45
+  ],
+  "truth_parameters": {
+    "k0_1": 0.1778279410038923,
+    "k0_2": 1995.2623149688789,
+    "k0_3": 3.981071705534973,
+    "k0_4": 251.18864315095772,
+    "G_OH": 1.095,
+    "G_O": 3.125,
+    "scaling_OOH_OH": 3.03
+  },
+  "parameter_names": [
+    "k0_1",
+    "k0_2",
+    "k0_3",
+    "k0_4",
+    "G_OH",
+    "G_O",
+    "scaling_OOH_OH"
+  ],
+  "noise_evidence": {
+    "path": "/Users/liushiyu/OER-FTAcV/results/formal/identifiability/gate-a6-d9299f8/noise_evidence.json",
+    "sha256": "4aac6249e25b772717628c6366e15972426851111be6f41bde03616fd887a5a5",
+    "selection_rule": "maximum_dataset_noise_floor",
+    "selected_noise_fraction": 0.001495726085983469,
+    "limitation": "Quantized traces provide a measurement-resolution noise floor, not full repeatability uncertainty; no repeat traces are available.",
+    "source_commit": "d9299f89ca7c363a5b4dd5a4ea83e929a363beb5"
+  },
+  "feature_stability": {
+    "model": "diagonal_feature_stability_from_quantization_floor",
+    "distribution": "uniform_quantization_error",
+    "noise_fraction": 0.001495726085983469,
+    "noise_seeds": [
+      101,
+      103,
+      107,
+      109,
+      113,
+      127,
+      131,
+      137,
+      139,
+      149,
+      151,
+      157,
+      163,
+      167,
+      173,
+      179,
+      181,
+      191,
+      193,
+      197,
+      199,
+      211,
+      223,
+      227,
+      229,
+      233,
+      239,
+      241,
+      251,
+      257,
+      263,
+      269,
+      271,
+      277,
+      281,
+      283,
+      293,
+      307,
+      311,
+      313,
+      317,
+      331,
+      337,
+      347,
+      349,
+      353,
+      359,
+      367
+    ],
+    "anchors": [
+      {
+        "anchor_id": "truth-mixed-a",
+        "split": "train",
+        "current_sigma": 6.032882974007354e-05,
+        "minimum_feature_standard_deviation": 3.2866565230771467e-06,
+        "maximum_feature_standard_deviation": 0.02090927596233412
+      }
+    ],
+    "limitation": "Quantization-resolution propagation only; not repeatability uncertainty and not a full feature covariance."
+  },
+  "feature_count": 134,
+  "structurally_excluded_feature_rows": [
+    "Lockin H1 real[0]",
+    "Lockin H1 real[1]",
+    "Lockin H1 real[2]",
+    "Lockin H1 real[3]",
+    "Lockin H1 real[4]",
+    "Lockin H1 real[5]",
+    "Lockin H1 real[6]",
+    "Lockin H1 real[7]",
+    "Lockin H1 real[24]",
+    "Lockin H1 real[25]",
+    "Lockin H1 real[26]",
+    "Lockin H1 real[27]",
+    "Lockin H1 real[28]",
+    "Lockin H1 real[29]",
+    "Lockin H1 real[30]",
+    "Lockin H1 real[31]",
+    "Lockin H1 imag[0]",
+    "Lockin H1 imag[1]",
+    "Lockin H1 imag[2]",
+    "Lockin H1 imag[3]",
+    "Lockin H1 imag[4]",
+    "Lockin H1 imag[5]",
+    "Lockin H1 imag[6]",
+    "Lockin H1 imag[7]",
+    "Lockin H1 imag[24]",
+    "Lockin H1 imag[25]",
+    "Lockin H1 imag[26]",
+    "Lockin H1 imag[27]",
+    "Lockin H1 imag[28]",
+    "Lockin H1 imag[29]",
+    "Lockin H1 imag[30]",
+    "Lockin H1 imag[31]",
+    "Lockin H2 real[0]",
+    "Lockin H2 real[1]",
+    "Lockin H2 real[2]",
+    "Lockin H2 real[3]",
+    "Lockin H2 real[4]",
+    "Lockin H2 real[5]",
+    "Lockin H2 real[6]",
+    "Lockin H2 real[7]",
+    "Lockin H2 real[24]",
+    "Lockin H2 real[25]",
+    "Lockin H2 real[26]",
+    "Lockin H2 real[27]",
+    "Lockin H2 real[28]",
+    "Lockin H2 real[29]",
+    "Lockin H2 real[30]",
+    "Lockin H2 real[31]",
+    "Lockin H2 imag[0]",
+    "Lockin H2 imag[1]",
+    "Lockin H2 imag[2]",
+    "Lockin H2 imag[3]",
+    "Lockin H2 imag[4]",
+    "Lockin H2 imag[5]",
+    "Lockin H2 imag[6]",
+    "Lockin H2 imag[7]",
+    "Lockin H2 imag[24]",
+    "Lockin H2 imag[25]",
+    "Lockin H2 imag[26]",
+    "Lockin H2 imag[27]",
+    "Lockin H2 imag[28]",
+    "Lockin H2 imag[29]",
+    "Lockin H2 imag[30]",
+    "Lockin H2 imag[31]",
+    "Lockin H3 real[0]",
+    "Lockin H3 real[1]",
+    "Lockin H3 real[2]",
+    "Lockin H3 real[3]",
+    "Lockin H3 real[4]",
+    "Lockin H3 real[5]",
+    "Lockin H3 real[6]",
+    "Lockin H3 real[7]",
+    "Lockin H3 real[24]",
+    "Lockin H3 real[25]",
+    "Lockin H3 real[26]",
+    "Lockin H3 real[27]",
+    "Lockin H3 real[28]",
+    "Lockin H3 real[29]",
+    "Lockin H3 real[30]",
+    "Lockin H3 real[31]",
+    "Lockin H3 imag[0]",
+    "Lockin H3 imag[1]",
+    "Lockin H3 imag[2]",
+    "Lockin H3 imag[3]",
+    "Lockin H3 imag[4]",
+    "Lockin H3 imag[5]",
+    "Lockin H3 imag[6]",
+    "Lockin H3 imag[7]",
+    "Lockin H3 imag[24]",
+    "Lockin H3 imag[25]",
+    "Lockin H3 imag[26]",
+    "Lockin H3 imag[27]",
+    "Lockin H3 imag[28]",
+    "Lockin H3 imag[29]",
+    "Lockin H3 imag[30]",
+    "Lockin H3 imag[31]"
+  ],
+  "local_singular_values": [
+    63394.92027224452,
+    22380.465233772586,
+    14056.671538626973,
+    929.3541769228063,
+    147.59689782461498,
+    2.6471823764520863,
+    0.12454812392125757
+  ],
+  "local_effective_rank_at_one_sigma": 6,
+  "local_directions": [
+    [
+      -0.31989956716568907,
+      -0.4194899446503012,
+      0.8469074631599456,
+      -0.06444699083698652,
+      0.01692486460467261,
+      0.0005800225324524836,
+      3.536996990806966e-06
+    ],
+    [
+      0.06685718635625237,
+      -0.1619612007065963,
+      -0.03188687141939678,
+      0.5222686208943941,
+      0.8339471513479491,
+      -0.007038747722927452,
+      7.711994597314329e-05
+    ],
+    [
+      0.06792446270528425,
+      -0.19003913247259763,
+      -0.1123926799172958,
+      -0.49854827135758734,
+      0.2722375894769064,
+      0.7899121412384456,
+      0.003795539820297176
+    ],
+    [
+      -4.60340751432382e-08,
+      -3.289120113362333e-06,
+      7.016534339521634e-07,
+      6.845868868800874e-06,
+      -0.00013749493095188185,
+      -0.0047539409610679794,
+      0.9999886904771995
+    ],
+    [
+      0.8823422477086508,
+      0.19458776793067065,
+      0.42613312034658735,
+      -0.04363674194650933,
+      0.010678596548894704,
+      0.00035289840566055726,
+      3.826328351546174e-06
+    ],
+    [
+      -0.31959438739216584,
+      0.8137166298521998,
+      0.25784533751981736,
+      -0.2327134333530618,
+      0.3392198254114812,
+      -0.003850026358435052,
+      3.24124821195996e-05
+    ],
+    [
+      -0.08895075256454114,
+      0.24836008293392534,
+      0.14500071530360287,
+      0.6468941078491471,
+      -0.3390401912919037,
+      0.6131487434004426,
+      0.002864571514618511
+    ]
+  ],
+  "conditional_objective_slices": [
+    {
+      "parameter": "k0_1",
+      "truth_unit_coordinate": 0.25,
+      "complement": "fixed_to_truth_diagnostic_not_profile_likelihood",
+      "rows": [
+        {
+          "unit_coordinate": 0.15,
+          "offset_from_truth": -0.1,
+          "is_truth": false,
+          "loss": 13.289695822334275,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.2,
+          "offset_from_truth": -0.04999999999999999,
+          "is_truth": false,
+          "loss": 4.019441777841346,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.25,
+          "offset_from_truth": 0.0,
+          "is_truth": true,
+          "loss": 0.0,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.3,
+          "offset_from_truth": 0.04999999999999999,
+          "is_truth": false,
+          "loss": 2.9339027208606603,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.35,
+          "offset_from_truth": 0.09999999999999998,
+          "is_truth": false,
+          "loss": 9.75562208055975,
+          "ode_failed": false
+        }
+      ]
+    },
+    {
+      "parameter": "k0_2",
+      "truth_unit_coordinate": 0.7,
+      "complement": "fixed_to_truth_diagnostic_not_profile_likelihood",
+      "rows": [
+        {
+          "unit_coordinate": 0.6,
+          "offset_from_truth": -0.09999999999999998,
+          "is_truth": false,
+          "loss": 3.4884206509393296,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.65,
+          "offset_from_truth": -0.04999999999999993,
+          "is_truth": false,
+          "loss": 0.45042846187969204,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.7,
+          "offset_from_truth": 0.0,
+          "is_truth": true,
+          "loss": 0.0,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.75,
+          "offset_from_truth": 0.050000000000000044,
+          "is_truth": false,
+          "loss": 0.05739823134243759,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.8,
+          "offset_from_truth": 0.10000000000000009,
+          "is_truth": false,
+          "loss": 0.10254424930551806,
+          "ode_failed": false
+        }
+      ]
+    },
+    {
+      "parameter": "k0_3",
+      "truth_unit_coordinate": 0.4,
+      "complement": "fixed_to_truth_diagnostic_not_profile_likelihood",
+      "rows": [
+        {
+          "unit_coordinate": 0.3,
+          "offset_from_truth": -0.10000000000000003,
+          "is_truth": false,
+          "loss": 0.7985479174936386,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.35,
+          "offset_from_truth": -0.050000000000000044,
+          "is_truth": false,
+          "loss": 0.17979972068488878,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.4,
+          "offset_from_truth": 0.0,
+          "is_truth": true,
+          "loss": 0.0,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.45,
+          "offset_from_truth": 0.04999999999999999,
+          "is_truth": false,
+          "loss": 0.1294421018369907,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.5,
+          "offset_from_truth": 0.09999999999999998,
+          "is_truth": false,
+          "loss": 0.4053244886925577,
+          "ode_failed": false
+        }
+      ]
+    },
+    {
+      "parameter": "k0_4",
+      "truth_unit_coordinate": 0.6,
+      "complement": "fixed_to_truth_diagnostic_not_profile_likelihood",
+      "rows": [
+        {
+          "unit_coordinate": 0.5,
+          "offset_from_truth": -0.09999999999999998,
+          "is_truth": false,
+          "loss": 2.0809707764429173e-09,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.55,
+          "offset_from_truth": -0.04999999999999993,
+          "is_truth": false,
+          "loss": 6.1863730626099265e-09,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.6,
+          "offset_from_truth": 0.0,
+          "is_truth": true,
+          "loss": 0.0,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.65,
+          "offset_from_truth": 0.050000000000000044,
+          "is_truth": false,
+          "loss": 2.10960650788679e-09,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.7,
+          "offset_from_truth": 0.09999999999999998,
+          "is_truth": false,
+          "loss": 2.5703847081641323e-09,
+          "ode_failed": false
+        }
+      ]
+    },
+    {
+      "parameter": "G_OH",
+      "truth_unit_coordinate": 0.35,
+      "complement": "fixed_to_truth_diagnostic_not_profile_likelihood",
+      "rows": [
+        {
+          "unit_coordinate": 0.25,
+          "offset_from_truth": -0.09999999999999998,
+          "is_truth": false,
+          "loss": 40.5901978887716,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.3,
+          "offset_from_truth": -0.04999999999999999,
+          "is_truth": false,
+          "loss": 12.319219232503364,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.35,
+          "offset_from_truth": 0.0,
+          "is_truth": true,
+          "loss": 0.0,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.4,
+          "offset_from_truth": 0.050000000000000044,
+          "is_truth": false,
+          "loss": 10.69563819842041,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.45,
+          "offset_from_truth": 0.10000000000000003,
+          "is_truth": false,
+          "loss": 26.72342255643228,
+          "ode_failed": false
+        }
+      ]
+    },
+    {
+      "parameter": "G_O",
+      "truth_unit_coordinate": 0.65,
+      "complement": "fixed_to_truth_diagnostic_not_profile_likelihood",
+      "rows": [
+        {
+          "unit_coordinate": 0.55,
+          "offset_from_truth": -0.09999999999999998,
+          "is_truth": false,
+          "loss": 7.391707533391149,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.6,
+          "offset_from_truth": -0.050000000000000044,
+          "is_truth": false,
+          "loss": 2.2838779270025222,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.65,
+          "offset_from_truth": 0.0,
+          "is_truth": true,
+          "loss": 0.0,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.7,
+          "offset_from_truth": 0.04999999999999993,
+          "is_truth": false,
+          "loss": 5.823911027447459,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.75,
+          "offset_from_truth": 0.09999999999999998,
+          "is_truth": false,
+          "loss": 26.08936305915579,
+          "ode_failed": false
+        }
+      ]
+    },
+    {
+      "parameter": "scaling_OOH_OH",
+      "truth_unit_coordinate": 0.45,
+      "complement": "fixed_to_truth_diagnostic_not_profile_likelihood",
+      "rows": [
+        {
+          "unit_coordinate": 0.35,
+          "offset_from_truth": -0.10000000000000003,
+          "is_truth": false,
+          "loss": 0.5839569455858151,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.4,
+          "offset_from_truth": -0.04999999999999999,
+          "is_truth": false,
+          "loss": 0.20846221209423726,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.45,
+          "offset_from_truth": 0.0,
+          "is_truth": true,
+          "loss": 0.0,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.5,
+          "offset_from_truth": 0.04999999999999999,
+          "is_truth": false,
+          "loss": 0.3222559534550839,
+          "ode_failed": false
+        },
+        {
+          "unit_coordinate": 0.55,
+          "offset_from_truth": 0.10000000000000003,
+          "is_truth": false,
+          "loss": 1.4549986579073044,
+          "ode_failed": false
+        }
+      ]
+    }
+  ],
+  "artifacts": {
+    "importance_report": {
+      "path": "results/smoke/truth_identifiability/dev-mixed-a-v1/importance_report.json",
+      "sha256": "7a1d4cc4cd79e964e0d8e44c8c51fcdd462fbb43e725ff75e40f8db38f4548a5"
+    }
+  },
+  "prohibited_claims": [
+    "conditional_slice_is_profile_likelihood",
+    "local_rank_proves_global_identifiability",
+    "seven_parameters_recoverable"
+  ]
+}

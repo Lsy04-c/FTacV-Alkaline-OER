@@ -1,0 +1,2904 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_smoke",
+  "eligible_for_formal_conclusions": false,
+  "schema_path": "config/parameter-schemas/m0-total-current-effective-v1.json",
+  "schema_sha256": "a8dbcb8c06b2eb8b06f65f081dd2caf4420a589feefb2e5ca48977ba4c840b41",
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "dirty_worktree_expected": true,
+  "forward_reports_source": null,
+  "seed": 23,
+  "split_counts": {
+    "train": 12,
+    "selection": 4,
+    "holdout": 2
+  },
+  "parameter_names": [
+    "k0_1",
+    "k0_2",
+    "k0_3",
+    "k0_4",
+    "G_OH",
+    "G_O",
+    "scaling_OOH_OH"
+  ],
+  "config": {
+    "E_start": 0.924097277474612,
+    "E_end": 1.9229037265531128,
+    "f": 5.0,
+    "dE": 0.16,
+    "n_points": 256,
+    "points_per_cycle": 32,
+    "fit_harmonics": [
+      1,
+      2,
+      3
+    ],
+    "feature_mode": "hybrid",
+    "solver_backend": "lsoda"
+  },
+  "noise_evidence": {
+    "path": "results/formal/identifiability/gate-a6-d9299f8/noise_evidence.json",
+    "sha256": "4aac6249e25b772717628c6366e15972426851111be6f41bde03616fd887a5a5",
+    "selection_rule": "maximum_dataset_noise_floor",
+    "selected_noise_fraction": 0.001495726085983469,
+    "limitation": "Quantized traces provide a measurement-resolution noise floor, not full repeatability uncertainty; no repeat traces are available.",
+    "source_commit": "d9299f89ca7c363a5b4dd5a4ea83e929a363beb5"
+  },
+  "feature_stability": {
+    "model": "diagonal_feature_stability_from_quantization_floor",
+    "distribution": "uniform_quantization_error",
+    "noise_fraction": 0.001495726085983469,
+    "noise_seeds": [
+      101,
+      103,
+      107,
+      109,
+      113,
+      127,
+      131,
+      137,
+      139,
+      149,
+      151,
+      157,
+      163,
+      167,
+      173,
+      179,
+      181,
+      191,
+      193,
+      197,
+      199,
+      211,
+      223,
+      227,
+      229,
+      233,
+      239,
+      241,
+      251,
+      257,
+      263,
+      269,
+      271,
+      277,
+      281,
+      283,
+      293,
+      307,
+      311,
+      313,
+      317,
+      331,
+      337,
+      347,
+      349,
+      353,
+      359,
+      367
+    ],
+    "anchors": [
+      {
+        "anchor_id": "train-00",
+        "split": "train",
+        "current_sigma": 4.257267618391747e-05,
+        "minimum_feature_standard_deviation": 4.4443470902182876e-05,
+        "maximum_feature_standard_deviation": 0.016580930692056985
+      },
+      {
+        "anchor_id": "train-01",
+        "split": "train",
+        "current_sigma": 6.0217417244819956e-05,
+        "minimum_feature_standard_deviation": 2.670633046413175e-05,
+        "maximum_feature_standard_deviation": 0.04467418938801349
+      },
+      {
+        "anchor_id": "train-02",
+        "split": "train",
+        "current_sigma": 7.956961988627015e-05,
+        "minimum_feature_standard_deviation": 1.3250839920878178e-06,
+        "maximum_feature_standard_deviation": 0.9037719277180284
+      },
+      {
+        "anchor_id": "train-03",
+        "split": "train",
+        "current_sigma": 4.261946204202056e-05,
+        "minimum_feature_standard_deviation": 2.0875167967881695e-05,
+        "maximum_feature_standard_deviation": 0.167228749648164
+      },
+      {
+        "anchor_id": "train-04",
+        "split": "train",
+        "current_sigma": 6.107078324148723e-05,
+        "minimum_feature_standard_deviation": 2.3346521451164244e-05,
+        "maximum_feature_standard_deviation": 0.10764590631189652
+      },
+      {
+        "anchor_id": "train-05",
+        "split": "train",
+        "current_sigma": 5.083946933963562e-05,
+        "minimum_feature_standard_deviation": 9.368310325078433e-06,
+        "maximum_feature_standard_deviation": 0.3457751796354328
+      },
+      {
+        "anchor_id": "train-06",
+        "split": "train",
+        "current_sigma": 6.511408796894932e-05,
+        "minimum_feature_standard_deviation": 1.0829676311441226e-05,
+        "maximum_feature_standard_deviation": 0.04926011801586551
+      },
+      {
+        "anchor_id": "train-07",
+        "split": "train",
+        "current_sigma": 4.257264566745019e-05,
+        "minimum_feature_standard_deviation": 4.449808328916665e-05,
+        "maximum_feature_standard_deviation": 0.01657325467551106
+      },
+      {
+        "anchor_id": "train-08",
+        "split": "train",
+        "current_sigma": 5.098102475951098e-05,
+        "minimum_feature_standard_deviation": 1.84312984822601e-05,
+        "maximum_feature_standard_deviation": 0.03419029757098305
+      },
+      {
+        "anchor_id": "train-09",
+        "split": "train",
+        "current_sigma": 4.300474313716865e-05,
+        "minimum_feature_standard_deviation": 3.322100268291865e-05,
+        "maximum_feature_standard_deviation": 0.09864007401681067
+      },
+      {
+        "anchor_id": "train-10",
+        "split": "train",
+        "current_sigma": 7.707054982801747e-05,
+        "minimum_feature_standard_deviation": 1.4513519352628193e-05,
+        "maximum_feature_standard_deviation": 0.029295103142665087
+      },
+      {
+        "anchor_id": "train-11",
+        "split": "train",
+        "current_sigma": 5.33179297367998e-05,
+        "minimum_feature_standard_deviation": 7.820291159784726e-06,
+        "maximum_feature_standard_deviation": 0.0337119955507446
+      },
+      {
+        "anchor_id": "selection-00",
+        "split": "selection",
+        "current_sigma": 5.018306928636379e-05,
+        "minimum_feature_standard_deviation": 2.905702383503074e-06,
+        "maximum_feature_standard_deviation": 0.03752675284699105
+      },
+      {
+        "anchor_id": "selection-01",
+        "split": "selection",
+        "current_sigma": 7.200258363390953e-05,
+        "minimum_feature_standard_deviation": 4.039462958422421e-05,
+        "maximum_feature_standard_deviation": 0.03477343242330954
+      },
+      {
+        "anchor_id": "selection-02",
+        "split": "selection",
+        "current_sigma": 4.25729980899761e-05,
+        "minimum_feature_standard_deviation": 5.002613910736855e-06,
+        "maximum_feature_standard_deviation": 0.019021467794756487
+      },
+      {
+        "anchor_id": "selection-03",
+        "split": "selection",
+        "current_sigma": 5.8875914981557976e-05,
+        "minimum_feature_standard_deviation": 1.3876096169254576e-05,
+        "maximum_feature_standard_deviation": 0.04547334716440448
+      },
+      {
+        "anchor_id": "holdout-00",
+        "split": "holdout",
+        "current_sigma": 4.257615486903356e-05,
+        "minimum_feature_standard_deviation": 1.24577739307895e-06,
+        "maximum_feature_standard_deviation": 0.027535111776250648
+      },
+      {
+        "anchor_id": "holdout-01",
+        "split": "holdout",
+        "current_sigma": 5.3903137475833806e-05,
+        "minimum_feature_standard_deviation": 4.8078064437786254e-06,
+        "maximum_feature_standard_deviation": 0.05279238618501091
+      }
+    ],
+    "limitation": "Quantization-resolution propagation only; not repeatability uncertainty and not a full feature covariance.",
+    "artifact": {
+      "path": "results/smoke/effective_dimension/dev-partitioned-seed23-v1/feature_stability.json",
+      "sha256": "9450292a321652ba7653808c2f56ee89d838e1ee3f4d7a39549b70a3af41d561"
+    }
+  },
+  "structurally_excluded_feature_rows": [
+    "Lockin H1 real[0]",
+    "Lockin H1 real[1]",
+    "Lockin H1 real[2]",
+    "Lockin H1 real[3]",
+    "Lockin H1 real[4]",
+    "Lockin H1 real[5]",
+    "Lockin H1 real[6]",
+    "Lockin H1 real[7]",
+    "Lockin H1 real[24]",
+    "Lockin H1 real[25]",
+    "Lockin H1 real[26]",
+    "Lockin H1 real[27]",
+    "Lockin H1 real[28]",
+    "Lockin H1 real[29]",
+    "Lockin H1 real[30]",
+    "Lockin H1 real[31]",
+    "Lockin H1 imag[0]",
+    "Lockin H1 imag[1]",
+    "Lockin H1 imag[2]",
+    "Lockin H1 imag[3]",
+    "Lockin H1 imag[4]",
+    "Lockin H1 imag[5]",
+    "Lockin H1 imag[6]",
+    "Lockin H1 imag[7]",
+    "Lockin H1 imag[24]",
+    "Lockin H1 imag[25]",
+    "Lockin H1 imag[26]",
+    "Lockin H1 imag[27]",
+    "Lockin H1 imag[28]",
+    "Lockin H1 imag[29]",
+    "Lockin H1 imag[30]",
+    "Lockin H1 imag[31]",
+    "Lockin H2 real[0]",
+    "Lockin H2 real[1]",
+    "Lockin H2 real[2]",
+    "Lockin H2 real[3]",
+    "Lockin H2 real[4]",
+    "Lockin H2 real[5]",
+    "Lockin H2 real[6]",
+    "Lockin H2 real[7]",
+    "Lockin H2 real[24]",
+    "Lockin H2 real[25]",
+    "Lockin H2 real[26]",
+    "Lockin H2 real[27]",
+    "Lockin H2 real[28]",
+    "Lockin H2 real[29]",
+    "Lockin H2 real[30]",
+    "Lockin H2 real[31]",
+    "Lockin H2 imag[0]",
+    "Lockin H2 imag[1]",
+    "Lockin H2 imag[2]",
+    "Lockin H2 imag[3]",
+    "Lockin H2 imag[4]",
+    "Lockin H2 imag[5]",
+    "Lockin H2 imag[6]",
+    "Lockin H2 imag[7]",
+    "Lockin H2 imag[24]",
+    "Lockin H2 imag[25]",
+    "Lockin H2 imag[26]",
+    "Lockin H2 imag[27]",
+    "Lockin H2 imag[28]",
+    "Lockin H2 imag[29]",
+    "Lockin H2 imag[30]",
+    "Lockin H2 imag[31]",
+    "Lockin H3 real[0]",
+    "Lockin H3 real[1]",
+    "Lockin H3 real[2]",
+    "Lockin H3 real[3]",
+    "Lockin H3 real[4]",
+    "Lockin H3 real[5]",
+    "Lockin H3 real[6]",
+    "Lockin H3 real[7]",
+    "Lockin H3 real[24]",
+    "Lockin H3 real[25]",
+    "Lockin H3 real[26]",
+    "Lockin H3 real[27]",
+    "Lockin H3 real[28]",
+    "Lockin H3 real[29]",
+    "Lockin H3 real[30]",
+    "Lockin H3 real[31]",
+    "Lockin H3 imag[0]",
+    "Lockin H3 imag[1]",
+    "Lockin H3 imag[2]",
+    "Lockin H3 imag[3]",
+    "Lockin H3 imag[4]",
+    "Lockin H3 imag[5]",
+    "Lockin H3 imag[6]",
+    "Lockin H3 imag[7]",
+    "Lockin H3 imag[24]",
+    "Lockin H3 imag[25]",
+    "Lockin H3 imag[26]",
+    "Lockin H3 imag[27]",
+    "Lockin H3 imag[28]",
+    "Lockin H3 imag[29]",
+    "Lockin H3 imag[30]",
+    "Lockin H3 imag[31]"
+  ],
+  "decomposition": {
+    "training_anchor_ids": [
+      "train-00",
+      "train-01",
+      "train-02",
+      "train-03",
+      "train-04",
+      "train-05",
+      "train-06",
+      "train-07",
+      "train-08",
+      "train-09",
+      "train-10",
+      "train-11"
+    ],
+    "selection_anchor_ids": [
+      "selection-00",
+      "selection-01",
+      "selection-02",
+      "selection-03"
+    ],
+    "parameter_names": [
+      "k0_1",
+      "k0_2",
+      "k0_3",
+      "k0_4",
+      "G_OH",
+      "G_O",
+      "scaling_OOH_OH"
+    ],
+    "feature_names": [
+      "DC shape[0]",
+      "DC shape[1]",
+      "DC shape[2]",
+      "DC shape[3]",
+      "DC shape[4]",
+      "DC shape[5]",
+      "DC shape[6]",
+      "DC shape[7]",
+      "DC shape[8]",
+      "DC shape[9]",
+      "DC shape[10]",
+      "DC shape[11]",
+      "DC shape[12]",
+      "DC shape[13]",
+      "DC shape[14]",
+      "DC shape[15]",
+      "DC shape[16]",
+      "DC shape[17]",
+      "DC shape[18]",
+      "DC shape[19]",
+      "DC shape[20]",
+      "DC shape[21]",
+      "DC shape[22]",
+      "DC shape[23]",
+      "DC shape[24]",
+      "DC shape[25]",
+      "DC shape[26]",
+      "DC shape[27]",
+      "DC shape[28]",
+      "DC shape[29]",
+      "DC shape[30]",
+      "DC shape[31]",
+      "Complex H1 real",
+      "Complex H1 imag",
+      "Complex H2 real",
+      "Complex H2 imag",
+      "Complex H3 real",
+      "Complex H3 imag",
+      "Lockin H1 real[8]",
+      "Lockin H1 real[9]",
+      "Lockin H1 real[10]",
+      "Lockin H1 real[11]",
+      "Lockin H1 real[12]",
+      "Lockin H1 real[13]",
+      "Lockin H1 real[14]",
+      "Lockin H1 real[15]",
+      "Lockin H1 real[16]",
+      "Lockin H1 real[17]",
+      "Lockin H1 real[18]",
+      "Lockin H1 real[19]",
+      "Lockin H1 real[20]",
+      "Lockin H1 real[21]",
+      "Lockin H1 real[22]",
+      "Lockin H1 real[23]",
+      "Lockin H1 imag[8]",
+      "Lockin H1 imag[9]",
+      "Lockin H1 imag[10]",
+      "Lockin H1 imag[11]",
+      "Lockin H1 imag[12]",
+      "Lockin H1 imag[13]",
+      "Lockin H1 imag[14]",
+      "Lockin H1 imag[15]",
+      "Lockin H1 imag[16]",
+      "Lockin H1 imag[17]",
+      "Lockin H1 imag[18]",
+      "Lockin H1 imag[19]",
+      "Lockin H1 imag[20]",
+      "Lockin H1 imag[21]",
+      "Lockin H1 imag[22]",
+      "Lockin H1 imag[23]",
+      "Lockin H2 real[8]",
+      "Lockin H2 real[9]",
+      "Lockin H2 real[10]",
+      "Lockin H2 real[11]",
+      "Lockin H2 real[12]",
+      "Lockin H2 real[13]",
+      "Lockin H2 real[14]",
+      "Lockin H2 real[15]",
+      "Lockin H2 real[16]",
+      "Lockin H2 real[17]",
+      "Lockin H2 real[18]",
+      "Lockin H2 real[19]",
+      "Lockin H2 real[20]",
+      "Lockin H2 real[21]",
+      "Lockin H2 real[22]",
+      "Lockin H2 real[23]",
+      "Lockin H2 imag[8]",
+      "Lockin H2 imag[9]",
+      "Lockin H2 imag[10]",
+      "Lockin H2 imag[11]",
+      "Lockin H2 imag[12]",
+      "Lockin H2 imag[13]",
+      "Lockin H2 imag[14]",
+      "Lockin H2 imag[15]",
+      "Lockin H2 imag[16]",
+      "Lockin H2 imag[17]",
+      "Lockin H2 imag[18]",
+      "Lockin H2 imag[19]",
+      "Lockin H2 imag[20]",
+      "Lockin H2 imag[21]",
+      "Lockin H2 imag[22]",
+      "Lockin H2 imag[23]",
+      "Lockin H3 real[8]",
+      "Lockin H3 real[9]",
+      "Lockin H3 real[10]",
+      "Lockin H3 real[11]",
+      "Lockin H3 real[12]",
+      "Lockin H3 real[13]",
+      "Lockin H3 real[14]",
+      "Lockin H3 real[15]",
+      "Lockin H3 real[16]",
+      "Lockin H3 real[17]",
+      "Lockin H3 real[18]",
+      "Lockin H3 real[19]",
+      "Lockin H3 real[20]",
+      "Lockin H3 real[21]",
+      "Lockin H3 real[22]",
+      "Lockin H3 real[23]",
+      "Lockin H3 imag[8]",
+      "Lockin H3 imag[9]",
+      "Lockin H3 imag[10]",
+      "Lockin H3 imag[11]",
+      "Lockin H3 imag[12]",
+      "Lockin H3 imag[13]",
+      "Lockin H3 imag[14]",
+      "Lockin H3 imag[15]",
+      "Lockin H3 imag[16]",
+      "Lockin H3 imag[17]",
+      "Lockin H3 imag[18]",
+      "Lockin H3 imag[19]",
+      "Lockin H3 imag[20]",
+      "Lockin H3 imag[21]",
+      "Lockin H3 imag[22]",
+      "Lockin H3 imag[23]"
+    ],
+    "feature_count": 134,
+    "noise_model": "diagonal_quantization_stability_floor",
+    "excluded_nonsmooth_features": [
+      "Tafel",
+      "onset"
+    ],
+    "included_feature_blocks": [
+      "DC shape",
+      "Complex H1 real",
+      "Complex H1 imag",
+      "Complex H2 real",
+      "Complex H2 imag",
+      "Complex H3 real",
+      "Complex H3 imag",
+      "Lockin H1 real",
+      "Lockin H1 imag",
+      "Lockin H2 real",
+      "Lockin H2 imag",
+      "Lockin H3 real",
+      "Lockin H3 imag"
+    ],
+    "gramian": [
+      [
+        255536561.7501669,
+        -8677174.33467894,
+        -2769138.7871350334,
+        154624.54091372094,
+        -424161359.8893417,
+        14419702.842201952,
+        3326940.482291153
+      ],
+      [
+        -8677174.33467894,
+        40743308.55968781,
+        -734409.3891027827,
+        -1666.9815569051764,
+        98863223.5146664,
+        -111229175.93350436,
+        934950.3852270665
+      ],
+      [
+        -2769138.7871350334,
+        -734409.3891027827,
+        17634009.518549882,
+        29408.930860923883,
+        -14301682.29883994,
+        72118777.64968853,
+        -23097232.860806614
+      ],
+      [
+        154624.54091372094,
+        -1666.9815569051764,
+        29408.930860923883,
+        12848242.697972318,
+        30422103.155525763,
+        8968285.95618498,
+        20467817.680587947
+      ],
+      [
+        -424161359.8893417,
+        98863223.5146664,
+        -14301682.29883994,
+        30422103.155525763,
+        1487859775.656526,
+        -485387722.47987825,
+        307738438.34757423
+      ],
+      [
+        14419702.842201952,
+        -111229175.93350436,
+        72118777.64968853,
+        8968285.95618498,
+        -485387722.47987825,
+        1033680058.2773252,
+        -202260361.017651
+      ],
+      [
+        3326940.482291153,
+        934950.3852270665,
+        -23097232.860806614,
+        20467817.680587947,
+        307738438.34757423,
+        -202260361.017651,
+        223079472.5784368
+      ]
+    ],
+    "eigenvalues": [
+      1966442983.3104413,
+      804841192.2849553,
+      205361251.73817515,
+      64374567.55297072,
+      12284999.778994847,
+      9657989.463684734,
+      8418444.909443142
+    ],
+    "directions": [
+      [
+        -0.20773213006093055,
+        -0.31455991863155575,
+        0.5502835147940448,
+        0.6525067875637275,
+        -0.29078145414270645,
+        -0.16084764201238824,
+        0.13746471272927616
+      ],
+      [
+        0.07123769171122536,
+        -0.06171386890166025,
+        -0.12087030338214357,
+        0.5123905608946813,
+        0.6794618058118799,
+        0.03735855802219899,
+        -0.5008980586072869
+      ],
+      [
+        -0.026093475748145155,
+        0.07161000644117768,
+        -0.02792095396681852,
+        0.20951909002911256,
+        -0.11090877164367341,
+        0.9593783292718174,
+        0.12963708744004906
+      ],
+      [
+        0.012663885694872748,
+        0.024505335521122672,
+        0.10684596461008053,
+        0.014461768186406187,
+        0.5964501579729401,
+        -0.039857169488236935,
+        0.7938970504618404
+      ],
+      [
+        0.8217262669080101,
+        0.4360608761250821,
+        0.08126065922975068,
+        0.2818086825076661,
+        -0.17647721076934023,
+        -0.10124749037945252,
+        0.08486557654448566
+      ],
+      [
+        -0.48488971131641695,
+        0.8350621521411247,
+        0.21497297647149693,
+        0.0857572482352389,
+        0.04232396542518032,
+        -0.07175639218312814,
+        -0.08393560516592131
+      ],
+      [
+        0.20144284567936616,
+        -0.06353790883125235,
+        0.785853744618474,
+        -0.4252210887315063,
+        0.22975798098394948,
+        0.18798129544793216,
+        -0.26244796545022525
+      ]
+    ],
+    "column_norms": [
+      15985.510994340058,
+      6383.04853182927,
+      4199.286786890112,
+      3584.4445452499776,
+      38572.785427766634,
+      32150.89513959643,
+      14935.845224775088
+    ],
+    "selection_residuals": [
+      {
+        "dimension": 1,
+        "worst_relative_frobenius": 0.7330464521560154,
+        "mean_relative_frobenius": 0.6292150517351951,
+        "worst_discarded_singular_value": 121361.70337320202
+      },
+      {
+        "dimension": 2,
+        "worst_relative_frobenius": 0.679640834029778,
+        "mean_relative_frobenius": 0.3802429900058067,
+        "worst_discarded_singular_value": 112139.62507084555
+      },
+      {
+        "dimension": 3,
+        "worst_relative_frobenius": 0.40050415580997667,
+        "mean_relative_frobenius": 0.21631495522012464,
+        "worst_discarded_singular_value": 66366.09295457095
+      },
+      {
+        "dimension": 4,
+        "worst_relative_frobenius": 0.3891868846202847,
+        "mean_relative_frobenius": 0.1359191903521826,
+        "worst_discarded_singular_value": 66265.15726839141
+      },
+      {
+        "dimension": 5,
+        "worst_relative_frobenius": 0.30027743160123366,
+        "mean_relative_frobenius": 0.09771717499147524,
+        "worst_discarded_singular_value": 52116.90861025713
+      },
+      {
+        "dimension": 6,
+        "worst_relative_frobenius": 0.2968684323678779,
+        "mean_relative_frobenius": 0.08902533227219032,
+        "worst_discarded_singular_value": 52063.81142388073
+      },
+      {
+        "dimension": 7,
+        "worst_relative_frobenius": 9.594874627591635e-16,
+        "mean_relative_frobenius": 5.152306308651641e-16,
+        "worst_discarded_singular_value": 1.6683688004054746e-10
+      }
+    ],
+    "subspace_alignment": {
+      "training": {
+        "per_anchor": [
+          {
+            "anchor_id": "train-00",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 37.59857244815556,
+                "projector_frobenius": 0.8628476485706592,
+                "local_retained_singular_value": 1600.1304375515963
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 79.30377480702904,
+                "projector_frobenius": 1.4035215884893102,
+                "local_retained_singular_value": 1.3430621074636646
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 67.9276665189044,
+                "projector_frobenius": 1.7117601772177398,
+                "local_retained_singular_value": 0.44039641270563085
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 84.57928046692153,
+                "projector_frobenius": 1.7932545002666747,
+                "local_retained_singular_value": 0.288066762447789
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 84.42483218927771,
+                "projector_frobenius": 1.7613615314648563,
+                "local_retained_singular_value": 0.2574228618092668
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 78.86900372161784,
+                "projector_frobenius": 1.3876098979730664,
+                "local_retained_singular_value": 0.15632342665567867
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 1.4787793334710982e-06,
+                "projector_frobenius": 3.448136252708404e-15,
+                "local_retained_singular_value": 0.13861454382147723
+              }
+            ],
+            "local_singular_values": [
+              1600.1304375515963,
+              1.3430621074636646,
+              0.44039641270563085,
+              0.288066762447789,
+              0.2574228618092668,
+              0.15632342665567867,
+              0.13861454382147723
+            ],
+            "local_directions": [
+              [
+                -0.5734970119981958,
+                0.817562775922704,
+                -0.027259271222740123,
+                0.040305192227531,
+                0.003749052656111065,
+                -0.014818671194846917,
+                0.00954252874302682
+              ],
+              [
+                -2.8918524811794022e-05,
+                0.004907489214095451,
+                -0.44202450731741405,
+                -0.4541505792139739,
+                -0.20914345411274618,
+                0.24882990668581342,
+                0.7019118143928483
+              ],
+              [
+                3.5745323348778136e-05,
+                0.05442437120777042,
+                0.8226093407667643,
+                -0.5024408420535417,
+                -0.21349129491003216,
+                0.12253168176569071,
+                0.08551323419223963
+              ],
+              [
+                5.06516970670109e-05,
+                0.010657431436728582,
+                -0.00032556295114897886,
+                -0.4186346820833808,
+                0.8596470553993284,
+                -0.2802236131938085,
+                0.08433848651213996
+              ],
+              [
+                0.8192076490315663,
+                0.5723420064926513,
+                -0.019127130103216372,
+                0.028260476783533467,
+                0.0025766898879684996,
+                -0.010357160500881321,
+                0.006711453918622137
+              ],
+              [
+                -1.3941677639999687e-05,
+                -0.017173686067459996,
+                0.3207674403144182,
+                0.5621671372748712,
+                0.35975439701232936,
+                0.42046540518829145,
+                0.5239914504884013
+              ],
+              [
+                1.1105914540722011e-05,
+                0.02492234057644327,
+                -0.15468495622841513,
+                -0.21815224338230366,
+                0.20553224040619175,
+                0.8169616700685722,
+                -0.4671093743793972
+              ]
+            ]
+          },
+          {
+            "anchor_id": "train-01",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 12.334566516043667,
+                "projector_frobenius": 0.30210401636153084,
+                "local_retained_singular_value": 69954.70788277494
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 26.793692338573546,
+                "projector_frobenius": 0.6607491453231903,
+                "local_retained_singular_value": 27687.58117595653
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 50.2686128677097,
+                "projector_frobenius": 1.166293995194275,
+                "local_retained_singular_value": 9739.070889391465
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 31.79097612138389,
+                "projector_frobenius": 0.8702922406818973,
+                "local_retained_singular_value": 5041.24342567663
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 39.518027174578414,
+                "projector_frobenius": 1.0915367944781846,
+                "local_retained_singular_value": 2195.7937832054795
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 37.44850046533959,
+                "projector_frobenius": 0.8599098530474465,
+                "local_retained_singular_value": 68.22040218728392
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 0.0,
+                "projector_frobenius": 2.3982543146434947e-15,
+                "local_retained_singular_value": 0.06228091586988704
+              }
+            ],
+            "local_singular_values": [
+              69954.70788277494,
+              27687.58117595653,
+              9739.070889391465,
+              5041.24342567663,
+              2195.7937832054795,
+              68.22040218728392,
+              0.06228091586988704
+            ],
+            "local_directions": [
+              [
+                -0.07159583893207834,
+                -0.1351832768348117,
+                -0.05256820966001069,
+                0.9858986729638561,
+                -0.04282425079593833,
+                -0.0024476592083774607,
+                -1.1086087688444992e-06
+              ],
+              [
+                0.1200332853214694,
+                -0.06147173698837605,
+                -0.4898700038766525,
+                0.01158166170224742,
+                0.8612215637523792,
+                0.0019744635829259238,
+                -1.461476681455884e-06
+              ],
+              [
+                -0.03611696788410582,
+                0.2847800149358798,
+                -0.4747452436942769,
+                0.002376088028154566,
+                -0.24653211240087308,
+                0.7946251525527416,
+                -2.2401899944815485e-06
+              ],
+              [
+                5.7154562881769534e-08,
+                -2.6111187528220905e-06,
+                5.145527248047745e-06,
+                1.2561353175339262e-06,
+                4.393787372237815e-06,
+                8.191143008470065e-06,
+                0.9999999999393621
+              ],
+              [
+                0.8541142494908528,
+                0.4602773374820112,
+                0.1982705690437523,
+                0.1367832839481942,
+                0.024750126273073127,
+                -0.0004090843549409863,
+                -1.4439859231412712e-07
+              ],
+              [
+                -0.49741428231804125,
+                0.738898510509592,
+                0.32340419251332786,
+                0.09567408557604469,
+                0.3047363076234176,
+                5.780494039988553e-05,
+                -1.1659034582651187e-06
+              ],
+              [
+                0.04721749099759614,
+                -0.37285495044227934,
+                0.6228799450247888,
+                0.0009102450008949563,
+                0.31970084965955775,
+                0.6070920907325151,
+                -1.0559932059685387e-05
+              ]
+            ]
+          },
+          {
+            "anchor_id": "train-02",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 24.54493264485145,
+                "projector_frobenius": 0.5874738275813971,
+                "local_retained_singular_value": 91264.25959906376
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 33.33164642912217,
+                "projector_frobenius": 0.8241633240872056,
+                "local_retained_singular_value": 33774.276337294104
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 77.81476838835081,
+                "projector_frobenius": 1.4002021848227506,
+                "local_retained_singular_value": 8770.059480609974
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 86.49908914641802,
+                "projector_frobenius": 1.5473080850326593,
+                "local_retained_singular_value": 2500.609249786766
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 59.85561958338501,
+                "projector_frobenius": 1.262776974265215,
+                "local_retained_singular_value": 235.03620389357965
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 59.939938380746575,
+                "projector_frobenius": 1.2240029576519065,
+                "local_retained_singular_value": 96.88033056476708
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 0.0,
+                "projector_frobenius": 2.1354242532136074e-15,
+                "local_retained_singular_value": 0.04370680146959244
+              }
+            ],
+            "local_singular_values": [
+              91264.25959906376,
+              33774.276337294104,
+              8770.059480609974,
+              2500.609249786766,
+              235.03620389357965,
+              96.88033056476708,
+              0.04370680146959244
+            ],
+            "local_directions": [
+              [
+                0.0008494729473924337,
+                -0.013019600566544097,
+                0.01798781628636582,
+                0.014927081806344685,
+                0.9630787373512806,
+                -0.2678856563254256,
+                -9.943718070608232e-05
+              ],
+              [
+                4.504344158773321e-08,
+                -7.002884533369169e-07,
+                7.1205127474549545e-06,
+                8.405225973041885e-08,
+                7.791281217350322e-05,
+                -9.05704123387828e-05,
+                0.999999992837697
+              ],
+              [
+                -0.000349306685818612,
+                0.0037779477952541813,
+                -0.007525950547651374,
+                -0.008836435343342823,
+                0.2682669906021257,
+                0.963267200686557,
+                6.639906511902333e-05
+              ],
+              [
+                0.04694013030461608,
+                0.2396122858540248,
+                0.9549569842815983,
+                -0.16817304808437863,
+                -0.009877029872503676,
+                0.007746286787073163,
+                -5.148833158323047e-06
+              ],
+              [
+                0.783909139748361,
+                0.2856865250479199,
+                -0.2003984062626016,
+                -0.5132815541684379,
+                0.011964485283439212,
+                -0.010442510939154952,
+                -2.431343279392151e-07
+              ],
+              [
+                -0.32865364558451965,
+                0.9189959363671818,
+                -0.19880150920425627,
+                0.08764622421765239,
+                0.012830178205949248,
+                -0.008045870381740114,
+                3.3821469082902537e-07
+              ],
+              [
+                0.524660864188024,
+                0.1274042696518191,
+                0.08941697467604387,
+                0.8368256156858452,
+                -0.010336500604137905,
+                0.010944404491733437,
+                1.1551404820192178e-06
+              ]
+            ]
+          },
+          {
+            "anchor_id": "train-03",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 36.48390035668718,
+                "projector_frobenius": 0.8408869804649922,
+                "local_retained_singular_value": 33097.90800676562
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 80.16695506384086,
+                "projector_frobenius": 1.4086604499760071,
+                "local_retained_singular_value": 2618.0492049532577
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 55.939680571377394,
+                "projector_frobenius": 1.191756205644322,
+                "local_retained_singular_value": 9.172998985521286
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 39.661156650746314,
+                "projector_frobenius": 0.9665857848039329,
+                "local_retained_singular_value": 1.1640295201586055
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 33.345862698338095,
+                "projector_frobenius": 0.8897177767033326,
+                "local_retained_singular_value": 0.49949507736157994
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 45.38051978281575,
+                "projector_frobenius": 1.0066192207524933,
+                "local_retained_singular_value": 0.26064834626963224
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 0.0,
+                "projector_frobenius": 2.143065841695213e-15,
+                "local_retained_singular_value": 0.19017452284104583
+              }
+            ],
+            "local_singular_values": [
+              33097.90800676562,
+              2618.0492049532577,
+              9.172998985521286,
+              1.1640295201586055,
+              0.49949507736157994,
+              0.26064834626963224,
+              0.19017452284104583
+            ],
+            "local_directions": [
+              [
+                -0.5391010929795186,
+                0.8422404705041703,
+                0.0009970083456932032,
+                -5.074904486578826e-05,
+                6.557285189836327e-05,
+                -2.073218231501299e-05,
+                7.903980202397845e-06
+              ],
+              [
+                -3.827015628621311e-06,
+                -1.574639815371537e-05,
+                0.013282287168263227,
+                0.8187230619202581,
+                0.5603739545604287,
+                -0.11769667729998533,
+                0.04055430516915047
+              ],
+              [
+                -2.2795932389108937e-06,
+                1.2920408405446621e-05,
+                0.001468389283906427,
+                0.04118923353811677,
+                0.15848787118155985,
+                0.9101708719942896,
+                -0.38048898691396066
+              ],
+              [
+                3.4073382290884345e-06,
+                -1.4753005804671574e-05,
+                -0.016068535223884167,
+                -0.20292537190246993,
+                0.30126589793792297,
+                0.32215229045829485,
+                0.8740822935381277
+              ],
+              [
+                0.8422410564776044,
+                0.5391008756735723,
+                0.0004970901629180718,
+                -1.8030534577982746e-05,
+                3.313523330329379e-05,
+                -1.0027073335232425e-05,
+                3.043128664659621e-06
+              ],
+              [
+                0.00011926692757743299,
+                -0.0011100707048301605,
+                0.9993342463121798,
+                -0.030194736808881073,
+                0.019734368551076478,
+                -0.0015390012254615948,
+                0.005126568858274753
+              ],
+              [
+                8.702015255345151e-06,
+                -5.294709012440996e-05,
+                -0.029883940162664227,
+                -0.534701377712066,
+                0.7547927091450003,
+                -0.23227571681739542,
+                -0.2992279089800444
+              ]
+            ]
+          },
+          {
+            "anchor_id": "train-04",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 36.693949445359436,
+                "projector_frobenius": 0.8450498430362771,
+                "local_retained_singular_value": 24422.11717215001
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 49.173888833026595,
+                "projector_frobenius": 1.0885894147976822,
+                "local_retained_singular_value": 3776.6391063695633
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 52.09621481302048,
+                "projector_frobenius": 1.222562170195049,
+                "local_retained_singular_value": 288.83111726989944
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 64.49937094618963,
+                "projector_frobenius": 1.3849824573624208,
+                "local_retained_singular_value": 103.09138193700356
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 42.51283083006855,
+                "projector_frobenius": 1.0668877401871926,
+                "local_retained_singular_value": 8.012229334599482
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 37.44381237073421,
+                "projector_frobenius": 0.8598179842038776,
+                "local_retained_singular_value": 4.178582756223055
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 1.2074182697257333e-06,
+                "projector_frobenius": 2.3718937324933003e-15,
+                "local_retained_singular_value": 0.21544401620510706
+              }
+            ],
+            "local_singular_values": [
+              24422.11717215001,
+              3776.6391063695633,
+              288.83111726989944,
+              103.09138193700356,
+              8.012229334599482,
+              4.178582756223055,
+              0.21544401620510706
+            ],
+            "local_directions": [
+              [
+                -0.5319496121183397,
+                0.23704756041435415,
+                0.803230656139092,
+                -0.12389793766379012,
+                0.015851573418341477,
+                -0.007523693876144789,
+                -6.287338915208807e-07
+              ],
+              [
+                -0.00922071448972861,
+                -0.06548803623153274,
+                0.09255938798976415,
+                0.600769236182463,
+                0.7672601647380504,
+                0.1935120365984232,
+                0.0005580181065964729
+              ],
+              [
+                0.009089383951049097,
+                -0.29529413923313286,
+                0.021944676488414007,
+                -0.490931479301683,
+                0.1536989171130535,
+                0.80473189523791,
+                -0.002586098124481762
+              ],
+              [
+                4.8174120485486015e-06,
+                6.75502068642541e-07,
+                5.341530635667858e-05,
+                -8.477908017421767e-05,
+                -0.0015384798385182424,
+                0.003454448749810733,
+                0.9999928448740373
+              ],
+              [
+                0.8466026569471932,
+                0.15378739419278642,
+                0.5060816570270179,
+                -0.05828483471531971,
+                0.00894443557107841,
+                -0.004196440189273416,
+                -7.898994129472596e-06
+              ],
+              [
+                0.002568744910218819,
+                0.827458250983004,
+                -0.29855175132890194,
+                -0.3220616582296102,
+                0.34646587059732475,
+                0.04909848742837243,
+                0.00035149688079206924
+              ],
+              [
+                -0.01092311618402285,
+                0.379451476230872,
+                -0.022801518659527863,
+                0.5249676825130946,
+                -0.5170263443654658,
+                0.5589837723177736,
+                -0.002680914054270664
+              ]
+            ]
+          },
+          {
+            "anchor_id": "train-05",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 33.714331134678964,
+                "projector_frobenius": 0.78496277759776,
+                "local_retained_singular_value": 46763.753468561416
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 25.890291261921845,
+                "projector_frobenius": 0.7594705478691022,
+                "local_retained_singular_value": 7955.538441570482
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 84.28191538603546,
+                "projector_frobenius": 1.5004939773650015,
+                "local_retained_singular_value": 1135.2807657957278
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 71.47402501923673,
+                "projector_frobenius": 1.5958224958518752,
+                "local_retained_singular_value": 39.54200890111683
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 62.051420041149534,
+                "projector_frobenius": 1.2869052300203119,
+                "local_retained_singular_value": 16.41655927883798
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 62.93506705573422,
+                "projector_frobenius": 1.2593450823090004,
+                "local_retained_singular_value": 8.504322192459023
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 1.7075472925031877e-06,
+                "projector_frobenius": 3.312173217887883e-15,
+                "local_retained_singular_value": 0.32893880169966133
+              }
+            ],
+            "local_singular_values": [
+              46763.753468561416,
+              7955.538441570482,
+              1135.2807657957278,
+              39.54200890111683,
+              16.41655927883798,
+              8.504322192459023,
+              0.32893880169966133
+            ],
+            "local_directions": [
+              [
+                8.226422135042465e-05,
+                -0.001218561142026811,
+                0.005121541827204622,
+                0.030405806588747763,
+                0.9977304123595727,
+                0.05984138352838146,
+                -0.0008933904784552188
+              ],
+              [
+                -0.3417572053669148,
+                -0.214736284060692,
+                0.9149062327840544,
+                0.003378042088520671,
+                -0.0049842687628903395,
+                -0.0008189873269225288,
+                3.545131846787884e-05
+              ],
+              [
+                4.358302213075822e-06,
+                5.1625675478771415e-05,
+                0.0006884326106946013,
+                -0.05906257094026351,
+                -0.046871901713953466,
+                0.819915861189954,
+                0.5674963801550759
+              ],
+              [
+                2.9870925200004876e-05,
+                0.00035737921691931336,
+                0.0020425713154368385,
+                -0.5823731295329927,
+                0.04758812036413865,
+                -0.4880125840219472,
+                0.6483951927062869
+              ],
+              [
+                -0.521134019878278,
+                0.8534553316933466,
+                0.00565062952318669,
+                0.0005696924201629533,
+                0.0010364194188862137,
+                4.231253509101035e-05,
+                3.2682206631809944e-06
+              ],
+              [
+                0.7820622329499984,
+                0.4748688602676015,
+                0.4035738831215236,
+                0.001921741146723723,
+                -0.0015943604157615716,
+                -0.0003387749822917526,
+                1.8999131332012365e-05
+              ],
+              [
+                -4.4943250127001095e-05,
+                -0.000524770218714394,
+                -0.003449671487024278,
+                0.8101933157158989,
+                -0.0066302939056111995,
+                -0.29325742944328853,
+                0.5074748592898679
+              ]
+            ]
+          },
+          {
+            "anchor_id": "train-06",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 40.42824512699585,
+                "projector_frobenius": 0.9171107609791689,
+                "local_retained_singular_value": 53204.023500051786
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 57.01450093558252,
+                "projector_frobenius": 1.2066389861241782,
+                "local_retained_singular_value": 2497.3207193347225
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 55.77287444349661,
+                "projector_frobenius": 1.1909007258669013,
+                "local_retained_singular_value": 871.9930407104803
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 45.81079215219521,
+                "projector_frobenius": 1.154474146111265,
+                "local_retained_singular_value": 5.078225352937384
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 69.51624876568685,
+                "projector_frobenius": 1.4555213400310842,
+                "local_retained_singular_value": 0.13980708533315703
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 58.03111680831524,
+                "projector_frobenius": 1.1997279447789722,
+                "local_retained_singular_value": 0.10550597302778417
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 1.7075472925031877e-06,
+                "projector_frobenius": 2.3645689292322966e-15,
+                "local_retained_singular_value": 0.07583166953126418
+              }
+            ],
+            "local_singular_values": [
+              53204.023500051786,
+              2497.3207193347225,
+              871.9930407104803,
+              5.078225352937384,
+              0.13980708533315703,
+              0.10550597302778417,
+              0.07583166953126418
+            ],
+            "local_directions": [
+              [
+                -0.5701916874813977,
+                0.7353728905803784,
+                0.36619940421601493,
+                0.0024787889604800995,
+                -5.5703167763663975e-05,
+                1.3264822986694573e-05,
+                -2.213968385442689e-06
+              ],
+              [
+                0.00010668778723910144,
+                -0.0007187288930677882,
+                0.0015108060862453754,
+                0.03491539711246933,
+                0.7459824317407864,
+                -0.6642142372473421,
+                0.03328307569887311
+              ],
+              [
+                4.7354815561415433e-05,
+                -0.0002867569613407521,
+                0.0006767587657873698,
+                0.006918080735682152,
+                0.6619365944028385,
+                0.7469200270168377,
+                0.06246611814426421
+              ],
+              [
+                -0.0022255071597952055,
+                0.013669824478752375,
+                -0.027377092124427883,
+                -0.5227864265781577,
+                -0.04046287774800586,
+                -0.03038951876129593,
+                0.8504071158585511
+              ],
+              [
+                0.8190311328782959,
+                0.543478829938582,
+                0.18389557914116966,
+                0.0010864430310548014,
+                -1.8943002537383472e-05,
+                -2.694824587093882e-06,
+                -5.697346931181253e-06
+              ],
+              [
+                0.0636720580308617,
+                -0.4040854457657385,
+                0.9109525144572163,
+                -0.0530551103234737,
+                -0.0003336509369021745,
+                -0.0004767800370572173,
+                0.0033398468388864642
+              ],
+              [
+                0.0032164300777499854,
+                -0.019620469573806955,
+                0.03864819552836137,
+                0.8500619023956121,
+                -0.06093272736549018,
+                0.002483933600904456,
+                0.5213317596683342
+              ]
+            ]
+          },
+          {
+            "anchor_id": "train-07",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 50.563610798127,
+                "projector_frobenius": 1.0922399751361522,
+                "local_retained_singular_value": 2034.1393470642474
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 23.64418854032164,
+                "projector_frobenius": 0.6549527886031022,
+                "local_retained_singular_value": 89.20045252145206
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 55.7095413558551,
+                "projector_frobenius": 1.252602960898219,
+                "local_retained_singular_value": 32.5267026416415
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 66.85771241567247,
+                "projector_frobenius": 1.342933377669297,
+                "local_retained_singular_value": 1.8838691294366454
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 64.10009425008246,
+                "projector_frobenius": 1.3095973016993516,
+                "local_retained_singular_value": 0.7258369597227575
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 66.02254637850565,
+                "projector_frobenius": 1.2921746270298307,
+                "local_retained_singular_value": 0.24945377067822963
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 1.2074182697257333e-06,
+                "projector_frobenius": 2.817633492166948e-15,
+                "local_retained_singular_value": 0.19797683804656432
+              }
+            ],
+            "local_singular_values": [
+              2034.1393470642474,
+              89.20045252145206,
+              32.5267026416415,
+              1.8838691294366454,
+              0.7258369597227575,
+              0.24945377067822963,
+              0.19797683804656432
+            ],
+            "local_directions": [
+              [
+                -0.5831715508276893,
+                -0.13546366496353487,
+                0.800945317186377,
+                -0.006571311429447696,
+                -0.0019462635455082863,
+                0.00040111679184675415,
+                7.541032276537463e-05
+              ],
+              [
+                -0.09684334848037801,
+                -0.38216657112947217,
+                -0.12746556663138875,
+                0.9021872268409544,
+                0.11863905539760981,
+                0.01688966972059961,
+                -0.00450870332907551
+              ],
+              [
+                4.519491955360876e-06,
+                -0.0008083674056793727,
+                -0.0005736044868903773,
+                -0.02880002404679973,
+                0.0741169057170114,
+                0.8611413216876149,
+                -0.5021074431668494
+              ],
+              [
+                1.3857205265880442e-05,
+                -0.0016672057512483053,
+                0.0011499607231132316,
+                -0.12486843285124917,
+                0.9646714215217537,
+                -0.17559306214641301,
+                -0.1515912178386772
+              ],
+              [
+                0.7719388605866312,
+                -0.3992880308292258,
+                0.4943811351746565,
+                -0.015984527576232,
+                -0.00334008719268263,
+                -0.00013394603346492307,
+                0.0002790883750886984
+              ],
+              [
+                0.23375778799194463,
+                0.8222918713093758,
+                0.3127695035446935,
+                0.4101668959050357,
+                0.05526293325479678,
+                0.008425531769533522,
+                -0.002597827967428884
+              ],
+              [
+                4.149033985541568e-06,
+                -0.0001454921105924808,
+                -8.720438755049312e-05,
+                -0.033182390888762466,
+                0.21626736093162363,
+                0.47670354649725694,
+                0.8513994699891114
+              ]
+            ]
+          },
+          {
+            "anchor_id": "train-08",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 15.830360894153339,
+                "projector_frobenius": 0.38578343896732353,
+                "local_retained_singular_value": 47024.898416364245
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 23.284617834690856,
+                "projector_frobenius": 0.6552672776316948,
+                "local_retained_singular_value": 8509.978776273016
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 55.12602296463237,
+                "projector_frobenius": 1.2133670471917097,
+                "local_retained_singular_value": 2171.5364843059906
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 61.5059302986277,
+                "projector_frobenius": 1.3479132977816926,
+                "local_retained_singular_value": 265.39208427451183
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 40.92565257786951,
+                "projector_frobenius": 1.048947566748691,
+                "local_retained_singular_value": 32.04483996734038
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 37.292576414598294,
+                "projector_frobenius": 0.8568512493117368,
+                "local_retained_singular_value": 0.6085595964399662
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 0.0,
+                "projector_frobenius": 2.026655026292437e-15,
+                "local_retained_singular_value": 0.04469818697954829
+              }
+            ],
+            "local_singular_values": [
+              47024.898416364245,
+              8509.978776273016,
+              2171.5364843059906,
+              265.39208427451183,
+              32.04483996734038,
+              0.6085595964399662,
+              0.04469818697954829
+            ],
+            "local_directions": [
+              [
+                -0.29819517438028575,
+                -0.5308288815721078,
+                0.7916996303946484,
+                -0.04026056393564997,
+                -0.02984945974296254,
+                0.00035825311499206416,
+                -9.87604194938231e-06
+              ],
+              [
+                0.17382571078455578,
+                -0.27723346199445775,
+                -0.06555880094317121,
+                0.49424274481252034,
+                0.7899401901605002,
+                0.1426261463133157,
+                -0.0021589342040066618
+              ],
+              [
+                0.023064586018891928,
+                -0.039681072317535086,
+                -0.03926578230169791,
+                -0.5312367107314094,
+                0.16029237417233388,
+                0.8296179905114914,
+                -0.013399159857566937
+              ],
+              [
+                1.8727129548427947e-06,
+                -4.895837654799176e-06,
+                -2.467558757232104e-06,
+                0.00010217308603204062,
+                -0.0002704916795231049,
+                0.0162661468296127,
+                0.9998676556568196
+              ],
+              [
+                0.8173429590761684,
+                0.2872288138034241,
+                0.4982399133044419,
+                -0.0284465052781649,
+                -0.019945568270112065,
+                0.00023489746959880442,
+                -5.205195482470031e-06
+              ],
+              [
+                -0.4597140402909818,
+                0.74468807672986,
+                0.34292247043915763,
+                0.09025141315197568,
+                0.3236924828277793,
+                0.059865810809296066,
+                -0.0008902160601180197
+              ],
+              [
+                -0.030753431073294705,
+                0.05222064163426408,
+                0.03915488787247016,
+                0.6803941664103492,
+                -0.4942015157866929,
+                0.5362304409942016,
+                -0.008926369938895772
+              ]
+            ]
+          },
+          {
+            "anchor_id": "train-09",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 36.2598972116913,
+                "projector_frobenius": 0.8364351179423386,
+                "local_retained_singular_value": 43925.576247953555
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 80.01631933081407,
+                "projector_frobenius": 1.4080388648444282,
+                "local_retained_singular_value": 1925.686829706571
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 55.645817974505334,
+                "projector_frobenius": 1.2322800230370985,
+                "local_retained_singular_value": 20.49610169081738
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 68.80174266794461,
+                "projector_frobenius": 1.3468478379745763,
+                "local_retained_singular_value": 0.05117981194785668
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 38.064340562669365,
+                "projector_frobenius": 0.9273478229353683,
+                "local_retained_singular_value": 0.0003756952910814139
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 82.95565199926268,
+                "projector_frobenius": 1.4035384069201315,
+                "local_retained_singular_value": 3.4236478893691595e-06
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 8.537736462515939e-07,
+                "projector_frobenius": 2.4161454980525663e-15,
+                "local_retained_singular_value": 3.773787551666111e-07
+              }
+            ],
+            "local_singular_values": [
+              43925.576247953555,
+              1925.686829706571,
+              20.49610169081738,
+              0.05117981194785668,
+              0.0003756952910814139,
+              3.4236478893691595e-06,
+              3.773787551666111e-07
+            ],
+            "local_directions": [
+              [
+                -0.532113397636878,
+                0.8466664769480381,
+                0.0033479624788641856,
+                -3.8697026302159875e-06,
+                -2.4624946030463427e-08,
+                -3.80518967057019e-10,
+                -1.1362139137268295e-11
+              ],
+              [
+                5.610112597509431e-05,
+                0.001510670664068181,
+                -0.372044250393149,
+                0.928211850394038,
+                -0.001884263437938105,
+                -2.8434681206993604e-05,
+                -2.655018233770322e-06
+              ],
+              [
+                -5.450187572771376e-12,
+                4.6002203820283087e-10,
+                -5.9286992109731706e-08,
+                1.3314461938857418e-05,
+                0.0005578140636486563,
+                0.3096611166259775,
+                0.9508468233717484
+              ],
+              [
+                -4.455213645293074e-12,
+                9.259951005602564e-10,
+                -7.092277566668977e-08,
+                3.3304864390927106e-05,
+                0.0025079197310299683,
+                0.9508435472626777,
+                -0.30966152143644177
+              ],
+              [
+                0.8466730828983451,
+                0.5321085246260043,
+                0.0022822598302149355,
+                -2.41157365980408e-06,
+                -2.5177796134485717e-08,
+                -1.9278588717618787e-10,
+                1.0441500838231622e-12
+              ],
+              [
+                -0.0001400121892379782,
+                -0.0037566882855277757,
+                0.9282061506751974,
+                0.3720465678514258,
+                -0.0007488385668374115,
+                -1.1321176652498287e-05,
+                -1.0255350047280586e-06
+              ],
+              [
+                9.076934778247759e-09,
+                6.759264663512489e-08,
+                -5.952495745929981e-06,
+                0.0020275183773920034,
+                0.9999946439727508,
+                -0.002557448373048938,
+                0.00024620605707119576
+              ]
+            ]
+          },
+          {
+            "anchor_id": "train-10",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 54.66766567999939,
+                "projector_frobenius": 1.153731478003106,
+                "local_retained_singular_value": 83469.9075540315
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 40.21454227300826,
+                "projector_frobenius": 0.9383912231774478,
+                "local_retained_singular_value": 18159.1380472399
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 51.31676555950671,
+                "projector_frobenius": 1.182581407167587,
+                "local_retained_singular_value": 1911.2416705527914
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 69.29681989206426,
+                "projector_frobenius": 1.4810481167242049,
+                "local_retained_singular_value": 707.0358198656703
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 79.42845634297964,
+                "projector_frobenius": 1.610292169092783,
+                "local_retained_singular_value": 347.6802265115951
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 37.45282368467482,
+                "projector_frobenius": 0.8599945666195624,
+                "local_retained_singular_value": 97.35800624931449
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 1.2074182697257333e-06,
+                "projector_frobenius": 2.854543271603003e-15,
+                "local_retained_singular_value": 0.21249269991907055
+              }
+            ],
+            "local_singular_values": [
+              83469.9075540315,
+              18159.1380472399,
+              1911.2416705527914,
+              707.0358198656703,
+              347.6802265115951,
+              97.35800624931449,
+              0.21249269991907055
+            ],
+            "local_directions": [
+              [
+                -0.0021286708545810258,
+                -0.00401054031792735,
+                -0.06254864694608735,
+                0.03912051434796171,
+                0.05903803557139138,
+                0.9955155064991461,
+                -0.0001520681914474963
+              ],
+              [
+                -0.012645517998903011,
+                -0.03054169920035507,
+                -0.18312257620717604,
+                0.9809701791579711,
+                -0.026573856134051495,
+                -0.04862873542845548,
+                3.783273727517571e-05
+              ],
+              [
+                0.09894980079801093,
+                -0.3877424690215669,
+                0.48574414925341036,
+                0.09973682525318714,
+                0.7704233435955234,
+                -0.020439487620907602,
+                -2.7972788497854502e-05
+              ],
+              [
+                4.0548559071306414e-06,
+                1.1103644719307674e-05,
+                1.974084836756125e-05,
+                -2.591900691784288e-05,
+                3.634157927627064e-05,
+                0.00015291027044734225,
+                0.9999999870482547
+              ],
+              [
+                -0.08857783864691458,
+                0.7515838307858033,
+                0.6361742187381273,
+                0.14216475993336658,
+                -0.028835403054039387,
+                0.038932959108985025,
+                -2.1765324355542092e-05
+              ],
+              [
+                0.9825910143843997,
+                0.17270786096500798,
+                -0.06816496468729243,
+                0.005306373320970658,
+                0.0029623357663453487,
+                -0.001870227823747981,
+                -4.240460521328691e-06
+              ],
+              [
+                -0.12928016666218445,
+                0.5039847595238471,
+                -0.5632426749873931,
+                -0.07733486543478629,
+                0.6335739538096077,
+                -0.06816929893673947,
+                -8.558702181052544e-06
+              ]
+            ]
+          },
+          {
+            "anchor_id": "train-11",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 35.57668749544777,
+                "projector_frobenius": 0.8227782607293611,
+                "local_retained_singular_value": 53056.07957186194
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 22.384315052426007,
+                "projector_frobenius": 0.6364117532748269,
+                "local_retained_singular_value": 19146.407359675857
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 58.12991534595829,
+                "projector_frobenius": 1.2483326198178561,
+                "local_retained_singular_value": 1990.0099970936503
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 68.73912546985832,
+                "projector_frobenius": 1.3463004823371922,
+                "local_retained_singular_value": 855.7450044956369
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 53.186017984965865,
+                "projector_frobenius": 1.1628761780641397,
+                "local_retained_singular_value": 3.428612614863825
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 69.49136545564917,
+                "projector_frobenius": 1.324579860990837,
+                "local_retained_singular_value": 0.2025944625680785
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 0.0,
+                "projector_frobenius": 2.3218947171587197e-15,
+                "local_retained_singular_value": 0.1382915309830036
+              }
+            ],
+            "local_singular_values": [
+              53056.07957186194,
+              19146.407359675857,
+              1990.0099970936503,
+              855.7450044956369,
+              3.428612614863825,
+              0.2025944625680785,
+              0.1382915309830036
+            ],
+            "local_directions": [
+              [
+                -0.5282132803402216,
+                -0.26794186766807304,
+                0.7824036089807984,
+                -0.1924619826750515,
+                0.0009288684844342882,
+                3.226735042173314e-05,
+                -7.97083617579394e-06
+              ],
+              [
+                0.005225790068359326,
+                -0.3853073091810442,
+                0.09730200053743032,
+                0.9176290899193467,
+                -0.0003776608165321965,
+                2.707219410667823e-06,
+                -9.63234568173925e-08
+              ],
+              [
+                -3.373029798795404e-05,
+                -1.8947160632044768e-05,
+                0.00010823982153436898,
+                -6.072707954563635e-05,
+                -0.10442436045596491,
+                -0.4742934289555984,
+                0.8741517484353264
+              ],
+              [
+                -8.683780955142328e-05,
+                -4.428270492144102e-05,
+                0.00034077376543262435,
+                -0.00023024705968126575,
+                -0.42191467349277373,
+                0.8170687465276316,
+                0.3929204666303599
+              ],
+              [
+                0.849018834753946,
+                -0.15262970093609107,
+                0.4911510292156906,
+                -0.12100312851551508,
+                0.00031931660212584483,
+                6.890261876762647e-06,
+                2.1139697639900673e-06
+              ],
+              [
+                -0.011418861928044609,
+                0.8697411068825248,
+                0.37033341505986794,
+                0.32599567005530183,
+                3.716320287494934e-05,
+                2.138377525765175e-06,
+                8.017683207508201e-07
+              ],
+              [
+                0.00020183450145283826,
+                0.00011005987102137185,
+                -0.0007833856528435392,
+                0.0004978471112022046,
+                0.9006011617060566,
+                0.32778713458088277,
+                0.2854334029888354
+              ]
+            ]
+          }
+        ],
+        "rows": [
+          {
+            "dimension": 1,
+            "worst_maximum_principal_angle_degrees": 54.66766567999939,
+            "worst_projector_frobenius": 1.153731478003106,
+            "minimum_local_retained_singular_value": 1600.1304375515963
+          },
+          {
+            "dimension": 2,
+            "worst_maximum_principal_angle_degrees": 80.16695506384086,
+            "worst_projector_frobenius": 1.4086604499760071,
+            "minimum_local_retained_singular_value": 1.3430621074636646
+          },
+          {
+            "dimension": 3,
+            "worst_maximum_principal_angle_degrees": 84.28191538603546,
+            "worst_projector_frobenius": 1.7117601772177398,
+            "minimum_local_retained_singular_value": 0.44039641270563085
+          },
+          {
+            "dimension": 4,
+            "worst_maximum_principal_angle_degrees": 86.49908914641802,
+            "worst_projector_frobenius": 1.7932545002666747,
+            "minimum_local_retained_singular_value": 0.05117981194785668
+          },
+          {
+            "dimension": 5,
+            "worst_maximum_principal_angle_degrees": 84.42483218927771,
+            "worst_projector_frobenius": 1.7613615314648563,
+            "minimum_local_retained_singular_value": 0.0003756952910814139
+          },
+          {
+            "dimension": 6,
+            "worst_maximum_principal_angle_degrees": 82.95565199926268,
+            "worst_projector_frobenius": 1.4035384069201315,
+            "minimum_local_retained_singular_value": 3.4236478893691595e-06
+          },
+          {
+            "dimension": 7,
+            "worst_maximum_principal_angle_degrees": 1.7075472925031877e-06,
+            "worst_projector_frobenius": 3.448136252708404e-15,
+            "minimum_local_retained_singular_value": 3.773787551666111e-07
+          }
+        ]
+      },
+      "selection": {
+        "per_anchor": [
+          {
+            "anchor_id": "selection-00",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 45.49891392778239,
+                "projector_frobenius": 1.008669668983145,
+                "local_retained_singular_value": 169625.6037582054
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 82.86134987409679,
+                "projector_frobenius": 1.6800722095336704,
+                "local_retained_singular_value": 39817.26060676538
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 88.3356545722098,
+                "projector_frobenius": 1.6592481993469184,
+                "local_retained_singular_value": 19766.485443397076
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 87.75651139098508,
+                "projector_frobenius": 1.6263689478834786,
+                "local_retained_singular_value": 2831.9019284295873
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 85.43730748101245,
+                "projector_frobenius": 1.8628283978639206,
+                "local_retained_singular_value": 0.13513373079228594
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 59.93834900979221,
+                "projector_frobenius": 1.2239833066078931,
+                "local_retained_singular_value": 0.005643454101808268
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 1.2074182697257333e-06,
+                "projector_frobenius": 2.1588052341154496e-15,
+                "local_retained_singular_value": 3.1542824124006584e-05
+              }
+            ],
+            "local_singular_values": [
+              169625.6037582054,
+              39817.26060676538,
+              19766.485443397076,
+              2831.9019284295873,
+              0.13513373079228594,
+              0.005643454101808268,
+              3.1542824124006584e-05
+            ],
+            "local_directions": [
+              [
+                0.025728410483328155,
+                -0.02010936260958007,
+                -0.1152485748408183,
+                0.9927997926913966,
+                -6.523157709656071e-06,
+                -3.995764189968139e-06,
+                -4.3502680049035625e-09
+              ],
+              [
+                -1.9670931550308524e-12,
+                8.000704959654215e-11,
+                7.192559742241755e-11,
+                7.787511052681495e-10,
+                -0.0001575268280371482,
+                -0.0006405532140313291,
+                0.9999997824384156
+              ],
+              [
+                7.59490995682729e-07,
+                5.684049234391819e-07,
+                -5.869174532581884e-06,
+                5.869636476062914e-06,
+                0.9999960353396318,
+                -0.002811580491110767,
+                0.00015572527045230105
+              ],
+              [
+                0.41972138855314367,
+                -0.6508017708910686,
+                -0.6252609741850103,
+                -0.09664225342955406,
+                -3.051833073097581e-06,
+                -1.6163979596382935e-07,
+                -4.111576278934673e-10
+              ],
+              [
+                0.7166118445248433,
+                -0.18890760869402992,
+                0.6691231489008451,
+                0.055277402789116414,
+                3.1666872854999075e-06,
+                2.90501828934735e-07,
+                6.102693990210377e-10
+              ],
+              [
+                9.966712061245382e-08,
+                4.934841598492987e-08,
+                -8.658475109919007e-07,
+                3.941107279884844e-06,
+                0.002811480100853864,
+                0.9999958423366501,
+                0.0006409935738217141
+              ],
+              [
+                0.556452575850932,
+                0.7350963092803985,
+                -0.384760564154115,
+                -0.044195646560292706,
+                -2.8399611899207994e-06,
+                -2.42716187998923e-07,
+                -5.984696055125409e-10
+              ]
+            ]
+          },
+          {
+            "anchor_id": "selection-01",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 36.8362120407749,
+                "projector_frobenius": 0.8478628299239908,
+                "local_retained_singular_value": 53919.2873748495
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 80.21000997284351,
+                "projector_frobenius": 1.4088331358281638,
+                "local_retained_singular_value": 7874.712366131609
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 55.623721494857776,
+                "projector_frobenius": 1.2219898695087035,
+                "local_retained_singular_value": 2.2845042339633226
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 66.6760455989841,
+                "projector_frobenius": 1.3675322072822496,
+                "local_retained_singular_value": 0.2029014951837754
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 70.4092518711004,
+                "projector_frobenius": 1.3646183068939637,
+                "local_retained_singular_value": 0.0713874084982859
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 81.94392088182187,
+                "projector_frobenius": 1.4002572213735422,
+                "local_retained_singular_value": 0.03521169714091171
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 1.2074182697257333e-06,
+                "projector_frobenius": 2.4877785774180597e-15,
+                "local_retained_singular_value": 0.0018977178633011926
+              }
+            ],
+            "local_singular_values": [
+              53919.2873748495,
+              7874.712366131609,
+              2.2845042339633226,
+              0.2029014951837754,
+              0.0713874084982859,
+              0.03521169714091171,
+              0.0018977178633011926
+            ],
+            "local_directions": [
+              [
+                -0.5503475582578314,
+                0.8349355949725848,
+                0.0003408901321070092,
+                3.394950233449573e-05,
+                -2.620718835528869e-06,
+                -1.3778621187295886e-06,
+                -2.8382097125946557e-08
+              ],
+              [
+                -4.252000578941484e-05,
+                0.00010110234113147598,
+                -0.35140492940958273,
+                0.36415055043474703,
+                -0.28111752653601035,
+                0.8153418116097788,
+                0.009980315137411053
+              ],
+              [
+                3.0186271483189224e-08,
+                1.0229599435175257e-07,
+                -0.00022928287057024638,
+                -0.001112381516572764,
+                -0.019118874838282594,
+                -0.018430229363727117,
+                0.9996466902397236
+              ],
+              [
+                7.706281046708291e-06,
+                -2.8942118823392225e-05,
+                0.018778187892113326,
+                0.7005955701683201,
+                0.7106642646278946,
+                -0.059945136494641546,
+                0.013270622235385329
+              ],
+              [
+                0.8349356550295824,
+                0.5503475693880981,
+                6.860221432628716e-05,
+                1.1054660188551047e-05,
+                6.625325216500891e-07,
+                1.5731421847902577e-07,
+                -3.792281892364448e-08
+              ],
+              [
+                0.00012302507327617467,
+                -0.00030559141732321057,
+                0.9359728358013937,
+                0.11570833152839663,
+                -0.1124822650327317,
+                0.31288716265830296,
+                0.003960761577215359
+              ],
+              [
+                8.800996745351826e-06,
+                -2.5902386209109015e-05,
+                0.010799648376259713,
+                0.6026363472493995,
+                -0.6347530605880422,
+                -0.4831006737097729,
+                -0.020373781085893022
+              ]
+            ]
+          },
+          {
+            "anchor_id": "selection-02",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 34.22675359193487,
+                "projector_frobenius": 0.7954520124775951,
+                "local_retained_singular_value": 27432.840299718977
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 85.57978871020545,
+                "projector_frobenius": 1.4242524908809062,
+                "local_retained_singular_value": 2577.8028622027473
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 62.51864651872657,
+                "projector_frobenius": 1.2994336838154141,
+                "local_retained_singular_value": 437.98933753284985
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 68.1705130514585,
+                "projector_frobenius": 1.4651813088610939,
+                "local_retained_singular_value": 0.848637652195057
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 87.03653768396548,
+                "projector_frobenius": 1.6582497123411604,
+                "local_retained_singular_value": 0.35227423444015954
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 59.940574566139425,
+                "projector_frobenius": 1.2240108232087785,
+                "local_retained_singular_value": 0.19793249938728158
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 1.2074182697257333e-06,
+                "projector_frobenius": 2.5627839780788494e-15,
+                "local_retained_singular_value": 7.362495386803991e-07
+              }
+            ],
+            "local_singular_values": [
+              27432.840299718977,
+              2577.8028622027473,
+              437.98933753284985,
+              0.848637652195057,
+              0.35227423444015954,
+              0.19793249938728158,
+              7.362495386803991e-07
+            ],
+            "local_directions": [
+              [
+                -0.5198021810743427,
+                0.848232209434364,
+                -0.10152736416135627,
+                -5.6317927955558914e-05,
+                5.0495723934686005e-05,
+                -5.777029745537233e-06,
+                -5.466655448656834e-12
+              ],
+              [
+                -7.65787433465448e-12,
+                -1.0371370429140825e-11,
+                1.6056955765009207e-10,
+                6.079194907316314e-07,
+                1.3681289083865976e-06,
+                1.4301877650812197e-06,
+                0.9999999999978566
+              ],
+              [
+                -0.011293107807832875,
+                0.03190417978493988,
+                0.3250568902214398,
+                -0.5500533247524683,
+                0.7506402306634156,
+                -0.1648429288322026,
+                -4.5688007227675965e-07
+              ],
+              [
+                -6.8409204346466675e-06,
+                -3.745458098385036e-05,
+                -0.0004468185801723135,
+                0.7656610430611127,
+                0.4632520823314957,
+                -0.446273990119749,
+                -4.609931652074158e-07
+              ],
+              [
+                0.8535798633331217,
+                0.5205246188271955,
+                -0.021343307734276288,
+                3.2960209002865e-05,
+                -1.3694736122047771e-05,
+                6.931876125413965e-06,
+                4.1475236015540875e-12
+              ],
+              [
+                -0.028668865384194768,
+                0.0806112420395809,
+                0.8200529184339407,
+                0.3000129225678718,
+                -0.03403474023385081,
+                0.4785676728856858,
+                -8.203924806049099e-07
+              ],
+              [
+                0.016052142828639017,
+                -0.04516845845433543,
+                -0.45944280055531045,
+                0.14559103372513993,
+                0.46987060563849425,
+                0.737996827189608,
+                -1.786751791764598e-06
+              ]
+            ]
+          },
+          {
+            "anchor_id": "selection-03",
+            "rows": [
+              {
+                "dimension": 1,
+                "maximum_principal_angle_degrees": 36.941638230995764,
+                "projector_frobenius": 0.8499440719985627,
+                "local_retained_singular_value": 52695.229205892625
+              },
+              {
+                "dimension": 2,
+                "maximum_principal_angle_degrees": 80.2584773416614,
+                "projector_frobenius": 1.4090601545992247,
+                "local_retained_singular_value": 6050.141072984506
+              },
+              {
+                "dimension": 3,
+                "maximum_principal_angle_degrees": 55.651164438895684,
+                "projector_frobenius": 1.2992062676404759,
+                "local_retained_singular_value": 50.01503678532457
+              },
+              {
+                "dimension": 4,
+                "maximum_principal_angle_degrees": 33.452599199266274,
+                "projector_frobenius": 0.8676540491807658,
+                "local_retained_singular_value": 1.0041236987000213
+              },
+              {
+                "dimension": 5,
+                "maximum_principal_angle_degrees": 76.6670856215456,
+                "projector_frobenius": 1.4557695248416354,
+                "local_retained_singular_value": 0.2574774072985095
+              },
+              {
+                "dimension": 6,
+                "maximum_principal_angle_degrees": 67.76393352791321,
+                "projector_frobenius": 1.309042118242505,
+                "local_retained_singular_value": 0.22072267658673256
+              },
+              {
+                "dimension": 7,
+                "maximum_principal_angle_degrees": 0.0,
+                "projector_frobenius": 2.7241363874608977e-15,
+                "local_retained_singular_value": 0.13518574753528043
+              }
+            ],
+            "local_singular_values": [
+              52695.229205892625,
+              6050.141072984506,
+              50.01503678532457,
+              1.0041236987000213,
+              0.2574774072985095,
+              0.22072267658673256,
+              0.13518574753528043
+            ],
+            "local_directions": [
+              [
+                -0.5551175846732644,
+                0.8317714338088522,
+                -0.0008652810730072778,
+                1.5448668549596043e-05,
+                5.508607446782582e-06,
+                -9.157131785452562e-06,
+                -4.679057559169038e-06
+              ],
+              [
+                0.0004979834779138548,
+                -0.0001555290204845461,
+                -0.48146775500865746,
+                -0.3301989079862847,
+                -0.2263301824793863,
+                0.6806396794237833,
+                -0.38034390381272787
+              ],
+              [
+                9.728923406462323e-05,
+                -1.438258189509237e-05,
+                -0.09165852362832182,
+                -0.4636739360148631,
+                -0.2179606864973424,
+                0.1108522067752354,
+                0.8466463924386467
+              ],
+              [
+                -4.576221057698137e-07,
+                -1.5672925905110544e-06,
+                -0.0006965057293634303,
+                -0.002702671381789942,
+                0.9002804245545222,
+                0.39714893838274695,
+                0.17821360315613197
+              ],
+              [
+                0.8317712481603492,
+                0.5551181458870404,
+                0.0006590462294089849,
+                2.141779387562681e-05,
+                4.225047035392612e-06,
+                -4.501269950492811e-06,
+                -1.3942165575304046e-06
+              ],
+              [
+                -0.0008891581605077003,
+                0.0003180719467674886,
+                0.8671224304825138,
+                -0.31032129092403443,
+                -0.11967348726108262,
+                0.3385444922693432,
+                -0.1512097165601647
+              ],
+              [
+                -9.932327971867513e-05,
+                2.0931963556846816e-05,
+                0.08879492279291169,
+                0.7613596741976878,
+                -0.2764800195366016,
+                0.5020973635047145,
+                0.2896617583444277
+              ]
+            ]
+          }
+        ],
+        "rows": [
+          {
+            "dimension": 1,
+            "worst_maximum_principal_angle_degrees": 45.49891392778239,
+            "worst_projector_frobenius": 1.008669668983145,
+            "minimum_local_retained_singular_value": 27432.840299718977
+          },
+          {
+            "dimension": 2,
+            "worst_maximum_principal_angle_degrees": 85.57978871020545,
+            "worst_projector_frobenius": 1.6800722095336704,
+            "minimum_local_retained_singular_value": 2577.8028622027473
+          },
+          {
+            "dimension": 3,
+            "worst_maximum_principal_angle_degrees": 88.3356545722098,
+            "worst_projector_frobenius": 1.6592481993469184,
+            "minimum_local_retained_singular_value": 2.2845042339633226
+          },
+          {
+            "dimension": 4,
+            "worst_maximum_principal_angle_degrees": 87.75651139098508,
+            "worst_projector_frobenius": 1.6263689478834786,
+            "minimum_local_retained_singular_value": 0.2029014951837754
+          },
+          {
+            "dimension": 5,
+            "worst_maximum_principal_angle_degrees": 87.03653768396548,
+            "worst_projector_frobenius": 1.8628283978639206,
+            "minimum_local_retained_singular_value": 0.0713874084982859
+          },
+          {
+            "dimension": 6,
+            "worst_maximum_principal_angle_degrees": 81.94392088182187,
+            "worst_projector_frobenius": 1.4002572213735422,
+            "minimum_local_retained_singular_value": 0.005643454101808268
+          },
+          {
+            "dimension": 7,
+            "worst_maximum_principal_angle_degrees": 1.2074182697257333e-06,
+            "worst_projector_frobenius": 2.7241363874608977e-15,
+            "minimum_local_retained_singular_value": 7.362495386803991e-07
+          }
+        ]
+      }
+    },
+    "dimension_selection": {
+      "status": "full_space_required_by_selection",
+      "candidate_dimension": 7,
+      "maximum_whitened_operator_norm": 1.0,
+      "reduction_achieved": false
+    },
+    "dimension_selection_status": "full_space_required_by_selection"
+  },
+  "holdout_inactive_probes": {
+    "holdout_anchor_ids": [
+      "holdout-00",
+      "holdout-01"
+    ],
+    "probe_maximum_step": 0.05,
+    "normalization": "frozen_diagonal_feature_stability",
+    "forward_runs": 30,
+    "per_anchor": [
+      {
+        "anchor_id": "holdout-00",
+        "directions": [
+          {
+            "direction_index": 0,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 39921.029972055185,
+            "rms_normalized_feature_deviation": 3453.401966380887
+          },
+          {
+            "direction_index": 1,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 17054.95450397208,
+            "rms_normalized_feature_deviation": 1477.8446278933122
+          },
+          {
+            "direction_index": 2,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 3204.345686541132,
+            "rms_normalized_feature_deviation": 280.42807478198023
+          },
+          {
+            "direction_index": 3,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 982.600602904018,
+            "rms_normalized_feature_deviation": 87.43546285094133
+          },
+          {
+            "direction_index": 4,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 2.76634514035076,
+            "rms_normalized_feature_deviation": 0.9134292786609066
+          },
+          {
+            "direction_index": 5,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 0.24402984904405026,
+            "rms_normalized_feature_deviation": 0.08065414641866239
+          },
+          {
+            "direction_index": 6,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 0.6047645294100938,
+            "rms_normalized_feature_deviation": 0.1997376284492068
+          }
+        ]
+      },
+      {
+        "anchor_id": "holdout-01",
+        "directions": [
+          {
+            "direction_index": 0,
+            "step": 0.03029609562056666,
+            "max_normalized_feature_deviation": 1803.8672407336635,
+            "rms_normalized_feature_deviation": 215.7254951891179
+          },
+          {
+            "direction_index": 1,
+            "step": 0.017591822383285896,
+            "max_normalized_feature_deviation": 377.0684037040008,
+            "rms_normalized_feature_deviation": 63.972941971106955
+          },
+          {
+            "direction_index": 2,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 44.45185215981355,
+            "rms_normalized_feature_deviation": 8.442569931759241
+          },
+          {
+            "direction_index": 3,
+            "step": 0.022250554997989957,
+            "max_normalized_feature_deviation": 70.83509915284124,
+            "rms_normalized_feature_deviation": 12.315118977906682
+          },
+          {
+            "direction_index": 4,
+            "step": 0.016779419031530633,
+            "max_normalized_feature_deviation": 36.5460268479545,
+            "rms_normalized_feature_deviation": 6.885579516888857
+          },
+          {
+            "direction_index": 5,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 72.18211336177413,
+            "rms_normalized_feature_deviation": 12.575928283440549
+          },
+          {
+            "direction_index": 6,
+            "step": 0.022761067166715845,
+            "max_normalized_feature_deviation": 20.764405427074976,
+            "rms_normalized_feature_deviation": 4.365465143480496
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "dimension": 1,
+        "worst_normalized_feature_deviation": 17054.95450397208,
+        "worst_rms_normalized_feature_deviation": 1477.8446278933122
+      },
+      {
+        "dimension": 2,
+        "worst_normalized_feature_deviation": 3204.345686541132,
+        "worst_rms_normalized_feature_deviation": 280.42807478198023
+      },
+      {
+        "dimension": 3,
+        "worst_normalized_feature_deviation": 982.600602904018,
+        "worst_rms_normalized_feature_deviation": 87.43546285094133
+      },
+      {
+        "dimension": 4,
+        "worst_normalized_feature_deviation": 72.18211336177413,
+        "worst_rms_normalized_feature_deviation": 12.575928283440549
+      },
+      {
+        "dimension": 5,
+        "worst_normalized_feature_deviation": 72.18211336177413,
+        "worst_rms_normalized_feature_deviation": 12.575928283440549
+      },
+      {
+        "dimension": 6,
+        "worst_normalized_feature_deviation": 20.764405427074976,
+        "worst_rms_normalized_feature_deviation": 4.365465143480496
+      },
+      {
+        "dimension": 7,
+        "worst_normalized_feature_deviation": 0.0,
+        "worst_rms_normalized_feature_deviation": 0.0
+      }
+    ],
+    "dimension_selection_status": "not_selected_from_holdout"
+  },
+  "prohibited_claims": [
+    "effective_dimension_selected",
+    "real_data_parameters_identifiable",
+    "unit_noise_proxy_is_experimental_covariance",
+    "quantization_floor_is_repeatability_covariance"
+  ]
+}

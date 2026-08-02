@@ -1,0 +1,179 @@
+{
+  "backend": "cn",
+  "feature_modes": [
+    "hybrid"
+  ],
+  "phase": null,
+  "portfolio_stage": "S0",
+  "noise_fraction": null,
+  "workers": 8,
+  "free_parameters": [
+    "k0_2",
+    "k0_3"
+  ],
+  "smoke": true,
+  "job_count": 3,
+  "jobs": [
+    {
+      "job_id": "S0__k0_2-k0_3__P0__center__noise-0__seed-7__trials-3",
+      "portfolio_stage": "S0",
+      "parameter_pair_id": "k0_2-k0_3",
+      "portfolio_id": "P0",
+      "condition_ids": [
+        "baseline_5hz_amp_016"
+      ],
+      "target_identities": [
+        {
+          "condition_id": "baseline_5hz_amp_016",
+          "target_key": "center|0|baseline_5hz_amp_016",
+          "target_seed": 91219193
+        }
+      ],
+      "feature_mode": "hybrid",
+      "free_parameters": [
+        "k0_2",
+        "k0_3"
+      ],
+      "truth_id": "center",
+      "truth_params": {
+        "k0_1": 10.0,
+        "k0_2": 10.0,
+        "k0_3": 10.0,
+        "k0_4": 10.0,
+        "G_OH": 1.3,
+        "G_O": 2.8,
+        "scaling_OOH_OH": 3.2,
+        "gamma": 3.1622776601683795e-09
+      },
+      "noise_fraction": 0.0,
+      "seed": 7,
+      "trials": 3,
+      "backend": "cn",
+      "pre_experiment_spec": "/Users/liushiyu/OER-FTAcV/config/recovery/pre-experiment-a6-v2.json",
+      "pre_experiment_spec_sha256": "a5284cbc58aafbeda49828523a3712ecd3614d972987527f364ef282a171b5f5",
+      "job_input_hash": "89def2dda931855346c6729e41ab9a9b348475bad85732409581a127fd9d7c03"
+    },
+    {
+      "job_id": "S0__k0_2-k0_3__P1__center__noise-0__seed-7__trials-3",
+      "portfolio_stage": "S0",
+      "parameter_pair_id": "k0_2-k0_3",
+      "portfolio_id": "P1",
+      "condition_ids": [
+        "baseline_5hz_amp_016",
+        "candidate_5hz_amp_008"
+      ],
+      "target_identities": [
+        {
+          "condition_id": "baseline_5hz_amp_016",
+          "target_key": "center|0|baseline_5hz_amp_016",
+          "target_seed": 91219193
+        },
+        {
+          "condition_id": "candidate_5hz_amp_008",
+          "target_key": "center|0|candidate_5hz_amp_008",
+          "target_seed": 3022416617
+        }
+      ],
+      "feature_mode": "hybrid",
+      "free_parameters": [
+        "k0_2",
+        "k0_3"
+      ],
+      "truth_id": "center",
+      "truth_params": {
+        "k0_1": 10.0,
+        "k0_2": 10.0,
+        "k0_3": 10.0,
+        "k0_4": 10.0,
+        "G_OH": 1.3,
+        "G_O": 2.8,
+        "scaling_OOH_OH": 3.2,
+        "gamma": 3.1622776601683795e-09
+      },
+      "noise_fraction": 0.0,
+      "seed": 7,
+      "trials": 3,
+      "backend": "cn",
+      "pre_experiment_spec": "/Users/liushiyu/OER-FTAcV/config/recovery/pre-experiment-a6-v2.json",
+      "pre_experiment_spec_sha256": "a5284cbc58aafbeda49828523a3712ecd3614d972987527f364ef282a171b5f5",
+      "job_input_hash": "b754683439410066f4c8bf5de4884a385ecc421cd3a1ce64bcaa2705dd70057c"
+    },
+    {
+      "job_id": "S0__k0_2-k0_3__P2__center__noise-0__seed-7__trials-3",
+      "portfolio_stage": "S0",
+      "parameter_pair_id": "k0_2-k0_3",
+      "portfolio_id": "P2",
+      "condition_ids": [
+        "baseline_5hz_amp_016",
+        "candidate_5hz_amp_008",
+        "candidate_10hz_matched_scan"
+      ],
+      "target_identities": [
+        {
+          "condition_id": "baseline_5hz_amp_016",
+          "target_key": "center|0|baseline_5hz_amp_016",
+          "target_seed": 91219193
+        },
+        {
+          "condition_id": "candidate_5hz_amp_008",
+          "target_key": "center|0|candidate_5hz_amp_008",
+          "target_seed": 3022416617
+        },
+        {
+          "condition_id": "candidate_10hz_matched_scan",
+          "target_key": "center|0|candidate_10hz_matched_scan",
+          "target_seed": 2002452712
+        }
+      ],
+      "feature_mode": "hybrid",
+      "free_parameters": [
+        "k0_2",
+        "k0_3"
+      ],
+      "truth_id": "center",
+      "truth_params": {
+        "k0_1": 10.0,
+        "k0_2": 10.0,
+        "k0_3": 10.0,
+        "k0_4": 10.0,
+        "G_OH": 1.3,
+        "G_O": 2.8,
+        "scaling_OOH_OH": 3.2,
+        "gamma": 3.1622776601683795e-09
+      },
+      "noise_fraction": 0.0,
+      "seed": 7,
+      "trials": 3,
+      "backend": "cn",
+      "pre_experiment_spec": "/Users/liushiyu/OER-FTAcV/config/recovery/pre-experiment-a6-v2.json",
+      "pre_experiment_spec_sha256": "a5284cbc58aafbeda49828523a3712ecd3614d972987527f364ef282a171b5f5",
+      "job_input_hash": "9635547225a8b14074e319bd118ab1dc202d98996c144252df1c4d475521bb2d"
+    }
+  ],
+  "noise_evidence": null,
+  "provenance": {
+    "source_commit": "eb35b92f34b2ac38d4f37494a19aeadccfd1737d",
+    "dirty": false,
+    "dirty_paths": [],
+    "ignored_workflow_paths": [
+      "results/smoke/experiment_design/"
+    ],
+    "python": "3.13.3",
+    "command": [
+      "/Users/liushiyu/OER-FTAcV/.venv/bin/python",
+      "code/python/scripts/run_synthetic_recovery.py",
+      "--pre-experiment-spec",
+      "config/recovery/pre-experiment-a6-v2.json",
+      "--portfolio-stage",
+      "S0",
+      "--backend",
+      "cn",
+      "--workers",
+      "8",
+      "--output",
+      "results/smoke/pre_experiment_recovery/a6-v2-s0-20260801_215929"
+    ]
+  },
+  "resume_schema_version": 2,
+  "resume_fingerprint": "a936942f328d73500fde8a713108d003c77b50eba7b089d08225e985a08e9332"
+}

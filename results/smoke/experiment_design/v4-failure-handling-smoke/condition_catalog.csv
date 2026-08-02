@@ -1,0 +1,3 @@
+condition_id,condition_role,E_start,E_end,frequency_hz,amplitude_v,cycles,points_per_cycle,n_points,duration_s,scan_rate_v_s
+existing_ft3,existing,0.924097277474612,1.9229037265531128,4.999999877927828,0.15999925452484762,8,32,256,1.600000039063096,0.624254015433254
+candidate_5hz_amp_008,candidate,0.924097277474612,1.9229037265531128,5.0,0.08,8,32,256,1.6,0.6242540306740629

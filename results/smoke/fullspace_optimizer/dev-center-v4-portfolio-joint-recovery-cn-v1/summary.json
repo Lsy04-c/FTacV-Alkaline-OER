@@ -1,0 +1,103 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_v4_portfolio_joint_recovery",
+  "eligible_for_formal_conclusions": false,
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "truth_id": "center",
+  "backend": "cn",
+  "condition_ids": [
+    "baseline_5hz_amp_016",
+    "candidate_5hz_amp_008",
+    "candidate_10hz_matched_scan"
+  ],
+  "fixed_parameters": {
+    "k0_4": 5000.0
+  },
+  "free_parameter_names": [
+    "k0_1",
+    "k0_2",
+    "k0_3",
+    "G_OH",
+    "G_O",
+    "scaling_OOH_OH"
+  ],
+  "optimizer": "tpe_powell_hybrid",
+  "budget": 256,
+  "confirmation_only": false,
+  "candidate_source": null,
+  "candidate_source_sha256": null,
+  "best_loss": 1.7590807757772218,
+  "recovered_unit": [
+    0.15061950787499195,
+    0.45118020128711034,
+    0.6444576631148861,
+    0.12743798783566643,
+    0.24232265992389818,
+    0.3313977286462946
+  ],
+  "recovery": {
+    "truth_unit": [
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "recovered_unit": [
+      0.15061950787499195,
+      0.45118020128711034,
+      0.6444576631148861,
+      0.12743798783566643,
+      0.24232265992389818,
+      0.3313977286462946
+    ],
+    "signed_errors": {
+      "k0_1": -0.349380492125008,
+      "k0_2": -0.04881979871289,
+      "k0_3": 0.144457663114886,
+      "G_OH": -0.372562012164334,
+      "G_O": -0.257677340076102,
+      "scaling_OOH_OH": -0.168602271353705
+    },
+    "absolute_errors": {
+      "k0_1": 0.349380492125008,
+      "k0_2": 0.04881979871289,
+      "k0_3": 0.144457663114886,
+      "G_OH": 0.372562012164334,
+      "G_O": 0.257677340076102,
+      "scaling_OOH_OH": 0.168602271353705
+    },
+    "maximum_absolute_error": 0.372562012164334,
+    "median_absolute_error": 0.213139805714904,
+    "boundary_hit": false
+  },
+  "optimization_calls": 256,
+  "termination_reason": "budget_exhausted",
+  "wall_seconds": 57.8245410840027,
+  "objective_diagnostics": {
+    "baseline_5hz_amp_016": {
+      "n_calls": 256,
+      "n_forward": 256,
+      "n_ode_fail": 1,
+      "n_feature_fail": 0
+    },
+    "candidate_5hz_amp_008": {
+      "n_calls": 256,
+      "n_forward": 256,
+      "n_ode_fail": 1,
+      "n_feature_fail": 0
+    },
+    "candidate_10hz_matched_scan": {
+      "n_calls": 256,
+      "n_forward": 256,
+      "n_ode_fail": 1,
+      "n_feature_fail": 0
+    }
+  },
+  "prohibited_claims": [
+    "six_parameters_recoverable",
+    "recommended_experiments_guarantee_identifiability",
+    "real_data_parameters_identifiable"
+  ]
+}

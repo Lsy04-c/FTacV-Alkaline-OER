@@ -1,0 +1,694 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_smoke",
+  "eligible_for_formal_conclusions": false,
+  "schema_path": "config/parameter-schemas/m0-total-current-effective-v1.json",
+  "schema_sha256": "a8dbcb8c06b2eb8b06f65f081dd2caf4420a589feefb2e5ca48977ba4c840b41",
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "dirty_worktree_expected": true,
+  "forward_reports_source": {
+    "path": "results/smoke/effective_dimension/dev-20260802-seed17-v2/anchor_reports.json",
+    "sha256": "5d547b1329b05ed2af2a4398182730ef9703b80e932dfe3292ffd720c4c32c94"
+  },
+  "seed": 17,
+  "split_counts": {
+    "train": 3,
+    "selection": 2,
+    "holdout": 1
+  },
+  "parameter_names": [
+    "k0_1",
+    "k0_2",
+    "k0_3",
+    "k0_4",
+    "G_OH",
+    "G_O",
+    "scaling_OOH_OH"
+  ],
+  "config": {
+    "E_start": 0.924097277474612,
+    "E_end": 1.9229037265531128,
+    "f": 5.0,
+    "dE": 0.16,
+    "n_points": 256,
+    "points_per_cycle": 32,
+    "fit_harmonics": [
+      1,
+      2,
+      3
+    ],
+    "feature_mode": "hybrid",
+    "solver_backend": "lsoda"
+  },
+  "noise_evidence": {
+    "path": "results/formal/identifiability/gate-a6-d9299f8/noise_evidence.json",
+    "sha256": "4aac6249e25b772717628c6366e15972426851111be6f41bde03616fd887a5a5",
+    "selection_rule": "maximum_dataset_noise_floor",
+    "selected_noise_fraction": 0.001495726085983469,
+    "limitation": "Quantized traces provide a measurement-resolution noise floor, not full repeatability uncertainty; no repeat traces are available.",
+    "source_commit": "d9299f89ca7c363a5b4dd5a4ea83e929a363beb5"
+  },
+  "feature_stability": {
+    "model": "diagonal_feature_stability_from_quantization_floor",
+    "distribution": "uniform_quantization_error",
+    "noise_fraction": 0.001495726085983469,
+    "noise_seeds": [
+      101,
+      103,
+      107,
+      109,
+      113,
+      127,
+      131,
+      137,
+      139,
+      149,
+      151,
+      157
+    ],
+    "anchors": [
+      {
+        "anchor_id": "train-00",
+        "split": "train",
+        "current_sigma": 7.110732693188458e-05,
+        "minimum_feature_standard_deviation": 6.938784345400137e-07,
+        "maximum_feature_standard_deviation": 0.14349400831390835
+      },
+      {
+        "anchor_id": "train-01",
+        "split": "train",
+        "current_sigma": 4.26607062812689e-05,
+        "minimum_feature_standard_deviation": 5.51409903892816e-06,
+        "maximum_feature_standard_deviation": 0.592043777883919
+      },
+      {
+        "anchor_id": "train-02",
+        "split": "train",
+        "current_sigma": 5.126615779912234e-05,
+        "minimum_feature_standard_deviation": 2.6552754423273197e-05,
+        "maximum_feature_standard_deviation": 1.9232167858082454
+      },
+      {
+        "anchor_id": "selection-00",
+        "split": "selection",
+        "current_sigma": 4.25741387254493e-05,
+        "minimum_feature_standard_deviation": 1.6061498420819853e-05,
+        "maximum_feature_standard_deviation": 0.1104430146029828
+      },
+      {
+        "anchor_id": "selection-01",
+        "split": "selection",
+        "current_sigma": 4.257655823314809e-05,
+        "minimum_feature_standard_deviation": 1.057664912596699e-05,
+        "maximum_feature_standard_deviation": 0.021255423651079203
+      },
+      {
+        "anchor_id": "holdout-00",
+        "split": "holdout",
+        "current_sigma": 3.985537673480177e-05,
+        "minimum_feature_standard_deviation": 1.2362243671055118e-05,
+        "maximum_feature_standard_deviation": 0.22520419480514542
+      }
+    ],
+    "limitation": "Quantization-resolution propagation only; not repeatability uncertainty and not a full feature covariance.",
+    "artifact": {
+      "path": "results/smoke/effective_dimension/dev-20260802-seed17-v8/feature_stability.json",
+      "sha256": "34e0bf0d7e475d4d5165e306da93275fd6f5eef2907856b8cd3c2c6700898c78"
+    }
+  },
+  "structurally_excluded_feature_rows": [
+    "Lockin H1 real[0]",
+    "Lockin H1 real[1]",
+    "Lockin H1 real[2]",
+    "Lockin H1 real[3]",
+    "Lockin H1 real[4]",
+    "Lockin H1 real[5]",
+    "Lockin H1 real[6]",
+    "Lockin H1 real[7]",
+    "Lockin H1 real[24]",
+    "Lockin H1 real[25]",
+    "Lockin H1 real[26]",
+    "Lockin H1 real[27]",
+    "Lockin H1 real[28]",
+    "Lockin H1 real[29]",
+    "Lockin H1 real[30]",
+    "Lockin H1 real[31]",
+    "Lockin H1 imag[0]",
+    "Lockin H1 imag[1]",
+    "Lockin H1 imag[2]",
+    "Lockin H1 imag[3]",
+    "Lockin H1 imag[4]",
+    "Lockin H1 imag[5]",
+    "Lockin H1 imag[6]",
+    "Lockin H1 imag[7]",
+    "Lockin H1 imag[24]",
+    "Lockin H1 imag[25]",
+    "Lockin H1 imag[26]",
+    "Lockin H1 imag[27]",
+    "Lockin H1 imag[28]",
+    "Lockin H1 imag[29]",
+    "Lockin H1 imag[30]",
+    "Lockin H1 imag[31]",
+    "Lockin H2 real[0]",
+    "Lockin H2 real[1]",
+    "Lockin H2 real[2]",
+    "Lockin H2 real[3]",
+    "Lockin H2 real[4]",
+    "Lockin H2 real[5]",
+    "Lockin H2 real[6]",
+    "Lockin H2 real[7]",
+    "Lockin H2 real[24]",
+    "Lockin H2 real[25]",
+    "Lockin H2 real[26]",
+    "Lockin H2 real[27]",
+    "Lockin H2 real[28]",
+    "Lockin H2 real[29]",
+    "Lockin H2 real[30]",
+    "Lockin H2 real[31]",
+    "Lockin H2 imag[0]",
+    "Lockin H2 imag[1]",
+    "Lockin H2 imag[2]",
+    "Lockin H2 imag[3]",
+    "Lockin H2 imag[4]",
+    "Lockin H2 imag[5]",
+    "Lockin H2 imag[6]",
+    "Lockin H2 imag[7]",
+    "Lockin H2 imag[24]",
+    "Lockin H2 imag[25]",
+    "Lockin H2 imag[26]",
+    "Lockin H2 imag[27]",
+    "Lockin H2 imag[28]",
+    "Lockin H2 imag[29]",
+    "Lockin H2 imag[30]",
+    "Lockin H2 imag[31]",
+    "Lockin H3 real[0]",
+    "Lockin H3 real[1]",
+    "Lockin H3 real[2]",
+    "Lockin H3 real[3]",
+    "Lockin H3 real[4]",
+    "Lockin H3 real[5]",
+    "Lockin H3 real[6]",
+    "Lockin H3 real[7]",
+    "Lockin H3 real[24]",
+    "Lockin H3 real[25]",
+    "Lockin H3 real[26]",
+    "Lockin H3 real[27]",
+    "Lockin H3 real[28]",
+    "Lockin H3 real[29]",
+    "Lockin H3 real[30]",
+    "Lockin H3 real[31]",
+    "Lockin H3 imag[0]",
+    "Lockin H3 imag[1]",
+    "Lockin H3 imag[2]",
+    "Lockin H3 imag[3]",
+    "Lockin H3 imag[4]",
+    "Lockin H3 imag[5]",
+    "Lockin H3 imag[6]",
+    "Lockin H3 imag[7]",
+    "Lockin H3 imag[24]",
+    "Lockin H3 imag[25]",
+    "Lockin H3 imag[26]",
+    "Lockin H3 imag[27]",
+    "Lockin H3 imag[28]",
+    "Lockin H3 imag[29]",
+    "Lockin H3 imag[30]",
+    "Lockin H3 imag[31]"
+  ],
+  "decomposition": {
+    "training_anchor_ids": [
+      "train-00",
+      "train-01",
+      "train-02"
+    ],
+    "selection_anchor_ids": [
+      "selection-00",
+      "selection-01"
+    ],
+    "parameter_names": [
+      "k0_1",
+      "k0_2",
+      "k0_3",
+      "k0_4",
+      "G_OH",
+      "G_O",
+      "scaling_OOH_OH"
+    ],
+    "feature_names": [
+      "DC shape[0]",
+      "DC shape[1]",
+      "DC shape[2]",
+      "DC shape[3]",
+      "DC shape[4]",
+      "DC shape[5]",
+      "DC shape[6]",
+      "DC shape[7]",
+      "DC shape[8]",
+      "DC shape[9]",
+      "DC shape[10]",
+      "DC shape[11]",
+      "DC shape[12]",
+      "DC shape[13]",
+      "DC shape[14]",
+      "DC shape[15]",
+      "DC shape[16]",
+      "DC shape[17]",
+      "DC shape[18]",
+      "DC shape[19]",
+      "DC shape[20]",
+      "DC shape[21]",
+      "DC shape[22]",
+      "DC shape[23]",
+      "DC shape[24]",
+      "DC shape[25]",
+      "DC shape[26]",
+      "DC shape[27]",
+      "DC shape[28]",
+      "DC shape[29]",
+      "DC shape[30]",
+      "DC shape[31]",
+      "Complex H1 real",
+      "Complex H1 imag",
+      "Complex H2 real",
+      "Complex H2 imag",
+      "Complex H3 real",
+      "Complex H3 imag",
+      "Lockin H1 real[8]",
+      "Lockin H1 real[9]",
+      "Lockin H1 real[10]",
+      "Lockin H1 real[11]",
+      "Lockin H1 real[12]",
+      "Lockin H1 real[13]",
+      "Lockin H1 real[14]",
+      "Lockin H1 real[15]",
+      "Lockin H1 real[16]",
+      "Lockin H1 real[17]",
+      "Lockin H1 real[18]",
+      "Lockin H1 real[19]",
+      "Lockin H1 real[20]",
+      "Lockin H1 real[21]",
+      "Lockin H1 real[22]",
+      "Lockin H1 real[23]",
+      "Lockin H1 imag[8]",
+      "Lockin H1 imag[9]",
+      "Lockin H1 imag[10]",
+      "Lockin H1 imag[11]",
+      "Lockin H1 imag[12]",
+      "Lockin H1 imag[13]",
+      "Lockin H1 imag[14]",
+      "Lockin H1 imag[15]",
+      "Lockin H1 imag[16]",
+      "Lockin H1 imag[17]",
+      "Lockin H1 imag[18]",
+      "Lockin H1 imag[19]",
+      "Lockin H1 imag[20]",
+      "Lockin H1 imag[21]",
+      "Lockin H1 imag[22]",
+      "Lockin H1 imag[23]",
+      "Lockin H2 real[8]",
+      "Lockin H2 real[9]",
+      "Lockin H2 real[10]",
+      "Lockin H2 real[11]",
+      "Lockin H2 real[12]",
+      "Lockin H2 real[13]",
+      "Lockin H2 real[14]",
+      "Lockin H2 real[15]",
+      "Lockin H2 real[16]",
+      "Lockin H2 real[17]",
+      "Lockin H2 real[18]",
+      "Lockin H2 real[19]",
+      "Lockin H2 real[20]",
+      "Lockin H2 real[21]",
+      "Lockin H2 real[22]",
+      "Lockin H2 real[23]",
+      "Lockin H2 imag[8]",
+      "Lockin H2 imag[9]",
+      "Lockin H2 imag[10]",
+      "Lockin H2 imag[11]",
+      "Lockin H2 imag[12]",
+      "Lockin H2 imag[13]",
+      "Lockin H2 imag[14]",
+      "Lockin H2 imag[15]",
+      "Lockin H2 imag[16]",
+      "Lockin H2 imag[17]",
+      "Lockin H2 imag[18]",
+      "Lockin H2 imag[19]",
+      "Lockin H2 imag[20]",
+      "Lockin H2 imag[21]",
+      "Lockin H2 imag[22]",
+      "Lockin H2 imag[23]",
+      "Lockin H3 real[8]",
+      "Lockin H3 real[9]",
+      "Lockin H3 real[10]",
+      "Lockin H3 real[11]",
+      "Lockin H3 real[12]",
+      "Lockin H3 real[13]",
+      "Lockin H3 real[14]",
+      "Lockin H3 real[15]",
+      "Lockin H3 real[16]",
+      "Lockin H3 real[17]",
+      "Lockin H3 real[18]",
+      "Lockin H3 real[19]",
+      "Lockin H3 real[20]",
+      "Lockin H3 real[21]",
+      "Lockin H3 real[22]",
+      "Lockin H3 real[23]",
+      "Lockin H3 imag[8]",
+      "Lockin H3 imag[9]",
+      "Lockin H3 imag[10]",
+      "Lockin H3 imag[11]",
+      "Lockin H3 imag[12]",
+      "Lockin H3 imag[13]",
+      "Lockin H3 imag[14]",
+      "Lockin H3 imag[15]",
+      "Lockin H3 imag[16]",
+      "Lockin H3 imag[17]",
+      "Lockin H3 imag[18]",
+      "Lockin H3 imag[19]",
+      "Lockin H3 imag[20]",
+      "Lockin H3 imag[21]",
+      "Lockin H3 imag[22]",
+      "Lockin H3 imag[23]"
+    ],
+    "feature_count": 134,
+    "noise_model": "diagonal_quantization_stability_floor",
+    "excluded_nonsmooth_features": [
+      "Tafel",
+      "onset"
+    ],
+    "included_feature_blocks": [
+      "DC shape",
+      "Complex H1 real",
+      "Complex H1 imag",
+      "Complex H2 real",
+      "Complex H2 imag",
+      "Complex H3 real",
+      "Complex H3 imag",
+      "Lockin H1 real",
+      "Lockin H1 imag",
+      "Lockin H2 real",
+      "Lockin H2 imag",
+      "Lockin H3 real",
+      "Lockin H3 imag"
+    ],
+    "gramian": [
+      [
+        1269031751.720466,
+        -7741.24110353452,
+        -8124.32100759197,
+        -27297.50766264359,
+        -2033271692.1922057,
+        75175.34495979536,
+        -11875.06286779626
+      ],
+      [
+        -7741.24110353452,
+        25.479073917732446,
+        -0.21449391619120606,
+        -0.7154302525691872,
+        13333.15379492707,
+        -64.25506691317705,
+        -0.24469030788609877
+      ],
+      [
+        -8124.32100759197,
+        -0.21449391619120606,
+        0.16249498780468727,
+        0.4660525193596187,
+        11431.223567671195,
+        -0.3504283982815078,
+        0.20371708978303266
+      ],
+      [
+        -27297.50766264359,
+        -0.7154302525691872,
+        0.4660525193596187,
+        1.5581893488993588,
+        38429.215110435565,
+        -1.1980958348397224,
+        0.6792254203977508
+      ],
+      [
+        -2033271692.1922057,
+        13333.15379492707,
+        11431.223567671195,
+        38429.215110435565,
+        3324793763.246573,
+        -111740.13643516006,
+        16593.66306640095
+      ],
+      [
+        75175.34495979536,
+        -64.25506691317705,
+        -0.3504283982815078,
+        -1.1980958348397224,
+        -111740.13643516006,
+        168.87476337805379,
+        -0.6505725114266997
+      ],
+      [
+        -11875.06286779626,
+        -0.24469030788609877,
+        0.20371708978303266,
+        0.6792254203977508,
+        16593.66306640095,
+        -0.6505725114266997,
+        0.32842579488249923
+      ]
+    ],
+    "eigenvalues": [
+      4575230811.9613085,
+      18594709.946424317,
+      188.3743219079601,
+      0.9412457607490101,
+      0.1029840064183957,
+      0.025065826131576995,
+      0.018636134228485535
+    ],
+    "directions": [
+      [
+        -0.5238521637972136,
+        0.8518091395500559,
+        -0.00024168245887186093,
+        0.00020451910919275665,
+        -8.434348158827508e-07,
+        4.579293457003458e-06,
+        1.952574331745783e-06
+      ],
+      [
+        3.3686980048408873e-06,
+        2.1001828754894895e-05,
+        -0.36517867512243635,
+        -0.5029581014407929,
+        0.7587404184801262,
+        -0.1295649666072253,
+        -0.14561449025128895
+      ],
+      [
+        3.058460896785933e-06,
+        -5.012716858316067e-05,
+        0.0021416413535918213,
+        0.22848856684380517,
+        0.16743601894592183,
+        -0.6764888942812323,
+        0.6797913953159348
+      ],
+      [
+        1.0280184615247192e-05,
+        -0.000167845619969421,
+        0.0070696721943625035,
+        0.7445029617465975,
+        0.3635675271874611,
+        -0.18836477958723125,
+        -0.5272596081567633
+      ],
+      [
+        0.8518091978100455,
+        0.5238521407025445,
+        -0.00011515102081064602,
+        0.00010926492214501516,
+        -5.809976497674714e-07,
+        2.6700763248206425e-06,
+        1.2332946362630793e-06
+      ],
+      [
+        -2.9410985769095554e-05,
+        0.00029577149171875123,
+        0.9309050521117073,
+        -0.20428661158272415,
+        0.2934148393251634,
+        -0.049627225601596194,
+        -0.05592447119145947
+      ],
+      [
+        4.449045975561337e-06,
+        -7.650893803089754e-05,
+        0.002383406371190131,
+        0.31433801794953453,
+        0.4219058451380819,
+        0.6983061961663141,
+        0.485334769212211
+      ]
+    ],
+    "column_norms": [
+      35623.471921199176,
+      5.047680053027573,
+      0.40310667050383486,
+      1.2482745486868498,
+      57661.02464617303,
+      12.995182314152187,
+      0.5730844570240056
+    ],
+    "selection_residuals": [
+      {
+        "dimension": 1,
+        "worst_relative_frobenius": 0.24647080465815066,
+        "mean_relative_frobenius": 0.14702122346743773,
+        "worst_discarded_singular_value": 13296.273895266715
+      },
+      {
+        "dimension": 2,
+        "worst_relative_frobenius": 0.23183786489184607,
+        "mean_relative_frobenius": 0.11593785228583547,
+        "worst_discarded_singular_value": 13132.032668623484
+      },
+      {
+        "dimension": 3,
+        "worst_relative_frobenius": 0.1500723581474035,
+        "mean_relative_frobenius": 0.075045648139773,
+        "worst_discarded_singular_value": 8504.633413456198
+      },
+      {
+        "dimension": 4,
+        "worst_relative_frobenius": 0.1401370636102289,
+        "mean_relative_frobenius": 0.07006888668069187,
+        "worst_discarded_singular_value": 7941.690509898482
+      },
+      {
+        "dimension": 5,
+        "worst_relative_frobenius": 0.13806349805534524,
+        "mean_relative_frobenius": 0.06903209958203593,
+        "worst_discarded_singular_value": 7824.245586480951
+      },
+      {
+        "dimension": 6,
+        "worst_relative_frobenius": 0.007827875748858099,
+        "mean_relative_frobenius": 0.003914083790098072,
+        "worst_discarded_singular_value": 443.65021291975376
+      },
+      {
+        "dimension": 7,
+        "worst_relative_frobenius": 5.344231566773498e-16,
+        "mean_relative_frobenius": 5.292315879526622e-16,
+        "worst_discarded_singular_value": 2.9503925968263464e-11
+      }
+    ],
+    "dimension_selection": {
+      "status": "full_space_required_by_selection",
+      "candidate_dimension": 7,
+      "maximum_whitened_operator_norm": 1.0,
+      "reduction_achieved": false
+    },
+    "dimension_selection_status": "full_space_required_by_selection"
+  },
+  "holdout_inactive_probes": {
+    "holdout_anchor_ids": [
+      "holdout-00"
+    ],
+    "probe_maximum_step": 0.05,
+    "normalization": "frozen_diagonal_feature_stability",
+    "forward_runs": 15,
+    "per_anchor": [
+      {
+        "anchor_id": "holdout-00",
+        "directions": [
+          {
+            "direction_index": 0,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 470.23075116287356,
+            "rms_normalized_feature_deviation": 124.58291571495211
+          },
+          {
+            "direction_index": 1,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 287.1483608804673,
+            "rms_normalized_feature_deviation": 73.03952572621792
+          },
+          {
+            "direction_index": 2,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 25.394837107401017,
+            "rms_normalized_feature_deviation": 8.041263596258117
+          },
+          {
+            "direction_index": 3,
+            "step": 0.0007731027538924022,
+            "max_normalized_feature_deviation": 6.024229541666399,
+            "rms_normalized_feature_deviation": 1.4616552671684646
+          },
+          {
+            "direction_index": 4,
+            "step": 0.0005759948342273619,
+            "max_normalized_feature_deviation": 3.5616667936764346,
+            "rms_normalized_feature_deviation": 0.8636451280620258
+          },
+          {
+            "direction_index": 5,
+            "step": 0.0003480072046675439,
+            "max_normalized_feature_deviation": 1.7075424650006228,
+            "rms_normalized_feature_deviation": 0.41523325842217174
+          },
+          {
+            "direction_index": 6,
+            "step": 0.0005007174485444845,
+            "max_normalized_feature_deviation": 0.3706722593898779,
+            "rms_normalized_feature_deviation": 0.09160984426990075
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "dimension": 1,
+        "worst_normalized_feature_deviation": 287.1483608804673,
+        "worst_rms_normalized_feature_deviation": 73.03952572621792
+      },
+      {
+        "dimension": 2,
+        "worst_normalized_feature_deviation": 25.394837107401017,
+        "worst_rms_normalized_feature_deviation": 8.041263596258117
+      },
+      {
+        "dimension": 3,
+        "worst_normalized_feature_deviation": 6.024229541666399,
+        "worst_rms_normalized_feature_deviation": 1.4616552671684646
+      },
+      {
+        "dimension": 4,
+        "worst_normalized_feature_deviation": 3.5616667936764346,
+        "worst_rms_normalized_feature_deviation": 0.8636451280620258
+      },
+      {
+        "dimension": 5,
+        "worst_normalized_feature_deviation": 1.7075424650006228,
+        "worst_rms_normalized_feature_deviation": 0.41523325842217174
+      },
+      {
+        "dimension": 6,
+        "worst_normalized_feature_deviation": 0.3706722593898779,
+        "worst_rms_normalized_feature_deviation": 0.09160984426990075
+      },
+      {
+        "dimension": 7,
+        "worst_normalized_feature_deviation": 0.0,
+        "worst_rms_normalized_feature_deviation": 0.0
+      }
+    ],
+    "dimension_selection_status": "not_selected_from_holdout"
+  },
+  "prohibited_claims": [
+    "effective_dimension_selected",
+    "real_data_parameters_identifiable",
+    "unit_noise_proxy_is_experimental_covariance",
+    "quantization_floor_is_repeatability_covariance"
+  ]
+}

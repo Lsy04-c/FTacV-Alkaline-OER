@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "source_commit": "eb35b92f34b2ac38d4f37494a19aeadccfd1737d",
+  "files": [
+    {
+      "path": "job_plan.json",
+      "size": 5221,
+      "sha256": "c94f7b2604b81cae0f2f7a245f8d32c2c6f62d7a5e3a5868fc8f40885d468b13"
+    },
+    {
+      "path": "portfolio_recovery.csv",
+      "size": 482,
+      "sha256": "1d84d1f2fd96e5e3aa23e87904c6234e052ae0f333d28e00a38f729980a3901e"
+    },
+    {
+      "path": "pre_experiment_recovery_spec.json",
+      "size": 1748,
+      "sha256": "a52cbf616a19db6aff19fb8c3bd5f011ea6f59950558cc04253a04702e302f41"
+    },
+    {
+      "path": "protocol_catalog.csv",
+      "size": 333,
+      "sha256": "c22bc08a34e4a8aeec6a0ac388a3e92e79c9f25aaf536721a9b7551fb3044fb0"
+    },
+    {
+      "path": "results.jsonl",
+      "size": 8525,
+      "sha256": "59568544ba2a48b295a7d89a1590e62d5f18c0a5cf0d3e87da581e72a52de5de"
+    },
+    {
+      "path": "summary.json",
+      "size": 1547,
+      "sha256": "085020e696f0c1b6c9e7fd7da819575b98cca2f721927c9fb22959c51fc5b836"
+    },
+    {
+      "path": "target_manifest.json",
+      "size": 2754,
+      "sha256": "2a57719b2420b74ddc21a2dfcf0e66369a3718a2372ebd2fa6b73617277410da"
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_combination_reoptimized_profile",
+  "eligible_for_formal_conclusions": false,
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "backend": "lsoda",
+  "direction": 6,
+  "direction_loadings": {
+    "k0_1": -0.5141514766849414,
+    "k0_2": 0.000975517557450456,
+    "k0_3": -0.0009601276748456749,
+    "G_OH": 0.8576396277600732,
+    "G_O": 0.010006003938117333,
+    "scaling_OOH_OH": 0.0007309745485867092
+  },
+  "pivot_parameter": "G_OH",
+  "truth_combination_coordinate": 0.1787676528717076,
+  "fixed_parameters": {
+    "k0_4": 5000.0
+  },
+  "per_coordinate_budget": 192,
+  "search": "powell",
+  "confirmation_only": true,
+  "candidate_source": "results/smoke/truth_identifiability/dev-mixed-a-combination-d6-profile-cn-tpe-powell-256-v1/summary.json",
+  "candidate_source_sha256": "25dcb717e58fa2213bdf033ac6a9d0d97cccfdc36d95d7e4fc57e21a3d18cace",
+  "geometry_path": "results/smoke/truth_identifiability/dev-mixed-a-compensation-geometry-v1/summary.json",
+  "geometry_sha256": "5e49dc08103e86688f2a4251dc5318eed9945ae3db8be93036a67788abe59617",
+  "rows": [
+    {
+      "combination_coordinate": 0.07876765287170759,
+      "offset_from_truth": -0.1,
+      "minimum_loss": 1.8014735489164577,
+      "recovered_unit": [
+        0.45870972362588486,
+        0.16820480463013376,
+        0.7239425438222465,
+        0.36543932532510937,
+        0.15281639575650718,
+        0.27442374946649506
+      ],
+      "realized_combination_coordinate": 0.07876765287170756,
+      "attempted_calls": 1,
+      "valid_objective_calls": 1,
+      "ode_failures": 0,
+      "wall_seconds": 0.37150404206477106,
+      "optimizer_success": true,
+      "optimizer_message": "candidate evaluated without reoptimization"
+    },
+    {
+      "combination_coordinate": 0.1287676528717076,
+      "offset_from_truth": -0.04999999999999999,
+      "minimum_loss": 3.242875594106042,
+      "recovered_unit": [
+        0.5296650032829493,
+        0.23738583727419055,
+        0.9118398348162072,
+        0.4615189285270627,
+        0.5418710413540306,
+        0.6850022716974804
+      ],
+      "realized_combination_coordinate": 0.1287676528717076,
+      "attempted_calls": 1,
+      "valid_objective_calls": 1,
+      "ode_failures": 0,
+      "wall_seconds": 0.28279083291999996,
+      "optimizer_success": true,
+      "optimizer_message": "candidate evaluated without reoptimization"
+    },
+    {
+      "combination_coordinate": 0.1787676528717076,
+      "offset_from_truth": 0.0,
+      "minimum_loss": 0.15296470610132543,
+      "recovered_unit": [
+        0.12997549387219806,
+        0.8143499920150954,
+        0.32022650216960313,
+        0.27828979081162286,
+        0.6137382827417707,
+        0.4027093913970673
+      ],
+      "realized_combination_coordinate": 0.1787676528717076,
+      "attempted_calls": 1,
+      "valid_objective_calls": 1,
+      "ode_failures": 0,
+      "wall_seconds": 0.32832608302123845,
+      "optimizer_success": true,
+      "optimizer_message": "candidate evaluated without reoptimization"
+    },
+    {
+      "combination_coordinate": 0.22876765287170758,
+      "offset_from_truth": 0.04999999999999999,
+      "minimum_loss": 14.583883425246528,
+      "recovered_unit": [
+        0.9999338930386481,
+        0.9999384353854625,
+        6.610696135192186e-05,
+        0.8598399085912879,
+        0.3945521175857271,
+        0.7237972335234854
+      ],
+      "realized_combination_coordinate": 0.22876765287170764,
+      "attempted_calls": 1,
+      "valid_objective_calls": 1,
+      "ode_failures": 0,
+      "wall_seconds": 0.3156502500642091,
+      "optimizer_success": true,
+      "optimizer_message": "candidate evaluated without reoptimization"
+    },
+    {
+      "combination_coordinate": 0.27876765287170757,
+      "offset_from_truth": 0.09999999999999998,
+      "minimum_loss": 8.246760142699083,
+      "recovered_unit": [
+        0.7347454809621987,
+        0.23784161850415175,
+        0.28488519978412413,
+        0.7570053692061355,
+        0.7328416989524001,
+        0.012332032201766947
+      ],
+      "realized_combination_coordinate": 0.2787676528717075,
+      "attempted_calls": 1,
+      "valid_objective_calls": 1,
+      "ode_failures": 0,
+      "wall_seconds": 0.3815110828727484,
+      "optimizer_success": true,
+      "optimizer_message": "candidate evaluated without reoptimization"
+    }
+  ],
+  "prohibited_claims": [
+    "confidence_interval",
+    "combination_globally_identifiable",
+    "real_data_combination_recoverable"
+  ]
+}

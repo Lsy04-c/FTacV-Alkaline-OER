@@ -1,0 +1,103 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_v4_portfolio_joint_recovery",
+  "eligible_for_formal_conclusions": false,
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "truth_id": "mixed_a",
+  "backend": "lsoda",
+  "condition_ids": [
+    "baseline_5hz_amp_016",
+    "candidate_5hz_amp_008",
+    "candidate_10hz_matched_scan"
+  ],
+  "fixed_parameters": {
+    "k0_4": 5000.0
+  },
+  "free_parameter_names": [
+    "k0_1",
+    "k0_2",
+    "k0_3",
+    "G_OH",
+    "G_O",
+    "scaling_OOH_OH"
+  ],
+  "optimizer": "tpe_powell_hybrid",
+  "budget": 256,
+  "confirmation_only": true,
+  "candidate_source": "results/smoke/fullspace_optimizer/dev-mixed_a-v4-portfolio-joint-recovery-cn-v1/summary.json",
+  "candidate_source_sha256": "eb9d955b068d223c8401674bb3c37dc23d913ec34167fdfda9325dd10e8d7314",
+  "best_loss": 0.1710360114258875,
+  "recovered_unit": [
+    0.3951753005747947,
+    0.9999359427028034,
+    0.3977841370859044,
+    0.4348035795329609,
+    0.626853674652087,
+    0.613885790204892
+  ],
+  "recovery": {
+    "truth_unit": [
+      0.25,
+      0.7,
+      0.4,
+      0.35,
+      0.65,
+      0.45
+    ],
+    "recovered_unit": [
+      0.3951753005747947,
+      0.9999359427028034,
+      0.3977841370859044,
+      0.4348035795329609,
+      0.626853674652087,
+      0.613885790204892
+    ],
+    "signed_errors": {
+      "k0_1": 0.145175300574795,
+      "k0_2": 0.299935942702803,
+      "k0_3": -0.002215862914096,
+      "G_OH": 0.084803579532961,
+      "G_O": -0.023146325347913,
+      "scaling_OOH_OH": 0.163885790204892
+    },
+    "absolute_errors": {
+      "k0_1": 0.145175300574795,
+      "k0_2": 0.299935942702803,
+      "k0_3": 0.002215862914096,
+      "G_OH": 0.084803579532961,
+      "G_O": 0.023146325347913,
+      "scaling_OOH_OH": 0.163885790204892
+    },
+    "maximum_absolute_error": 0.299935942702803,
+    "median_absolute_error": 0.114989440053878,
+    "boundary_hit": false
+  },
+  "optimization_calls": 1,
+  "termination_reason": "candidate evaluated without reoptimization",
+  "wall_seconds": 1.183473207987845,
+  "objective_diagnostics": {
+    "baseline_5hz_amp_016": {
+      "n_calls": 1,
+      "n_forward": 1,
+      "n_ode_fail": 0,
+      "n_feature_fail": 0
+    },
+    "candidate_5hz_amp_008": {
+      "n_calls": 1,
+      "n_forward": 1,
+      "n_ode_fail": 0,
+      "n_feature_fail": 0
+    },
+    "candidate_10hz_matched_scan": {
+      "n_calls": 1,
+      "n_forward": 1,
+      "n_ode_fail": 0,
+      "n_feature_fail": 0
+    }
+  },
+  "prohibited_claims": [
+    "six_parameters_recoverable",
+    "recommended_experiments_guarantee_identifiability",
+    "real_data_parameters_identifiable"
+  ]
+}

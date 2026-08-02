@@ -1,0 +1,16 @@
+{
+  "status": "FAIL_FEATURE_CONTRACT",
+  "study_kind": "development_smoke",
+  "eligible_for_formal_conclusions": false,
+  "forward_reports_source": {
+    "path": "results/smoke/effective_dimension/dev-20260802-seed17-v2/anchor_reports.json",
+    "sha256": "5d547b1329b05ed2af2a4398182730ef9703b80e932dfe3292ffd720c4c32c94"
+  },
+  "failure": "Ninety-six lock-in interpolation rows outside the valid potential mask had exactly zero propagated variance and could not be whitened.",
+  "root_cause": "Invalid lock-in edge rows were encoded as constant zero values and had been retained as if they were observed features.",
+  "resolution": "v8 freezes the structural valid-mask contract before noise propagation and excludes only those 96 acquisition-invalid rows.",
+  "prohibited_claims": [
+    "effective_dimension_selected",
+    "zero_variance_rows_are_high_information"
+  ]
+}

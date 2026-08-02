@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "analysis_id": "v4-computational-experiment-design",
+  "run_mode": "smoke",
+  "task_spec_hash": "8a8687805e49bc2d7442043d719cac317b08e3b9f2c21cf6f78e37c15f3f0e7c",
+  "source_state": {
+    "source_commit": "7b2b36b7ba5604090c20ad71905e1b5a45411912",
+    "dirty": true,
+    "dirty_paths": [
+      "code/python/scripts/run_v4_experiment_design.py",
+      "code/python/src/oer_aem/experiment_design.py",
+      "code/python/tests/test_experiment_design.py",
+      "code/python/tests/test_v4_experiment_design_runner.py",
+      "config/experiment-design/"
+    ],
+    "ignored_workflow_paths": [],
+    "dirty_content_sha256": "958c5ae5186d91a3556c408d5dd13e0abeb64feb01feacb1ee8a3257c19a5806"
+  },
+  "input_hashes": {
+    "v2": {
+      "task_spec.json": "b900fb66a5d42b07db4fb298bdd3b1a6b5c78c0b6507dd1224eab38fbac98201"
+    },
+    "v3": {
+      "v3_task_spec.json": "3adc17f22069c7a7d5ec135c9d86bc5ff68e2360932a733528b7ddba6ad59f48",
+      "selection.json": "e18d83ee52583255a8ddd818ba1e4fd03c6561a8377af0a329ec4c01f8aac318",
+      "residual_curves.jsonl": "7074b767fade549fe0e997d6fe9a2a9c6c58fcf62e0d3a54cdd48e9a8e2cbde6",
+      "run_manifest.json": "f747497dc165085b36ad9de14b41453022a2d932c992b3796497b94957ab19b1"
+    },
+    "parameter_roles": "ebb4c22604b0b19ba16508e3880ddeeda9a03cf62f8b8bdfa86a258a734867e3"
+  },
+  "primary_job_count": 22,
+  "linearity_job_count": 0,
+  "job_count": 22,
+  "success_count": 22,
+  "workers": 8,
+  "artifact_sha256": {
+    "condition_catalog.csv": "94cd85a105163070582deb29ceaf330ef6d18da77ebd99babf215ec3afc40d30",
+    "forward_results.jsonl": "8658d3367b922e4196db5bfcbd4315c24efed109615aa8ca3a1f94afc2ff7017",
+    "job_plan.json": "54dc2cfa93c10fba8875348107997016c265252c7a411fb267f23e7b8e502924",
+    "linearity_check.csv": "8ea1cf200f0c76990d1b2825e203787757717271850390d431e3ade58fb5bb6c",
+    "portfolio_gain.csv": "1e94fb85fee76667e3b82828d9e9b9d9f2aacbd1582ae40686ff627be1dd2897",
+    "recommendation.json": "eb162bcf06f4cc24713637fe30e2f08375dd84ae42952d17e9b6b9d628aece4b",
+    "sensitivity_matrices.jsonl": "6074fa048b6bbe5dfa19e2b2d76610aa4e26f0fec5c240cc013e99de3052592c",
+    "v4_task_spec.json": "d3e275817ceec66183c048b2cb797f78e416f99f272dd7919eb6b48052389ecb"
+  }
+}

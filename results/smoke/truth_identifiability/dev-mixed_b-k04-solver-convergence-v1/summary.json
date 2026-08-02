@@ -1,0 +1,120 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_k0_4_solver_convergence",
+  "eligible_for_formal_conclusions": false,
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "schema_path": "config/parameter-schemas/m0-total-current-effective-v1.json",
+  "schema_sha256": "a8dbcb8c06b2eb8b06f65f081dd2caf4420a589feefb2e5ca48977ba4c840b41",
+  "truth_id": "mixed_b",
+  "truth_k0_4_s^-1": 1.412537544622754,
+  "model_default_k0_4_s^-1": 5000.0,
+  "rtols": [
+    1e-06,
+    3e-07,
+    1e-07,
+    3e-08,
+    1e-08
+  ],
+  "rows": [
+    {
+      "rtol": 1e-06,
+      "truth_vs_default": {
+        "maximum_absolute_difference_A": 8.838544367728574e-06,
+        "rms_difference_A": 5.532945861721823e-07,
+        "relative_to_reference_peak": 0.00019076565291802557
+      },
+      "truth_vs_tightest": {
+        "maximum_absolute_difference_A": 3.797812258517219e-06,
+        "rms_difference_A": 2.3811083809397365e-07,
+        "relative_to_reference_peak": 8.196951847187086e-05
+      },
+      "default_vs_tightest": {
+        "maximum_absolute_difference_A": 4.516857851168121e-06,
+        "rms_difference_A": 2.8364446067174016e-07,
+        "relative_to_reference_peak": 9.748890838137092e-05
+      }
+    },
+    {
+      "rtol": 3e-07,
+      "truth_vs_default": {
+        "maximum_absolute_difference_A": 2.4330299856351045e-06,
+        "rms_difference_A": 1.5259395344389687e-07,
+        "relative_to_reference_peak": 5.251288783201125e-05
+      },
+      "truth_vs_tightest": {
+        "maximum_absolute_difference_A": 1.8395302352272602e-06,
+        "rms_difference_A": 1.1515639397369198e-07,
+        "relative_to_reference_peak": 3.9703228419958034e-05
+      },
+      "default_vs_tightest": {
+        "maximum_absolute_difference_A": 1.1173740084510775e-06,
+        "rms_difference_A": 7.082435198490417e-08,
+        "relative_to_reference_peak": 2.4116670465828602e-05
+      }
+    },
+    {
+      "rtol": 1e-07,
+      "truth_vs_default": {
+        "maximum_absolute_difference_A": 1.1086085969364001e-07,
+        "rms_difference_A": 7.802234894173656e-09,
+        "relative_to_reference_peak": 2.3927487396624995e-06
+      },
+      "truth_vs_tightest": {
+        "maximum_absolute_difference_A": 2.109831049243449e-07,
+        "rms_difference_A": 1.3461856886069442e-08,
+        "relative_to_reference_peak": 4.553722601101122e-06
+      },
+      "default_vs_tightest": {
+        "maximum_absolute_difference_A": 2.0203029342524825e-07,
+        "rms_difference_A": 1.2883056605889156e-08,
+        "relative_to_reference_peak": 4.360489839391765e-06
+      }
+    },
+    {
+      "rtol": 3e-08,
+      "truth_vs_default": {
+        "maximum_absolute_difference_A": 6.768493036948819e-07,
+        "rms_difference_A": 4.2328214731679324e-08,
+        "relative_to_reference_peak": 1.4608677101229995e-05
+      },
+      "truth_vs_tightest": {
+        "maximum_absolute_difference_A": 5.545352783214996e-08,
+        "rms_difference_A": 3.5591194621675256e-09,
+        "relative_to_reference_peak": 1.1968730059717384e-06
+      },
+      "default_vs_tightest": {
+        "maximum_absolute_difference_A": 9.75215178194988e-08,
+        "rms_difference_A": 6.186458598027672e-09,
+        "relative_to_reference_peak": 2.1048407165301076e-06
+      }
+    },
+    {
+      "rtol": 1e-08,
+      "truth_vs_default": {
+        "maximum_absolute_difference_A": 5.238742580432332e-07,
+        "rms_difference_A": 3.275722718028318e-08,
+        "relative_to_reference_peak": 1.1306962469065858e-05
+      },
+      "truth_vs_tightest": {
+        "maximum_absolute_difference_A": 0.0,
+        "rms_difference_A": 0.0,
+        "relative_to_reference_peak": 0.0
+      },
+      "default_vs_tightest": {
+        "maximum_absolute_difference_A": 0.0,
+        "rms_difference_A": 0.0,
+        "relative_to_reference_peak": 0.0
+      }
+    }
+  ],
+  "artifacts": {
+    "currents": {
+      "path": "results/smoke/truth_identifiability/dev-mixed_b-k04-solver-convergence-v1/currents.npz",
+      "sha256": "f2ae197845da9f605aaed90697a835cb6f703aa2a24409df70487a61ea4b8901"
+    }
+  },
+  "prohibited_claims": [
+    "k0_4_recoverable",
+    "rtol_change_approved_for_formal_runs"
+  ]
+}

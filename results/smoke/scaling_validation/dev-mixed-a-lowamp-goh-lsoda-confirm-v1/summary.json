@@ -1,0 +1,170 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_complement_reoptimized_profile",
+  "eligible_for_formal_conclusions": false,
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "schema_path": "config/parameter-schemas/m0-total-current-effective-v1.json",
+  "schema_sha256": "a8dbcb8c06b2eb8b06f65f081dd2caf4420a589feefb2e5ca48977ba4c840b41",
+  "truth_id": "mixed_a",
+  "protocol": "lowamp",
+  "backend": "lsoda",
+  "profiled_parameter": "G_OH",
+  "profile_truth_coordinate": 0.35,
+  "fixed_parameters": {
+    "k0_4": 5000.0
+  },
+  "complement_parameter_names": [
+    "k0_1",
+    "k0_2",
+    "k0_3",
+    "G_O",
+    "scaling_OOH_OH"
+  ],
+  "complement_initialization": "synthetic_truth_optimistic_identifiability_diagnostic",
+  "per_coordinate_budget": 48,
+  "confirmation_only": true,
+  "candidate_source": "results/smoke/scaling_validation/dev-mixed-a-lowamp-goh-cn192-v1/summary.json",
+  "candidate_source_sha256": "611935d988011d882e8a4663673e610dc10ceea41e10f87e336cc0df3f6eed7a",
+  "rows": [
+    {
+      "profile_coordinate": 0.25,
+      "offset_from_truth": -0.09999999999999998,
+      "profile_physical_value": 0.925,
+      "minimum_loss": 0.016013034103548738,
+      "complement_calls": 1,
+      "complement_recovered_unit": [
+        0.08855438164987975,
+        0.9260499134230229,
+        0.45581573975637585,
+        0.6501062808854142,
+        0.3956970596686668
+      ],
+      "complement_truth_unit": [
+        0.25,
+        0.7,
+        0.4,
+        0.65,
+        0.45
+      ],
+      "complement_maximum_truth_error": 0.22604991342302294,
+      "ode_failures": 0,
+      "feature_failures": 0,
+      "wall_seconds": 0.5210962500423193,
+      "optimizer_success": true,
+      "optimizer_message": "candidate evaluated without reoptimization"
+    },
+    {
+      "profile_coordinate": 0.3,
+      "offset_from_truth": -0.04999999999999999,
+      "profile_physical_value": 1.01,
+      "minimum_loss": 0.0016405422760511022,
+      "complement_calls": 1,
+      "complement_recovered_unit": [
+        0.16972944784438007,
+        0.9349998544017074,
+        0.41138205165458197,
+        0.649992843907094,
+        0.4183318247050031
+      ],
+      "complement_truth_unit": [
+        0.25,
+        0.7,
+        0.4,
+        0.65,
+        0.45
+      ],
+      "complement_maximum_truth_error": 0.23499985440170745,
+      "ode_failures": 0,
+      "feature_failures": 0,
+      "wall_seconds": 0.5666553750634193,
+      "optimizer_success": true,
+      "optimizer_message": "candidate evaluated without reoptimization"
+    },
+    {
+      "profile_coordinate": 0.35,
+      "offset_from_truth": 0.0,
+      "profile_physical_value": 1.095,
+      "minimum_loss": 3.4082588805085146e-09,
+      "complement_calls": 1,
+      "complement_recovered_unit": [
+        0.25,
+        0.7,
+        0.4,
+        0.65,
+        0.44999999999999996
+      ],
+      "complement_truth_unit": [
+        0.25,
+        0.7,
+        0.4,
+        0.65,
+        0.45
+      ],
+      "complement_maximum_truth_error": 5.551115123125783e-17,
+      "ode_failures": 0,
+      "feature_failures": 0,
+      "wall_seconds": 0.4946942499373108,
+      "optimizer_success": true,
+      "optimizer_message": "candidate evaluated without reoptimization"
+    },
+    {
+      "profile_coordinate": 0.4,
+      "offset_from_truth": 0.050000000000000044,
+      "profile_physical_value": 1.1800000000000002,
+      "minimum_loss": 0.007588769779074172,
+      "complement_calls": 1,
+      "complement_recovered_unit": [
+        0.3305117217274527,
+        0.5860017299815551,
+        0.38642331589985623,
+        0.6504653026908525,
+        0.44518132847413416
+      ],
+      "complement_truth_unit": [
+        0.25,
+        0.7,
+        0.4,
+        0.65,
+        0.45
+      ],
+      "complement_maximum_truth_error": 0.11399827001844487,
+      "ode_failures": 0,
+      "feature_failures": 0,
+      "wall_seconds": 0.5784199589397758,
+      "optimizer_success": true,
+      "optimizer_message": "candidate evaluated without reoptimization"
+    },
+    {
+      "profile_coordinate": 0.45,
+      "offset_from_truth": 0.10000000000000003,
+      "profile_physical_value": 1.2650000000000001,
+      "minimum_loss": 0.29363948157315833,
+      "complement_calls": 1,
+      "complement_recovered_unit": [
+        0.43259711949617285,
+        0.5063330718893073,
+        0.37557698720012633,
+        0.6495932862323709,
+        6.041258435063313e-05
+      ],
+      "complement_truth_unit": [
+        0.25,
+        0.7,
+        0.4,
+        0.65,
+        0.45
+      ],
+      "complement_maximum_truth_error": 0.4499395874156494,
+      "ode_failures": 0,
+      "feature_failures": 0,
+      "wall_seconds": 0.3443457498215139,
+      "optimizer_success": true,
+      "optimizer_message": "candidate evaluated without reoptimization"
+    }
+  ],
+  "prohibited_claims": [
+    "confidence_interval",
+    "global_profile_minimum_proven",
+    "real_data_parameter_identifiable"
+  ]
+}

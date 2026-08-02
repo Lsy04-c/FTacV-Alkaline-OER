@@ -1,0 +1,175 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_complement_reoptimized_profile",
+  "eligible_for_formal_conclusions": false,
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "schema_path": "config/parameter-schemas/m0-total-current-effective-v1.json",
+  "schema_sha256": "a8dbcb8c06b2eb8b06f65f081dd2caf4420a589feefb2e5ca48977ba4c840b41",
+  "truth_id": "mixed_a",
+  "protocol": "baseline",
+  "backend": "cn",
+  "physical_conditions": {
+    "transfer_coefficient": 0.6,
+    "temperature_K": 298.15
+  },
+  "fixed_k04_source": "truth",
+  "profiled_parameter": "k0_1",
+  "profile_truth_coordinate": 0.25,
+  "fixed_parameters": {
+    "k0_4": 251.18864315095772
+  },
+  "complement_parameter_names": [
+    "k0_2",
+    "k0_3",
+    "G_OH",
+    "G_O",
+    "scaling_OOH_OH"
+  ],
+  "complement_initialization": "synthetic_truth_optimistic_identifiability_diagnostic",
+  "per_coordinate_budget": 192,
+  "confirmation_only": false,
+  "candidate_source": null,
+  "candidate_source_sha256": null,
+  "rows": [
+    {
+      "profile_coordinate": 0.15,
+      "offset_from_truth": -0.1,
+      "profile_physical_value": 0.02238721138568339,
+      "minimum_loss": 7.931630060471988,
+      "complement_calls": 192,
+      "complement_recovered_unit": [
+        1.0,
+        0.8363324021842443,
+        0.6086212761465551,
+        0.8348644807265835,
+        0.44503593164608407
+      ],
+      "complement_truth_unit": [
+        0.7,
+        0.4,
+        0.35,
+        0.65,
+        0.45
+      ],
+      "complement_maximum_truth_error": 0.4363324021842443,
+      "ode_failures": 0,
+      "feature_failures": 0,
+      "wall_seconds": 7.733678583055735,
+      "optimizer_success": false,
+      "optimizer_message": "Maximum number of function evaluations has been exceeded."
+    },
+    {
+      "profile_coordinate": 0.2,
+      "offset_from_truth": -0.04999999999999999,
+      "profile_physical_value": 0.06309573444801933,
+      "minimum_loss": 7.940851579250737,
+      "complement_calls": 192,
+      "complement_recovered_unit": [
+        1.0,
+        0.3817539548494693,
+        0.6479498212057184,
+        0.7196063972283101,
+        0.24454816025858578
+      ],
+      "complement_truth_unit": [
+        0.7,
+        0.4,
+        0.35,
+        0.65,
+        0.45
+      ],
+      "complement_maximum_truth_error": 0.30000000000000004,
+      "ode_failures": 0,
+      "feature_failures": 0,
+      "wall_seconds": 5.983923916937783,
+      "optimizer_success": false,
+      "optimizer_message": "Maximum number of function evaluations has been exceeded."
+    },
+    {
+      "profile_coordinate": 0.25,
+      "offset_from_truth": 0.0,
+      "profile_physical_value": 0.1778279410038923,
+      "minimum_loss": 0.08024235574838957,
+      "complement_calls": 192,
+      "complement_recovered_unit": [
+        0.6314709093190812,
+        0.519788068435174,
+        0.3054365231125667,
+        0.617733761477212,
+        0.45019271927205345
+      ],
+      "complement_truth_unit": [
+        0.7,
+        0.4,
+        0.35,
+        0.65,
+        0.45
+      ],
+      "complement_maximum_truth_error": 0.11978806843517398,
+      "ode_failures": 0,
+      "feature_failures": 0,
+      "wall_seconds": 6.398485332960263,
+      "optimizer_success": false,
+      "optimizer_message": "Maximum number of function evaluations has been exceeded."
+    },
+    {
+      "profile_coordinate": 0.3,
+      "offset_from_truth": 0.04999999999999999,
+      "profile_physical_value": 0.501187233627272,
+      "minimum_loss": 0.050381258549390066,
+      "complement_calls": 192,
+      "complement_recovered_unit": [
+        0.7150781644417056,
+        0.4759789844352443,
+        0.3482501085565517,
+        0.647076653563397,
+        0.44605298597696924
+      ],
+      "complement_truth_unit": [
+        0.7,
+        0.4,
+        0.35,
+        0.65,
+        0.45
+      ],
+      "complement_maximum_truth_error": 0.07597898443524426,
+      "ode_failures": 0,
+      "feature_failures": 0,
+      "wall_seconds": 6.301751666935161,
+      "optimizer_success": false,
+      "optimizer_message": "Maximum number of function evaluations has been exceeded."
+    },
+    {
+      "profile_coordinate": 0.35,
+      "offset_from_truth": 0.09999999999999998,
+      "profile_physical_value": 1.412537544622754,
+      "minimum_loss": 0.06108778243619137,
+      "complement_calls": 192,
+      "complement_recovered_unit": [
+        0.7063018843370344,
+        0.5410636964535595,
+        0.38553207018389535,
+        0.6899737416694949,
+        0.44960561344959865
+      ],
+      "complement_truth_unit": [
+        0.7,
+        0.4,
+        0.35,
+        0.65,
+        0.45
+      ],
+      "complement_maximum_truth_error": 0.14106369645355943,
+      "ode_failures": 0,
+      "feature_failures": 0,
+      "wall_seconds": 6.9028732920996845,
+      "optimizer_success": false,
+      "optimizer_message": "Maximum number of function evaluations has been exceeded."
+    }
+  ],
+  "prohibited_claims": [
+    "confidence_interval",
+    "global_profile_minimum_proven",
+    "real_data_parameter_identifiable"
+  ]
+}

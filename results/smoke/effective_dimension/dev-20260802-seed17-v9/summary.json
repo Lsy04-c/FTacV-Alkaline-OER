@@ -1,0 +1,730 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_smoke",
+  "eligible_for_formal_conclusions": false,
+  "schema_path": "config/parameter-schemas/m0-total-current-effective-v1.json",
+  "schema_sha256": "a8dbcb8c06b2eb8b06f65f081dd2caf4420a589feefb2e5ca48977ba4c840b41",
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "dirty_worktree_expected": true,
+  "forward_reports_source": {
+    "path": "results/smoke/effective_dimension/dev-20260802-seed17-v2/anchor_reports.json",
+    "sha256": "5d547b1329b05ed2af2a4398182730ef9703b80e932dfe3292ffd720c4c32c94"
+  },
+  "seed": 17,
+  "split_counts": {
+    "train": 3,
+    "selection": 2,
+    "holdout": 1
+  },
+  "parameter_names": [
+    "k0_1",
+    "k0_2",
+    "k0_3",
+    "k0_4",
+    "G_OH",
+    "G_O",
+    "scaling_OOH_OH"
+  ],
+  "config": {
+    "E_start": 0.924097277474612,
+    "E_end": 1.9229037265531128,
+    "f": 5.0,
+    "dE": 0.16,
+    "n_points": 256,
+    "points_per_cycle": 32,
+    "fit_harmonics": [
+      1,
+      2,
+      3
+    ],
+    "feature_mode": "hybrid",
+    "solver_backend": "lsoda"
+  },
+  "noise_evidence": {
+    "path": "results/formal/identifiability/gate-a6-d9299f8/noise_evidence.json",
+    "sha256": "4aac6249e25b772717628c6366e15972426851111be6f41bde03616fd887a5a5",
+    "selection_rule": "maximum_dataset_noise_floor",
+    "selected_noise_fraction": 0.001495726085983469,
+    "limitation": "Quantized traces provide a measurement-resolution noise floor, not full repeatability uncertainty; no repeat traces are available.",
+    "source_commit": "d9299f89ca7c363a5b4dd5a4ea83e929a363beb5"
+  },
+  "feature_stability": {
+    "model": "diagonal_feature_stability_from_quantization_floor",
+    "distribution": "uniform_quantization_error",
+    "noise_fraction": 0.001495726085983469,
+    "noise_seeds": [
+      101,
+      103,
+      107,
+      109,
+      113,
+      127,
+      131,
+      137,
+      139,
+      149,
+      151,
+      157,
+      163,
+      167,
+      173,
+      179,
+      181,
+      191,
+      193,
+      197,
+      199,
+      211,
+      223,
+      227,
+      229,
+      233,
+      239,
+      241,
+      251,
+      257,
+      263,
+      269,
+      271,
+      277,
+      281,
+      283,
+      293,
+      307,
+      311,
+      313,
+      317,
+      331,
+      337,
+      347,
+      349,
+      353,
+      359,
+      367
+    ],
+    "anchors": [
+      {
+        "anchor_id": "train-00",
+        "split": "train",
+        "current_sigma": 7.110732693188458e-05,
+        "minimum_feature_standard_deviation": 8.378400949087499e-07,
+        "maximum_feature_standard_deviation": 0.16294789577596885
+      },
+      {
+        "anchor_id": "train-01",
+        "split": "train",
+        "current_sigma": 4.26607062812689e-05,
+        "minimum_feature_standard_deviation": 6.844082029649232e-06,
+        "maximum_feature_standard_deviation": 0.5804619386340121
+      },
+      {
+        "anchor_id": "train-02",
+        "split": "train",
+        "current_sigma": 5.126615779912234e-05,
+        "minimum_feature_standard_deviation": 3.289451691111228e-05,
+        "maximum_feature_standard_deviation": 2.183952710296608
+      },
+      {
+        "anchor_id": "selection-00",
+        "split": "selection",
+        "current_sigma": 4.25741387254493e-05,
+        "minimum_feature_standard_deviation": 1.982268273560071e-05,
+        "maximum_feature_standard_deviation": 0.15502426820909623
+      },
+      {
+        "anchor_id": "selection-01",
+        "split": "selection",
+        "current_sigma": 4.257655823314809e-05,
+        "minimum_feature_standard_deviation": 1.7070847437401063e-05,
+        "maximum_feature_standard_deviation": 0.028599269405612426
+      },
+      {
+        "anchor_id": "holdout-00",
+        "split": "holdout",
+        "current_sigma": 3.985537673480177e-05,
+        "minimum_feature_standard_deviation": 1.3385537174894759e-05,
+        "maximum_feature_standard_deviation": 0.3161097659529449
+      }
+    ],
+    "limitation": "Quantization-resolution propagation only; not repeatability uncertainty and not a full feature covariance.",
+    "artifact": {
+      "path": "results/smoke/effective_dimension/dev-20260802-seed17-v9/feature_stability.json",
+      "sha256": "f3a52ba4db5be3c65e0b11d0d33c8bd102a365c8946025065a4397b08477586d"
+    }
+  },
+  "structurally_excluded_feature_rows": [
+    "Lockin H1 real[0]",
+    "Lockin H1 real[1]",
+    "Lockin H1 real[2]",
+    "Lockin H1 real[3]",
+    "Lockin H1 real[4]",
+    "Lockin H1 real[5]",
+    "Lockin H1 real[6]",
+    "Lockin H1 real[7]",
+    "Lockin H1 real[24]",
+    "Lockin H1 real[25]",
+    "Lockin H1 real[26]",
+    "Lockin H1 real[27]",
+    "Lockin H1 real[28]",
+    "Lockin H1 real[29]",
+    "Lockin H1 real[30]",
+    "Lockin H1 real[31]",
+    "Lockin H1 imag[0]",
+    "Lockin H1 imag[1]",
+    "Lockin H1 imag[2]",
+    "Lockin H1 imag[3]",
+    "Lockin H1 imag[4]",
+    "Lockin H1 imag[5]",
+    "Lockin H1 imag[6]",
+    "Lockin H1 imag[7]",
+    "Lockin H1 imag[24]",
+    "Lockin H1 imag[25]",
+    "Lockin H1 imag[26]",
+    "Lockin H1 imag[27]",
+    "Lockin H1 imag[28]",
+    "Lockin H1 imag[29]",
+    "Lockin H1 imag[30]",
+    "Lockin H1 imag[31]",
+    "Lockin H2 real[0]",
+    "Lockin H2 real[1]",
+    "Lockin H2 real[2]",
+    "Lockin H2 real[3]",
+    "Lockin H2 real[4]",
+    "Lockin H2 real[5]",
+    "Lockin H2 real[6]",
+    "Lockin H2 real[7]",
+    "Lockin H2 real[24]",
+    "Lockin H2 real[25]",
+    "Lockin H2 real[26]",
+    "Lockin H2 real[27]",
+    "Lockin H2 real[28]",
+    "Lockin H2 real[29]",
+    "Lockin H2 real[30]",
+    "Lockin H2 real[31]",
+    "Lockin H2 imag[0]",
+    "Lockin H2 imag[1]",
+    "Lockin H2 imag[2]",
+    "Lockin H2 imag[3]",
+    "Lockin H2 imag[4]",
+    "Lockin H2 imag[5]",
+    "Lockin H2 imag[6]",
+    "Lockin H2 imag[7]",
+    "Lockin H2 imag[24]",
+    "Lockin H2 imag[25]",
+    "Lockin H2 imag[26]",
+    "Lockin H2 imag[27]",
+    "Lockin H2 imag[28]",
+    "Lockin H2 imag[29]",
+    "Lockin H2 imag[30]",
+    "Lockin H2 imag[31]",
+    "Lockin H3 real[0]",
+    "Lockin H3 real[1]",
+    "Lockin H3 real[2]",
+    "Lockin H3 real[3]",
+    "Lockin H3 real[4]",
+    "Lockin H3 real[5]",
+    "Lockin H3 real[6]",
+    "Lockin H3 real[7]",
+    "Lockin H3 real[24]",
+    "Lockin H3 real[25]",
+    "Lockin H3 real[26]",
+    "Lockin H3 real[27]",
+    "Lockin H3 real[28]",
+    "Lockin H3 real[29]",
+    "Lockin H3 real[30]",
+    "Lockin H3 real[31]",
+    "Lockin H3 imag[0]",
+    "Lockin H3 imag[1]",
+    "Lockin H3 imag[2]",
+    "Lockin H3 imag[3]",
+    "Lockin H3 imag[4]",
+    "Lockin H3 imag[5]",
+    "Lockin H3 imag[6]",
+    "Lockin H3 imag[7]",
+    "Lockin H3 imag[24]",
+    "Lockin H3 imag[25]",
+    "Lockin H3 imag[26]",
+    "Lockin H3 imag[27]",
+    "Lockin H3 imag[28]",
+    "Lockin H3 imag[29]",
+    "Lockin H3 imag[30]",
+    "Lockin H3 imag[31]"
+  ],
+  "decomposition": {
+    "training_anchor_ids": [
+      "train-00",
+      "train-01",
+      "train-02"
+    ],
+    "selection_anchor_ids": [
+      "selection-00",
+      "selection-01"
+    ],
+    "parameter_names": [
+      "k0_1",
+      "k0_2",
+      "k0_3",
+      "k0_4",
+      "G_OH",
+      "G_O",
+      "scaling_OOH_OH"
+    ],
+    "feature_names": [
+      "DC shape[0]",
+      "DC shape[1]",
+      "DC shape[2]",
+      "DC shape[3]",
+      "DC shape[4]",
+      "DC shape[5]",
+      "DC shape[6]",
+      "DC shape[7]",
+      "DC shape[8]",
+      "DC shape[9]",
+      "DC shape[10]",
+      "DC shape[11]",
+      "DC shape[12]",
+      "DC shape[13]",
+      "DC shape[14]",
+      "DC shape[15]",
+      "DC shape[16]",
+      "DC shape[17]",
+      "DC shape[18]",
+      "DC shape[19]",
+      "DC shape[20]",
+      "DC shape[21]",
+      "DC shape[22]",
+      "DC shape[23]",
+      "DC shape[24]",
+      "DC shape[25]",
+      "DC shape[26]",
+      "DC shape[27]",
+      "DC shape[28]",
+      "DC shape[29]",
+      "DC shape[30]",
+      "DC shape[31]",
+      "Complex H1 real",
+      "Complex H1 imag",
+      "Complex H2 real",
+      "Complex H2 imag",
+      "Complex H3 real",
+      "Complex H3 imag",
+      "Lockin H1 real[8]",
+      "Lockin H1 real[9]",
+      "Lockin H1 real[10]",
+      "Lockin H1 real[11]",
+      "Lockin H1 real[12]",
+      "Lockin H1 real[13]",
+      "Lockin H1 real[14]",
+      "Lockin H1 real[15]",
+      "Lockin H1 real[16]",
+      "Lockin H1 real[17]",
+      "Lockin H1 real[18]",
+      "Lockin H1 real[19]",
+      "Lockin H1 real[20]",
+      "Lockin H1 real[21]",
+      "Lockin H1 real[22]",
+      "Lockin H1 real[23]",
+      "Lockin H1 imag[8]",
+      "Lockin H1 imag[9]",
+      "Lockin H1 imag[10]",
+      "Lockin H1 imag[11]",
+      "Lockin H1 imag[12]",
+      "Lockin H1 imag[13]",
+      "Lockin H1 imag[14]",
+      "Lockin H1 imag[15]",
+      "Lockin H1 imag[16]",
+      "Lockin H1 imag[17]",
+      "Lockin H1 imag[18]",
+      "Lockin H1 imag[19]",
+      "Lockin H1 imag[20]",
+      "Lockin H1 imag[21]",
+      "Lockin H1 imag[22]",
+      "Lockin H1 imag[23]",
+      "Lockin H2 real[8]",
+      "Lockin H2 real[9]",
+      "Lockin H2 real[10]",
+      "Lockin H2 real[11]",
+      "Lockin H2 real[12]",
+      "Lockin H2 real[13]",
+      "Lockin H2 real[14]",
+      "Lockin H2 real[15]",
+      "Lockin H2 real[16]",
+      "Lockin H2 real[17]",
+      "Lockin H2 real[18]",
+      "Lockin H2 real[19]",
+      "Lockin H2 real[20]",
+      "Lockin H2 real[21]",
+      "Lockin H2 real[22]",
+      "Lockin H2 real[23]",
+      "Lockin H2 imag[8]",
+      "Lockin H2 imag[9]",
+      "Lockin H2 imag[10]",
+      "Lockin H2 imag[11]",
+      "Lockin H2 imag[12]",
+      "Lockin H2 imag[13]",
+      "Lockin H2 imag[14]",
+      "Lockin H2 imag[15]",
+      "Lockin H2 imag[16]",
+      "Lockin H2 imag[17]",
+      "Lockin H2 imag[18]",
+      "Lockin H2 imag[19]",
+      "Lockin H2 imag[20]",
+      "Lockin H2 imag[21]",
+      "Lockin H2 imag[22]",
+      "Lockin H2 imag[23]",
+      "Lockin H3 real[8]",
+      "Lockin H3 real[9]",
+      "Lockin H3 real[10]",
+      "Lockin H3 real[11]",
+      "Lockin H3 real[12]",
+      "Lockin H3 real[13]",
+      "Lockin H3 real[14]",
+      "Lockin H3 real[15]",
+      "Lockin H3 real[16]",
+      "Lockin H3 real[17]",
+      "Lockin H3 real[18]",
+      "Lockin H3 real[19]",
+      "Lockin H3 real[20]",
+      "Lockin H3 real[21]",
+      "Lockin H3 real[22]",
+      "Lockin H3 real[23]",
+      "Lockin H3 imag[8]",
+      "Lockin H3 imag[9]",
+      "Lockin H3 imag[10]",
+      "Lockin H3 imag[11]",
+      "Lockin H3 imag[12]",
+      "Lockin H3 imag[13]",
+      "Lockin H3 imag[14]",
+      "Lockin H3 imag[15]",
+      "Lockin H3 imag[16]",
+      "Lockin H3 imag[17]",
+      "Lockin H3 imag[18]",
+      "Lockin H3 imag[19]",
+      "Lockin H3 imag[20]",
+      "Lockin H3 imag[21]",
+      "Lockin H3 imag[22]",
+      "Lockin H3 imag[23]"
+    ],
+    "feature_count": 134,
+    "noise_model": "diagonal_quantization_stability_floor",
+    "excluded_nonsmooth_features": [
+      "Tafel",
+      "onset"
+    ],
+    "included_feature_blocks": [
+      "DC shape",
+      "Complex H1 real",
+      "Complex H1 imag",
+      "Complex H2 real",
+      "Complex H2 imag",
+      "Complex H3 real",
+      "Complex H3 imag",
+      "Lockin H1 real",
+      "Lockin H1 imag",
+      "Lockin H2 real",
+      "Lockin H2 imag",
+      "Lockin H3 real",
+      "Lockin H3 imag"
+    ],
+    "gramian": [
+      [
+        884662412.052806,
+        -3938.199997906741,
+        -5833.523938369395,
+        -19441.559584890572,
+        -1412992902.3998177,
+        50021.6940936601,
+        -8398.743455755435
+      ],
+      [
+        -3938.199997906741,
+        17.426671244339072,
+        -0.17708939298424484,
+        -0.5475562214669034,
+        7264.636868629735,
+        -44.018451773438585,
+        -0.20907522685845967
+      ],
+      [
+        -5833.523938369395,
+        -0.17708939298424484,
+        0.11991103252104453,
+        0.33870087621651146,
+        8125.705039711874,
+        -0.19773701794366497,
+        0.1471391170151332
+      ],
+      [
+        -19441.559584890572,
+        -0.5475562214669034,
+        0.33870087621651146,
+        1.1253357279601495,
+        27049.105917897334,
+        -0.7938741239537387,
+        0.48916830216180424
+      ],
+      [
+        -1412992902.3998177,
+        7264.636868629735,
+        8125.705039711874,
+        27049.105917897334,
+        2306457471.367659,
+        -74008.50872089357,
+        11589.053084701172
+      ],
+      [
+        50021.6940936601,
+        -44.018451773438585,
+        -0.19773701794366497,
+        -0.7938741239537387,
+        -74008.50872089357,
+        116.13165700310397,
+        -0.3854624715868445
+      ],
+      [
+        -8398.743455755435,
+        -0.20907522685845967,
+        0.1471391170151332,
+        0.48916830216180424,
+        11589.053084701172,
+        -0.3854624715868445,
+        0.2376150169011478
+      ]
+    ],
+    "eigenvalues": [
+      3177307155.807666,
+      13812732.140687052,
+      129.772141038126,
+      0.6355020419525592,
+      0.07215430569105603,
+      0.020021997483100004,
+      0.013481514031651064
+    ],
+    "directions": [
+      [
+        -0.5246722102003978,
+        0.8513042823368845,
+        -0.0002180019209272312,
+        0.00020774091242055224,
+        -2.5795987188559273e-06,
+        -5.026365478545272e-06,
+        2.295372571214059e-06
+      ],
+      [
+        2.596753107568319e-06,
+        3.322551529438037e-05,
+        -0.3639646346888408,
+        -0.4970582997394056,
+        0.7563437933932062,
+        0.12889770396193764,
+        -0.17830378109907752
+      ],
+      [
+        3.140437906747572e-06,
+        -5.0878608603887294e-05,
+        0.0024752594755319303,
+        0.23131883053985006,
+        0.18418543565351328,
+        0.7069655291413477,
+        0.6424647344630907
+      ],
+      [
+        1.0457744741480716e-05,
+        -0.00017076779363029126,
+        0.00718549929208023,
+        0.7479610388164193,
+        0.33805173179360715,
+        0.16428459819978777,
+        -0.5470230535976157
+      ],
+      [
+        0.8513043350695835,
+        0.5246721892594091,
+        -0.00010262845097814974,
+        0.0001111943955159031,
+        -1.4526991504637918e-06,
+        -2.9360856680967822e-06,
+        1.3963014727677421e-06
+      ],
+      [
+        -2.808943426452137e-05,
+        0.0002717425003161055,
+        0.9313775255581306,
+        -0.20157324902582058,
+        0.291140343340656,
+        0.04924960763134894,
+        -0.06867191680031144
+      ],
+      [
+        4.491979446506012e-06,
+        -7.742368612942965e-05,
+        0.0027987879605986077,
+        0.31519374909284653,
+        0.4415632668041628,
+        -0.6739214861004525,
+        0.5014945396368093
+      ]
+    ],
+    "column_norms": [
+      29743.275072742174,
+      4.174526469474001,
+      0.34628172420883624,
+      1.0608184236522995,
+      48025.59183776561,
+      10.776439903934136,
+      0.4874577078077111
+    ],
+    "selection_residuals": [
+      {
+        "dimension": 1,
+        "worst_relative_frobenius": 0.2510418761444758,
+        "mean_relative_frobenius": 0.14876176530950583,
+        "worst_discarded_singular_value": 11363.106317178073
+      },
+      {
+        "dimension": 2,
+        "worst_relative_frobenius": 0.23633629190994795,
+        "mean_relative_frobenius": 0.11818602477968584,
+        "worst_discarded_singular_value": 11188.45868788038
+      },
+      {
+        "dimension": 3,
+        "worst_relative_frobenius": 0.15282463522863005,
+        "mean_relative_frobenius": 0.07642177408356826,
+        "worst_discarded_singular_value": 7238.298163121456
+      },
+      {
+        "dimension": 4,
+        "worst_relative_frobenius": 0.14296666277157183,
+        "mean_relative_frobenius": 0.07148371268672296,
+        "worst_discarded_singular_value": 6771.460452318888
+      },
+      {
+        "dimension": 5,
+        "worst_relative_frobenius": 0.1410560723810544,
+        "mean_relative_frobenius": 0.07052839510975606,
+        "worst_discarded_singular_value": 6681.012343907625
+      },
+      {
+        "dimension": 6,
+        "worst_relative_frobenius": 0.015034676634775456,
+        "mean_relative_frobenius": 0.007517473943013573,
+        "worst_discarded_singular_value": 712.155542925937
+      },
+      {
+        "dimension": 7,
+        "worst_relative_frobenius": 1.8488537312807543e-16,
+        "mean_relative_frobenius": 1.820989863482636e-16,
+        "worst_discarded_singular_value": 8.543657361719468e-12
+      }
+    ],
+    "dimension_selection": {
+      "status": "full_space_required_by_selection",
+      "candidate_dimension": 7,
+      "maximum_whitened_operator_norm": 1.0,
+      "reduction_achieved": false
+    },
+    "dimension_selection_status": "full_space_required_by_selection"
+  },
+  "holdout_inactive_probes": {
+    "holdout_anchor_ids": [
+      "holdout-00"
+    ],
+    "probe_maximum_step": 0.05,
+    "normalization": "frozen_diagonal_feature_stability",
+    "forward_runs": 15,
+    "per_anchor": [
+      {
+        "anchor_id": "holdout-00",
+        "directions": [
+          {
+            "direction_index": 0,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 355.1860735433086,
+            "rms_normalized_feature_deviation": 110.91600672079912
+          },
+          {
+            "direction_index": 1,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 193.11871090011562,
+            "rms_normalized_feature_deviation": 64.92731909548576
+          },
+          {
+            "direction_index": 2,
+            "step": 0.05,
+            "max_normalized_feature_deviation": 23.20934935064253,
+            "rms_normalized_feature_deviation": 7.3970949764900755
+          },
+          {
+            "direction_index": 3,
+            "step": 0.0007710038286903953,
+            "max_normalized_feature_deviation": 4.055285142038728,
+            "rms_normalized_feature_deviation": 1.2917918548632579
+          },
+          {
+            "direction_index": 4,
+            "step": 0.0005503528160046068,
+            "max_normalized_feature_deviation": 2.285385305013341,
+            "rms_normalized_feature_deviation": 0.7284948430678811
+          },
+          {
+            "direction_index": 5,
+            "step": 0.0003605992572458825,
+            "max_normalized_feature_deviation": 1.1766024621376534,
+            "rms_normalized_feature_deviation": 0.3756353727776281
+          },
+          {
+            "direction_index": 6,
+            "step": 0.0004845827184995083,
+            "max_normalized_feature_deviation": 0.24426010995739056,
+            "rms_normalized_feature_deviation": 0.07966450404612598
+          }
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "dimension": 1,
+        "worst_normalized_feature_deviation": 193.11871090011562,
+        "worst_rms_normalized_feature_deviation": 64.92731909548576
+      },
+      {
+        "dimension": 2,
+        "worst_normalized_feature_deviation": 23.20934935064253,
+        "worst_rms_normalized_feature_deviation": 7.3970949764900755
+      },
+      {
+        "dimension": 3,
+        "worst_normalized_feature_deviation": 4.055285142038728,
+        "worst_rms_normalized_feature_deviation": 1.2917918548632579
+      },
+      {
+        "dimension": 4,
+        "worst_normalized_feature_deviation": 2.285385305013341,
+        "worst_rms_normalized_feature_deviation": 0.7284948430678811
+      },
+      {
+        "dimension": 5,
+        "worst_normalized_feature_deviation": 1.1766024621376534,
+        "worst_rms_normalized_feature_deviation": 0.3756353727776281
+      },
+      {
+        "dimension": 6,
+        "worst_normalized_feature_deviation": 0.24426010995739056,
+        "worst_rms_normalized_feature_deviation": 0.07966450404612598
+      },
+      {
+        "dimension": 7,
+        "worst_normalized_feature_deviation": 0.0,
+        "worst_rms_normalized_feature_deviation": 0.0
+      }
+    ],
+    "dimension_selection_status": "not_selected_from_holdout"
+  },
+  "prohibited_claims": [
+    "effective_dimension_selected",
+    "real_data_parameters_identifiable",
+    "unit_noise_proxy_is_experimental_covariance",
+    "quantization_floor_is_repeatability_covariance"
+  ]
+}

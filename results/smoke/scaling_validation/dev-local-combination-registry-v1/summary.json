@@ -1,0 +1,171 @@
+{
+  "status": "SUCCESS",
+  "study_kind": "development_local_combination_registry",
+  "eligible_for_formal_conclusions": false,
+  "git_commit": "b0b68d26c7b1559cbae21dd18fdfaa5640c36b0b",
+  "schema_path": "config/parameter-schemas/m0-total-current-effective-v1.json",
+  "schema_sha256": "a8dbcb8c06b2eb8b06f65f081dd2caf4420a589feefb2e5ca48977ba4c840b41",
+  "claim_level": "LOCAL_ONLY",
+  "registered_coordinate": "G_OH - c*log10(k0_1)",
+  "baseline": {
+    "minimum_training_singular_value": 0.0012488225656862547,
+    "weakest_direction_loadings": {
+      "k0_1": -0.5141514766849414,
+      "k0_2": 0.000975517557450456,
+      "k0_3": -0.0009601276748456749,
+      "G_OH": 0.8576396277600732,
+      "G_O": 0.010006003938117333,
+      "scaling_OOH_OH": 0.0007309745485867092
+    },
+    "goh_k01_loading_square_sum": 0.9998974720817427,
+    "selection_maximum_absolute_motion": 0.0039018161324652356,
+    "physical_coefficient_eV_per_decade": 0.11323812240957798,
+    "local_geometry_gate": true
+  },
+  "protocol_contexts": {
+    "lowamp": {
+      "minimum_training_singular_value": 0.0019991900626637063,
+      "weakest_direction_loadings": {
+        "k0_1": -0.5261651470409308,
+        "k0_2": -0.002269629962432018,
+        "k0_3": 0.006479090451728736,
+        "G_OH": 0.8502830796900537,
+        "G_O": 0.0013897872284825302,
+        "scaling_OOH_OH": -0.010948108987629754
+      },
+      "goh_k01_loading_square_sum": 0.9998310775678064,
+      "selection_maximum_absolute_motion": 0.005841196510934926,
+      "physical_coefficient_eV_per_decade": 0.11688666089045174,
+      "local_geometry_gate": true,
+      "angle_to_baseline_degrees": 1.2487049685510412
+    },
+    "highfreq_matched": {
+      "minimum_training_singular_value": 0.0019722990830163033,
+      "weakest_direction_loadings": {
+        "k0_1": -0.49744134644722804,
+        "k0_2": 0.006430449437760055,
+        "k0_3": 0.033445222155723306,
+        "G_OH": 0.8606674544351038,
+        "G_O": -0.09170901277503009,
+        "scaling_OOH_OH": -0.0472563554644169
+      },
+      "goh_k01_loading_square_sum": 0.9881963602790327,
+      "selection_maximum_absolute_motion": 0.010547432305587814,
+      "physical_coefficient_eV_per_decade": 0.10917241349561756,
+      "local_geometry_gate": true,
+      "angle_to_baseline_degrees": 6.819720800822967
+    }
+  },
+  "anchor_challenges": {
+    "center": {
+      "minimum_training_singular_value": 0.01977874358820017,
+      "weakest_direction_loadings": {
+        "k0_1": -0.16087891779241884,
+        "k0_2": -0.034265961976220435,
+        "k0_3": 0.296666241404778,
+        "G_OH": -0.25866352423758504,
+        "G_O": 0.8659673669424266,
+        "scaling_OOH_OH": -0.26101084171033895
+      },
+      "goh_k01_loading_square_sum": 0.09278884496106761,
+      "selection_maximum_absolute_motion": 0.14902169999883533,
+      "physical_coefficient_eV_per_decade": -0.11748173661913378,
+      "local_geometry_gate": false,
+      "angle_to_baseline_degrees": 82.47445904113306
+    }
+  },
+  "transfer_holdouts": {
+    "0.35": {
+      "minimum_training_singular_value": 0.0011613021744773643,
+      "weakest_direction_loadings": {
+        "k0_1": -0.35960019955341144,
+        "k0_2": 0.059833358857171615,
+        "k0_3": 0.004824291961834956,
+        "G_OH": 0.9077523813169069,
+        "G_O": -0.2072693253306768,
+        "scaling_OOH_OH": -0.010461015559394276
+      },
+      "goh_k01_loading_square_sum": 0.9533266893053686,
+      "selection_maximum_absolute_motion": 0.004872659802368768,
+      "physical_coefficient_eV_per_decade": 0.07482710432477885,
+      "local_geometry_gate": true,
+      "transfer_coefficient": 0.35,
+      "forward_bv_theory_eV_per_decade": 0.09101438413355667,
+      "relative_theory_error": 0.17785408276810644,
+      "mechanism_gate": false
+    },
+    "0.65": {
+      "minimum_training_singular_value": 0.0009291695256966937,
+      "weakest_direction_loadings": {
+        "k0_1": -0.6446579014870197,
+        "k0_2": 0.0002557156592485066,
+        "k0_3": 0.01985066192563174,
+        "G_OH": 0.7622724530307586,
+        "G_O": -0.050794306389090174,
+        "scaling_OOH_OH": -0.019563273496247775
+      },
+      "goh_k01_loading_square_sum": 0.9966431025991782,
+      "selection_maximum_absolute_motion": 0.014614216171073918,
+      "physical_coefficient_eV_per_decade": 0.15974434631761833,
+      "local_geometry_gate": true,
+      "transfer_coefficient": 0.65,
+      "forward_bv_theory_eV_per_decade": 0.16902671339089095,
+      "relative_theory_error": 0.054916568434991896,
+      "mechanism_gate": true
+    }
+  },
+  "gates": {
+    "cross_protocol_local_geometry": true,
+    "cross_anchor_global_invariance": false,
+    "cross_anchor_rejection_supported": true,
+    "forward_bv_mechanism_scaling": false,
+    "temperature_perturbation_allowed": false
+  },
+  "sources": [
+    {
+      "role": "baseline",
+      "name": "mixed_a_baseline",
+      "path": "results/smoke/truth_identifiability/dev-mixed-a-compensation-geometry-v1/summary.json",
+      "sha256": "5e49dc08103e86688f2a4251dc5318eed9945ae3db8be93036a67788abe59617"
+    },
+    {
+      "role": "protocol",
+      "name": "lowamp",
+      "path": "results/smoke/scaling_validation/dev-mixed-a-lowamp-compensation-geometry-v1/summary.json",
+      "sha256": "7bfdddaa1a47a7a0e5627a0e9f388beafba08be51fe2f76a7ea287617f6cdbeb"
+    },
+    {
+      "role": "protocol",
+      "name": "highfreq_matched",
+      "path": "results/smoke/scaling_validation/dev-mixed-a-highfreq-compensation-geometry-v1/summary.json",
+      "sha256": "4d8cfe93640a0db051c62283e06ddabcd82f98cd8e3d00c98383bfab81fe66c9"
+    },
+    {
+      "role": "anchor_challenge",
+      "name": "center",
+      "path": "results/smoke/truth_identifiability/dev-center-compensation-geometry-v1/summary.json",
+      "sha256": "1f5d658b08884517f9febe8a7405ee1cd3ee61609b52b1e7d6c6b5fa8302dc7f"
+    },
+    {
+      "role": "transfer_holdout",
+      "name": "0.35",
+      "path": "results/smoke/scaling_validation/dev-mixed-a-a035-truthk04-compensation-geometry-v1/summary.json",
+      "sha256": "f7489545502e668ecffba362e5730b139dcda117df802203c7620cd0d6d94f4e"
+    },
+    {
+      "role": "transfer_holdout",
+      "name": "0.65",
+      "path": "results/smoke/scaling_validation/dev-mixed-a-a065-truthk04-compensation-geometry-v1/summary.json",
+      "sha256": "a038afeb30fa8bd39da4f7ad2d1606d7f3d49aff829fbe4fe68449775c67eafc"
+    }
+  ],
+  "prohibited_claims": [
+    "global_effective_coordinate",
+    "global_parameter_reduction",
+    "individual_G_OH_point_estimate",
+    "individual_k0_1_point_estimate",
+    "validated_BV_scaling_law",
+    "confidence_interval",
+    "real_data_parameter_identifiable"
+  ]
+}

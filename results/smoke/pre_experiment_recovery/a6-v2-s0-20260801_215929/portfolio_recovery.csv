@@ -1,0 +1,4 @@
+job_id,portfolio_stage,parameter_pair_id,portfolio_id,truth_id,optimizer_seed,success,max_normalized_bound_error,classification
+S0__k0_2-k0_3__P0__center__noise-0__seed-7__trials-3,S0,k0_2-k0_3,P0,center,7,true,0.22346517783094122,STRUCTURE_ONLY
+S0__k0_2-k0_3__P1__center__noise-0__seed-7__trials-3,S0,k0_2-k0_3,P1,center,7,true,0.22346517783094122,STRUCTURE_ONLY
+S0__k0_2-k0_3__P2__center__noise-0__seed-7__trials-3,S0,k0_2-k0_3,P2,center,7,true,0.22346517783094122,STRUCTURE_ONLY
