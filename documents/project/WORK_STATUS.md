@@ -2077,3 +2077,28 @@ H1-H7压力测试：
 - 接入与旧A1目标回归`45 passed in 3.31s`；全量Python回归
   `642 passed in 146.80s`。未运行ODE、未启动反演、未修改模型/求解器/
   优化器/Web，未提交、未推送。
+
+## 68. pre-experiment A6-v2 S1 正式验收（2026-08-02）
+
+- 状态：**S1 完成并独立验收**。结构/完整性 PASS，科学门 FAIL。
+- 执行：Legion 冻结 worktree，commit `21284b53`，LSODA，8 workers，
+  81 jobs × 100 trials × 3 真值 × 3 seed，N0=0.0 无噪声。
+  起止 2026-08-01T14:07:40Z → 2026-08-02T03:01:38Z，约 12.9 h。
+  0 ODE fail，n_tafel_fail=1804（不阻塞 recovery）。
+- 独立 validator（`validate_pre_experiment_recovery.py`）重建科学门：
+  ```json
+  {"gate": "PASS", "stage": "S1",
+   "stage_status": "DESIGN_INSUFFICIENT_NOISELESS",
+   "scientific_gate_passed": false, "eligible_parameter_pairs": []}
+  ```
+- 结论：**V4.1 推荐的三协议组合（5Hz/0.16V、5Hz/0.08V、10Hz/0.16V）
+  在无噪声合成条件下无法恢复 G_OH-G_O、k0_2-k0_3、k0_3-G_O 中任何参数对**。
+  问题不是噪声或预算，而是三协议信息量不足以解开这些补偿。
+- 按 plan 冻结规则：S1 三组参数对 P2 全失败 → **不创建 S2**。
+- 证据：Mac 归档
+  `~/OER-FTAcV-archive/results/21284b5/pre_experiment_a6_v2_s1_lsoda/20260801_140736/`；
+  10 文件，spec SHA-256 见 summary。
+- 边界：本结论只否定当前三协议组合在无噪声合成下的恢复能力；
+  不改变真实数据 Gate A6 `FAIL_RECOVERY`，不授权任何真实数据反演或参数点估计。
+- 下一步：按 roadmap 决策表——原始参数仍不具资格，候选为固定参数、
+  报告组合量或仅作诊断；或回到 V4 扩展条件矩阵（需恢复实验数据）。

@@ -19,10 +19,16 @@
 | 5 独立 validator 与 oer-wf 桥接 | 已完成 | 篡改拒绝测试、S1 81 行重建测试通过，提交 `2cae743` |
 | 6 TaskSpec | S1 已完成；S2 条件等待 | S1 TaskSpec 提交 `eb35b92`；S2 只在 S1 验收且 eligibility 非空后冻结具体 S1 summary 路径 |
 | 7 本地验证 | 已完成 | CN S0 `PASS/STRUCTURE_ONLY`；Python 503、oer-wf 136、Web 3 tests 通过 |
-| 8 Legion 正式运行 | 待执行 | 下一步为推送、部署、远端 smoke 和 S1 LSODA |
+| 8 Legion 正式运行 | S1 已完成并独立验收；S2 按冻结规则不创建 | S1：81 jobs × 100 trials × LSODA，N0=0.0；独立 validator `gate=PASS`、`stage_status=DESIGN_INSUFFICIENT_NOISELESS`、`eligible_parameter_pairs=[]`；三组参数对 P2 全失败 → 不创建 S2。归档 `~/OER-FTAcV-archive/results/21284b5/pre_experiment_a6_v2_s1_lsoda/20260801_140736/` |
 
 S2 TaskSpec 不提前写占位路径。这样可避免引用未知时间戳、未经独立验收或错误
 S1 归档；若 S1 三组参数对的 P2 全失败，则按冻结规则不创建 S2 正式任务。
+
+### 任务 8 验收（2026-08-02）
+
+S1 结构/完整性 gate PASS，科学门 FAIL（`DESIGN_INSUFFICIENT_NOISELESS`）。
+V4.1 推荐三协议在无噪声合成下不能恢复任何参数对；S2 不创建。
+详细记录见 WORK_STATUS 第 68 节。
 
 ## 0. 文件边界
 
