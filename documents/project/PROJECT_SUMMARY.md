@@ -384,11 +384,17 @@ FastAPI 和静态前端已支持数据分析、正演、TPE 接口和曲线显�
   先审计 React/Tauri、PySide6/Qt 和 MATLAB 备选路线，再决定是否实施。
   本地与远程计算必须共用任务和验收契约；本项不阻塞 A6-v2，也不授权重写
   已验证的科学核心。
-- **封装 `oer-ftacv-workflow` Skill（本轮 A6-v2 S1 验收后实施）：**
+- **封装 `oer-ftacv-workflow` Skill（2026-08-02 完成，S1 验收后实施）：**
   采用薄封装，只规定 `oer-wf` 调用顺序、JSON 状态推进、失败停止条件、
   环境配置读取和科学验收边界；不复制 CLI 实现、项目工作流指南或 validator
   的科学逻辑。完成信号为 Skill 结构校验通过，并由一个无当前对话背景的
   Agent 完成一次 `doctor → status/verify` 接续演练且未绕过冻结 Gate。
+  **已完成**：SKILL.md 位于 `.claude/skills/oer-ftacv-workflow/SKILL.md`；
+  结构校验通过（frontmatter/描述/篇幅）；无背景 Agent 演练通过——按 skill
+  从 `wf doctor`(warning→记录) → `wf status`(pass→继续) → `wf verify`
+  (scientific→停止交 Codex)，未绕过 A6 `FAIL_RECOVERY` 冻结 Gate。
+  verify 独立复现 S1 `DESIGN_INSUFFICIENT_NOISELESS`，15 项工程检查 PASS
+  但科学门 FAIL，Agent 正确停在 verify 不升级结论。
 
 ## 9. 休假期间路线
 
