@@ -228,19 +228,32 @@ const STRICTNESS=[
   {id:'strict',label:'严格',desc:'只保留信噪比很高的谐波'},
 ];
 function DataStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strictness,setStrictness}) {
-  const [sampleFiles,setSampleFiles]=useState([]); const [sampleSel,setSampleSel]=useState('');
-  useEffect(()=>{fetch(`${API_BASE}/api/data/samples`).then(r=>r.json()).then(d=>{if(d.success&&d.files.length){setSampleFiles(d.files);setSampleSel(d.files[0]);}}).catch(()=>{});},[]);
+  const [localFiles,setLocalFiles]=useState([]); const [localSel,setLocalSel]=useState('');
+  const dirRef=useRef(null);
   const handleFile=async(d)=>{
     setExpData(d);setExpAnalysis(null);
     try{const res=await fetch(`${API_BASE}/api/data/analyze`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:d.rows})});
       const data=await res.json();if(!data.success)setError('数据解析失败: '+data.error);else setExpAnalysis(data);
     }catch(e){setError('数据解析失败: '+e.message);}
   };
-  const loadSample=async()=>{
-    if(!sampleSel)return;setExpData({name:sampleSel});setExpAnalysis(null);setError(null);
-    try{const res=await fetch(`${API_BASE}/api/data/analyze-by-file`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:sampleSel})});
-      const data=await res.json();if(!data.success)setError('内置数据解析失败: '+data.error);else setExpAnalysis(data);
-    }catch(e){setError('内置数据解析失败: '+e.message);}
+  // 选择本地数据文件夹，列出 .txt/.csv/.dat 文件供逐个加载
+  const handleFolder=(e)=>{
+    const files=Array.from(e.target.files||[]);
+    const txt=files.filter(f=>/\.(txt|csv|dat)$/i.test(f.name));
+    if(txt.length){setLocalFiles(txt);setLocalSel(txt[0].name);}else{setError('文件夹中没有 .txt/.csv/.dat 文件');}
+    e.target.value='';
+  };
+  const loadLocalFile=async()=>{
+    const f=localFiles.find(x=>x.name===localSel);
+    if(!f)return;
+    setExpData({name:f.name});setExpAnalysis(null);setError(null);
+    try{
+      const text=await f.text();
+      const lines=text.trim().split('\n').filter(l=>l.trim());
+      const rows=lines.map(line=>{const c=line.split(/\s+/);return[parseFloat(c[0]),parseFloat(c[1]),parseFloat(c[2])];}).filter(d=>d.every(v=>!isNaN(v)));
+      if(rows.length<1024)throw new Error('有效数据点不足 1024');
+      await handleFile({name:f.name,rows});
+    }catch(e){setError('本地数据解析失败: '+e.message);}
   };
   // 建议最高阶：直接用科学侧 harmonic_quality（fit/relative_rms）；严格/宽松按相对 H1 阈值
   const suggested=()=>{
@@ -264,16 +277,18 @@ function DataStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
       yAxis:{type:'value',name:'i / A',axisLabel:{fontSize:9,formatter:v=>+v.toExponential(1)}},
       series:[{name:'实验电流',type:'line',showSymbol:false,smooth:true,data:d.y.map((v,i)=>[+d.x[i].toFixed(5),+v.toExponential(7)])}]};
   };
-  const expHarmOpt=()=>{
+  // 单阶谐波 option（每阶独立成图）
+  const expHarmOneOpt=(idx)=>{
     if(!expAnalysis||!expAnalysis.harmonics||!expAnalysis.tdc) return null;
+    const h=expAnalysis.harmonics[idx];
+    if(!h) return null;
     const x=downsample(expAnalysis.tdc,800);
-    const series=(expAnalysis.harmonics||[]).slice(0,7).map((h,i)=>({
-      name:`H${i+1}`,type:'line',showSymbol:false,smooth:true,data:downsample(h,800).map((v,k)=>[+x[k].toFixed(5),+v.toExponential(7)])}));
-    return {tooltip:{trigger:'axis'},legend:{top:0,type:'scroll'},grid:{top:26,right:24,bottom:40,left:64},
-      dataZoom:[zoom,zoomSlider],
-      xAxis:{type:'value',name:'E / V',nameLocation:'middle',nameGap:30,axisLabel:{fontSize:10},scale:true},
-      yAxis:{type:'value',axisLabel:{fontSize:9,formatter:v=>+v.toExponential(1)}},
-      series:series};
+    const ds=downsample(h,800);
+    return {tooltip:{trigger:'axis'},grid:{top:14,right:20,bottom:34,left:56},
+      xAxis:{type:'value',name:'E / V',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:9},scale:true},
+      yAxis:{type:'value',axisLabel:{fontSize:8,formatter:v=>+v.toExponential(1)}},
+      series:[{name:`H${idx+1}`,type:'line',showSymbol:false,smooth:true,
+        data:ds.map((v,k)=>[+x[k].toFixed(5),+v.toExponential(7)])}]};
   };
   return (<>
     <div className="panel-title">数据与分析</div>
@@ -283,11 +298,15 @@ function DataStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
         <div className="card">
           <h4>导入数据</h4>
           <FileDropZone onFileLoaded={handleFile} expData={expData}/>
-          {sampleFiles.length>0&&<div className="row" style={{marginTop:10}}>
-            <select value={sampleSel} onChange={e=>setSampleSel(e.target.value)} style={{flex:1,padding:'6px 8px',border:'1px solid var(--border-strong)',borderRadius:7,fontSize:12}}>
-              {sampleFiles.map(f=><option key={f} value={f}>{f.replace('ftacv','FT').replace('-ref','')}</option>)}
+          <div className="row" style={{marginTop:10}}>
+            <button className="btn btn-ghost btn-sm" onClick={()=>dirRef.current&&dirRef.current.click()}>📁 选择本地数据文件夹</button>
+            <input ref={dirRef} type="file" webkitdirectory="" multiple style={{display:'none'}} onChange={handleFolder}/>
+          </div>
+          {localFiles.length>0&&<div className="row" style={{marginTop:8}}>
+            <select value={localSel} onChange={e=>setLocalSel(e.target.value)} style={{flex:1,padding:'6px 8px',border:'1px solid var(--border-strong)',borderRadius:7,fontSize:12}}>
+              {localFiles.map(f=><option key={f.name} value={f.name}>{f.name}</option>)}
             </select>
-            <button className="btn btn-ghost btn-sm" onClick={loadSample}>加载内置</button>
+            <button className="btn btn-ghost btn-sm" onClick={loadLocalFile}>加载</button>
           </div>}
         </div>
         {expAnalysis&&(<div className="card">
@@ -325,8 +344,14 @@ function DataStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
             {expCurveOpt()?<ChartBox option={expCurveOpt()} height={300}/>:<div className="hint">无电流数据</div>}
             <div className="hint" style={{marginTop:4}}>滚轮或底部滑块缩放电位范围。</div>
           </div>
-          <div className="card"><h4>谐波包络 H1–H7</h4>
-            {expHarmOpt()?<ChartBox option={expHarmOpt()} height={340}/>:<div className="hint">无谐波数据</div>}
+          <div className="card"><h4>谐波包络（每阶独立）</h4>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:10}}>
+              {[0,1,2,3,4,5,6].map(i=>(
+                <div key={i}>
+                  <div className="hint" style={{marginBottom:2}}>H{i+1}{hqChannels[i]?`（${(hqChannels[i].relative_rms*100).toFixed(1)}%·${hqChannels[i].fit?'可拟合':'仅诊断'}）`:''}</div>
+                  {expHarmOneOpt(i)?<ChartBox option={expHarmOneOpt(i)} height={170}/>:<div className="hint">无数据</div>}
+                </div>))}
+            </div>
           </div>
         </>):<div className="card"><div className="hint" style={{padding:'60px 0',textAlign:'center'}}>导入数据后在此显示实验电流和谐波包络</div></div>}
       </div>
@@ -371,17 +396,19 @@ function SimInvertStep({expAnalysis,expData,setError,sample}) {
     }catch(e){setInvError(e.message);}setInvLoading(false);
   };
   // 每阶谐波对比（实验 vs 模型，降采样避免白屏）
-  const perHarmOpt=()=>{
+  // 单阶谐波对比（实验 vs 模型，每阶独立成图）
+  const perHarmOneOpt=(idx)=>{
     if(!expAnalysis||!expAnalysis.harmonics||!result||!result.harmonics) return null;
-    const exp=expAnalysis.harmonics, mod=result.harmonics;
-    const x=downsample(expAnalysis.tdc||Array.from({length:exp[0].length},(_,i)=>i),500);
-    const series=[];
-    exp.slice(0,4).forEach((h,i)=>{series.push({name:`实验 H${i+1}`,type:'line',showSymbol:false,smooth:true,data:downsample(h,500).map((v,k)=>[x[k],+v.toFixed(6)])});});
-    mod.slice(0,4).forEach((h,i)=>{series.push({name:`模型 H${i+1}`,type:'line',showSymbol:false,smooth:true,lineStyle:{type:'dashed'},data:downsample(h,500).map((v,k)=>[x[k],+v.toFixed(6)])});});
-    return {tooltip:{trigger:'axis'},legend:{top:0,type:'scroll'},grid:{top:30,right:20,bottom:42,left:62},
-      dataZoom:[{type:'inside',xAxisIndex:0},{type:'slider',xAxisIndex:0,height:16,bottom:0}],
-      xAxis:{type:'value',name:'E / V',nameLocation:'middle',nameGap:32,axisLabel:{fontSize:9},scale:true},
-      yAxis:{type:'value',axisLabel:{fontSize:9,formatter:v=>+v.toExponential(1)},name:'幅值'},
+    const exp=expAnalysis.harmonics[idx], mod=result.harmonics[idx];
+    if(!exp||!mod) return null;
+    const x=downsample(expAnalysis.tdc||Array.from({length:exp.length},(_,i)=>i),500);
+    const series=[
+      {name:'实验',type:'line',showSymbol:false,smooth:true,data:downsample(exp,500).map((v,k)=>[+x[k].toFixed(5),+v.toExponential(6)])},
+      {name:'模型',type:'line',showSymbol:false,smooth:true,lineStyle:{type:'dashed',color:'#d4380d'},data:downsample(mod,500).map((v,k)=>[+x[k].toFixed(5),+v.toExponential(6)])},
+    ];
+    return {tooltip:{trigger:'axis'},legend:{top:0,itemWidth:14,itemHeight:8,textStyle:{fontSize:9}},grid:{top:22,right:16,bottom:32,left:54},
+      xAxis:{type:'value',name:'E / V',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:8},scale:true},
+      yAxis:{type:'value',axisLabel:{fontSize:8,formatter:v=>+v.toExponential(1)}},
       series:series};
   };
   const mainOpt=()=>{
@@ -432,7 +459,6 @@ function SimInvertStep({expAnalysis,expData,setError,sample}) {
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);
     a.download=`oer-report-${now.slice(0,10)}.md`;a.click();
   };
-  const ph=perHarmOpt();
   const mo=mainOpt();
   return (<>
     <div className="panel-title">正演与反演</div>
@@ -473,8 +499,14 @@ function SimInvertStep({expAnalysis,expData,setError,sample}) {
         {mo?<ChartBox option={mo} height={360}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>运行正演后在此显示总电流对比曲线</div>}
       </div>
       <div className="card" style={{gridColumn:'1/-1'}}>
-        <h4>分阶谐波质量（实验 vs 模型）</h4>
-        {ph?<ChartBox option={ph} height={360}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>导入数据并运行正演后，显示 H1–H7 逐阶对比</div>}
+        <h4>分阶谐波质量（实验 vs 模型，每阶独立）</h4>
+        {result&&expAnalysis?(<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:10}}>
+          {[0,1,2,3,4,5,6].map(i=>(
+            <div key={i}>
+              <div className="hint" style={{marginBottom:2}}>H{i+1}</div>
+              {perHarmOneOpt(i)?<ChartBox option={perHarmOneOpt(i)} height={180}/>:<div className="hint">无数据</div>}
+            </div>))}
+        </div>):<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>导入数据并运行正演后，显示 H1–H7 逐阶对比</div>}
       </div>
       <div className="card" style={{gridColumn:'1/-1'}}>
         <h4>导出报告</h4>
