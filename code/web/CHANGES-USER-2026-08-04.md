@@ -81,3 +81,17 @@
   提交正演更新右栏图。
 - 为以后接远程 SSH（Legion）统一"提交/状态/取消/取回"语义做准备。
 - 验证：TestClient submit→poll→done 通过；浏览器 console 无错误。
+
+## 追加（2026-08-04）：远程计算接入（提交正式计算到 Legion）
+
+工作台可提交正式计算到 Legion（经本机 oer-wf CLI，实际在 Legion systemd 执行）：
+
+- 后端：
+  - `GET /api/wf/specs`：列出可提交的 task_spec（config/oer-wf/examples）。
+  - `POST /api/wf/submit`：`{spec, stage: prepare|smoke|formal}` →
+    调本机 `wf prepare/smoke/run`（subprocess），返回每步 JSON 结果。
+    属写操作（会在 Legion 启动计算），前端有确认提示。
+- 前端：②页新增「提交正式计算」卡——选 spec + stage + 提交 + 显示结果。
+- 与任务模型配合：为正式计算提供「提交/状态/取回」入口。
+
+验证：/api/wf/specs 18 个 spec 可读；submit 链路返回 JSON。

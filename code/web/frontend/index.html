@@ -639,12 +639,28 @@ function ResultsStep({setError}) {
   const [data,setData]=useState(null);
   const [profileSel,setProfileSel]=useState('hybrid__G_OH__G_O');
   const [wfSel,setWfSel]=useState(null);
+  const [wfSpecs,setWfSpecs]=useState([]);
+  const [wfSpec,setWfSpec]=useState('');
+  const [wfStage,setWfStage]=useState('smoke');
+  const [wfSubmitting,setWfSubmitting]=useState(false);
+  const [wfSubmitResult,setWfSubmitResult]=useState(null);
   const loadWfDetail=async(commit,task)=>{
     setWfSel({commit,task,loading:true});
     try{
       const r=await fetch(`${API_BASE}/api/wf/task?commit=${commit}&task=${encodeURIComponent(task)}`).then(x=>x.json());
       setWfSel({commit,task,data:r});
     }catch(e){setWfSel({commit,task,error:String(e)});}
+  };
+  const submitWf=async()=>{
+    if(!wfSpec){setError('请选择 task spec');return;}
+    setWfSubmitting(true);setWfSubmitResult(null);setError(null);
+    try{
+      const r=await fetch(`${API_BASE}/api/wf/submit`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({spec:wfSpec,stage:wfStage})});
+      const d=await r.json();
+      setWfSubmitResult(d);
+      if(!d.success)setError(d.error||'提交失败');
+    }catch(e){setError('提交失败: '+e.message);}
+    setWfSubmitting(false);
   };
   useEffect(()=>{
     Promise.all([
@@ -655,7 +671,11 @@ function ResultsStep({setError}) {
       fetch(`${API_BASE}/api/results/coupling`).then(r=>r.json()),
       fetch(`${API_BASE}/api/results/synthetic-recovery`).then(r=>r.json()),
       fetch(`${API_BASE}/api/wf/tasks`).then(r=>r.json()),
-    ]).then(([dq,sens,s1,matrix,coupling,synth,wf])=>setData({dq,sens,s1,matrix,coupling,synth,wf,p2d:null,wfDetail:null})).catch(e=>setError(String(e)));
+      fetch(`${API_BASE}/api/wf/specs`).then(r=>r.json()),
+    ]).then(([dq,sens,s1,matrix,coupling,synth,wf,specs])=>{
+      setData({dq,sens,s1,matrix,coupling,synth,wf,p2d:null,wfDetail:null});
+      if(specs&&specs.success&&specs.specs.length){setWfSpecs(specs.specs);setWfSpec(specs.specs[0]);}
+    }).catch(e=>setError(String(e)));
   },[]);
   useEffect(()=>{if(!profileSel)return;fetch(`${API_BASE}/api/results/profile2d?profile=${encodeURIComponent(profileSel)}`)
     .then(r=>r.json()).then(d=>setData(p=>p?{...p,p2d:d}:p)).catch(()=>{});},[profileSel]);
@@ -760,6 +780,31 @@ function ResultsStep({setError}) {
             </div>))}
         </div>}
         {wfSel&&wfSel.error&&<div className="err hint" style={{marginTop:8}}>加载失败：{wfSel.error}</div>}
+      </div>
+      <div className="card">
+        <h4>提交正式计算（Legion）</h4>
+        <div className="row" style={{marginTop:0}}>
+          <select value={wfSpec} onChange={e=>setWfSpec(e.target.value)} style={{flex:1,padding:'6px 8px',border:'1px solid var(--border-strong)',borderRadius:7,fontSize:12}}>
+            {wfSpecs.map(s=><option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="row">
+          <span className="meta">stage</span>
+          {['prepare','smoke','formal'].map(s=>(<label key={s} style={{fontSize:12,display:'flex',alignItems:'center',gap:4}}>
+            <input type="radio" name="wfstage" checked={wfStage===s} onChange={()=>setWfStage(s)}/>{s}
+          </label>))}
+        </div>
+        <button className="btn btn-primary" style={{width:'100%',marginTop:10,background:'var(--warn)'}} onClick={submitWf} disabled={wfSubmitting}>
+          {wfSubmitting?'提交中...':'提交正式计算'}
+        </button>
+        <div className="hint" style={{marginTop:6}}>会在 Legion 上执行 oer-wf（prepare → smoke → run），属写操作，请确认 spec 后再提交。</div>
+        {wfSubmitResult&&<div className="meta" style={{marginTop:8}}>
+          {wfSubmitResult.success?<>
+            <strong>{wfSubmitResult.spec}</strong> · {wfSubmitResult.stage}
+            {wfSubmitResult.result&&<><br/>状态：<b className={wfSubmitResult.result.status==='pass'?'ok':'warn'}>{wfSubmitResult.result.status}</b>
+            {wfSubmitResult.result.message&&<div className="hint">{wfSubmitResult.result.message}</div>}</>}
+          </>:<span className="err">提交失败：{wfSubmitResult.error}</span>}
+        </div>}
       </div>
       <div className="card">
         <h4>参数耦合方向</h4>

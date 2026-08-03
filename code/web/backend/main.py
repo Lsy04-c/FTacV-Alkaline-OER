@@ -5,6 +5,7 @@ import csv
 import inspect
 import json as _json
 import os
+import subprocess
 import uuid
 from pathlib import Path
 import sys
@@ -562,6 +563,51 @@ async def wf_task(commit: str, task: str) -> Dict[str, Any]:
                 break
         runs.append(entry)
     return {"success": True, "task_id": f"{commit}/{task}", "runs": runs}
+
+
+WF_CLI = os.path.join(os.path.dirname(sys.executable), "wf")
+
+
+@app.get("/api/wf/specs")
+async def wf_specs() -> Dict[str, Any]:
+    """列出可提交的正式计算 task_spec（只读 config/oer-wf/examples）。"""
+    d = REPO_ROOT / "config/oer-wf/examples"
+    files = sorted(p.name for p in d.glob("*.yaml")) if d.exists() else []
+    return {"success": True, "specs": files}
+
+
+@app.post("/api/wf/submit")
+async def wf_submit(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """提交正式计算到 Legion（经本机 oer-wf CLI，实际在 Legion systemd 执行）。
+
+    请求：{spec: '<file>.yaml', stage: 'prepare'|'smoke'|'formal'}
+    流程：prepare →（smoke）→（formal 时 run）。逐级执行并返回每步结果。
+    注意：这是写操作，会真的在 Legion 启动计算。
+    """
+    spec_name = Path(str(payload.get("spec") or "")).name
+    stage = str(payload.get("stage") or "smoke")
+    if not spec_name:
+        return {"success": False, "error": "spec 缺失"}
+    if stage not in ("prepare", "smoke", "formal"):
+        return {"success": False, "error": f"非法 stage: {stage}"}
+    spec_path = REPO_ROOT / "config/oer-wf/examples" / spec_name
+    if not spec_path.exists():
+        return {"success": False, "error": f"spec 不存在: {spec_name}"}
+    wf_cmd = {"prepare": "prepare", "smoke": "smoke", "formal": "run"}[stage]
+    try:
+        r = subprocess.run([WF_CLI, wf_cmd, str(spec_path)],
+                           capture_output=True, text=True, timeout=900)
+        out = r.stdout.strip()
+        try:
+            j = _json.loads(out) if out else {"raw": "no output"}
+        except Exception:
+            j = {"raw": out[:800]}
+        return {"success": True, "spec": spec_name, "stage": stage,
+                "result": j, "returncode": r.returncode}
+    except subprocess.TimeoutExpired:
+        return {"success": False, "error": f"提交超时（{stage}）"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @app.get("/api/results/sensitivity-matrix")
