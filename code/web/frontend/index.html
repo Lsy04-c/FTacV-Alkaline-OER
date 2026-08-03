@@ -603,8 +603,7 @@ function App() {
   const go=(id)=>{setStep(id);setVisited(v=>v[id]?v:{...v,[id]:true});};
   const steps=[
     {id:'sample',label:'样品与电极'},
-    {id:'data',label:'数据与分析'},
-    {id:'sim',label:'正演与反演'},
+    {id:'work',label:'数据与正演'},
     {id:'results',label:'项目结果'},
   ];
   return (<div className="app">
@@ -619,9 +618,13 @@ function App() {
         <span style={{float:'right',cursor:'pointer'}} onClick={()=>setError(null)}>✕</span></div>}
       {/* 已访问的步骤保留挂载（display 切换不丢状态）；未访问的不渲染，避免 display:none 下 echarts 初始化崩溃 */}
       <div style={{display:step==='sample'?'block':'none'}}><SampleStep sample={sample} setSample={setSample}/></div>
-      {visited.data&&<div style={{display:step==='data'?'block':'none'}}><DataStep expData={expData} setExpData={setExpData} expAnalysis={expAnalysis} setExpAnalysis={setExpAnalysis}
-        setError={setError} strictness={strictness} setStrictness={setStrictness}/></div>}
-      {visited.sim&&<div style={{display:step==='sim'?'block':'none'}}><SimInvertStep expAnalysis={expAnalysis} expData={expData} setError={setError} sample={sample}/></div>}
+      {visited.work&&<div style={{display:step==='work'?'block':'none'}}>
+        {/* ②③ 合并：数据与分析 + 正演与反演在同一页 */}
+        <DataStep expData={expData} setExpData={setExpData} expAnalysis={expAnalysis} setExpAnalysis={setExpAnalysis}
+          setError={setError} strictness={strictness} setStrictness={setStrictness}/>
+        <div style={{borderTop:'1px solid var(--border)',margin:'20px 0'}}/>
+        <SimInvertStep expAnalysis={expAnalysis} expData={expData} setError={setError} sample={sample}/>
+      </div>}
       {visited.results&&<div style={{display:step==='results'?'block':'none'}}><ResultsStep setError={setError}/></div>}
     </div>
   </div>);
