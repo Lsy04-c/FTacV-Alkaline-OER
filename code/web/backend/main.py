@@ -419,6 +419,42 @@ async def results_recovery_s1() -> Dict[str, Any]:
     }
 
 
+@app.get("/api/results/sensitivity-matrix")
+async def results_sensitivity_matrix() -> Dict[str, Any]:
+    """A6 敏感性矩阵（特征 × 参数），供热图展示。"""
+    path = RESULTS_ROOT / "formal/architecture_validation/sensitivity_matrix.csv"
+    if not path.exists():
+        return {"success": False, "error": "sensitivity_matrix.csv 不存在"}
+    rows = _read_csv_rows(path)
+    params = [k for k in rows[0].keys() if k != "feature"]
+    return {"success": True, "features": [r["feature"] for r in rows], "params": params, "rows": rows}
+
+
+@app.get("/api/results/coupling")
+async def results_coupling() -> Dict[str, Any]:
+    """A6 参数耦合方向（compensating 对）。"""
+    path = RESULTS_ROOT / "formal/architecture_validation/coupling_direction.csv"
+    if not path.exists():
+        return {"success": False, "error": "coupling_direction.csv 不存在"}
+    rows = _read_csv_rows(path)
+    return {"success": True, "rows": rows}
+
+
+@app.get("/api/results/synthetic-recovery")
+async def results_synthetic_recovery() -> Dict[str, Any]:
+    """合成恢复摘要（synthetic_recovery.json）。"""
+    path = RESULTS_ROOT / "formal/architecture_validation/synthetic_recovery.json"
+    if not path.exists():
+        return {"success": False, "error": "synthetic_recovery.json 不存在"}
+    d = _read_json(path)
+    return {
+        "success": True,
+        "git_commit": (d.get("git_commit") or "")[:7],
+        "configuration": d.get("configuration", {}),
+        "summary": {k: v for k, v in d.items() if k not in ("git_commit", "configuration", "command")},
+    }
+
+
 
 
 if __name__ == '__main__':

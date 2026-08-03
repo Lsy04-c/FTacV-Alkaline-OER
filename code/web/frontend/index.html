@@ -473,7 +473,10 @@ function ResultsStep({setError}) {
       fetch(`${API_BASE}/api/results/data-quality`).then(r=>r.json()),
       fetch(`${API_BASE}/api/results/sensitivity`).then(r=>r.json()),
       fetch(`${API_BASE}/api/results/recovery-s1`).then(r=>r.json()),
-    ]).then(([dq,sens,s1])=>setData({dq,sens,s1,p2d:null})).catch(e=>setError(String(e)));
+      fetch(`${API_BASE}/api/results/sensitivity-matrix`).then(r=>r.json()),
+      fetch(`${API_BASE}/api/results/coupling`).then(r=>r.json()),
+      fetch(`${API_BASE}/api/results/synthetic-recovery`).then(r=>r.json()),
+    ]).then(([dq,sens,s1,matrix,coupling,synth])=>setData({dq,sens,s1,matrix,coupling,synth,p2d:null})).catch(e=>setError(String(e)));
   },[]);
   useEffect(()=>{if(!profileSel)return;fetch(`${API_BASE}/api/results/profile2d?profile=${encodeURIComponent(profileSel)}`)
     .then(r=>r.json()).then(d=>setData(p=>p?{...p,p2d:d}:p)).catch(()=>{});},[profileSel]);
@@ -492,8 +495,26 @@ function ResultsStep({setError}) {
       series:[{type:'heatmap',data:vals}]};
   };
   const ho=heatOpt();
+  const matrixOpt=()=>{
+    const m=data.matrix;
+    if(!m||!m.success)return null;
+    const vals=[];
+    m.rows.forEach((r,fi)=>{m.params.forEach((p,ci)=>{
+      const v=parseFloat(r[p]||0); vals.push([ci,fi,v>0?Math.log10(v):-6]);});});
+    return {tooltip:{position:'top',formatter:p=>{const v=Math.pow(10,p.value[2]);
+      return `${m.features[p.value[1]]}<br/>${m.params[p.value[0]]} = ${v.toExponential(2)}`;}},
+      grid:{top:10,right:16,bottom:60,left:96},
+      xAxis:{type:'category',data:m.params.map(p=>({value:p,textStyle:{fontSize:9}})),axisLabel:{rotate:40,fontSize:9}},
+      yAxis:{type:'category',data:m.features.map(f=>({value:f,textStyle:{fontSize:8}})),axisLabel:{fontSize:8}},
+      visualMap:{min:-6,max:0,orient:'horizontal',left:'center',bottom:0,textStyle:{fontSize:9},
+        inRange:{color:['#fff7ec','#fc8d59','#b30000']}},
+      series:[{type:'heatmap',data:vals}]};
+  };
+  const matrixOptVal=matrixOpt();
   const dq=(data.dq&&data.dq.rows)||[]; const sens=(data.sens&&data.sens.rows)||[];
   const s1=data.s1&&data.s1.success?data.s1:null;
+  const coupRows=(data.coupling&&data.coupling.rows)||[];
+  const synth=data.synth&&data.synth.success?data.synth:null;
   return (<>
     <div className="panel-title">项目结果</div>
     <div className="panel-desc">当前已归档的正式分析结果（只读展示）。</div>
@@ -517,6 +538,26 @@ function ResultsStep({setError}) {
           {s1.job_count} jobs × 100 trials · {s1.backend} · {s1.duration_h}h · {s1.n_ode_fail} ODE fail<br/>
           <span className="hint">eligible pairs：{s1.eligible_parameter_pairs.length===0?'（无）':s1.eligible_parameter_pairs.join(', ')}</span>
         </div>:<div className="hint">无 S1 归档</div>}
+      </div>
+      <div className="card">
+        <h4>参数耦合方向</h4>
+        {coupRows.length>0?<table><thead><tr><th>参数对</th><th>相关</th><th>方向</th></tr></thead>
+          <tbody>{coupRows.map(r=><tr key={r.parameter+'-'+r.peer}>
+            <td>{r.parameter}↔{r.peer}</td><td>{Number(r.correlation).toFixed(3)}</td>
+            <td className={r.direction==='compensating'?'err':'warn'}>{r.direction}</td></tr>)}</tbody></table>
+        :<div className="hint">无耦合数据</div>}
+      </div>
+      <div className="card">
+        <h4>合成恢复</h4>
+        {synth?<div className="meta" style={{lineHeight:1.9}}>
+          commit：<strong>{synth.git_commit}</strong><br/>
+          配置：<span className="hint">{(synth.configuration&&JSON.stringify(synth.configuration)).slice(0,120)}…</span><br/>
+          <span className="hint">完整 summary 见 JSON 归档</span>
+        </div>:<div className="hint">无合成恢复数据</div>}
+      </div>
+      <div className="card" style={{gridColumn:'1/-1'}}>
+        <h4>敏感性矩阵（特征 × 参数，log₁₀）</h4>
+        {matrixOptVal?<ChartBox option={matrixOptVal} height={460}/>:<div className="hint" style={{padding:30,textAlign:'center'}}>无敏感性矩阵</div>}
       </div>
       <div className="card" style={{gridColumn:'1/-1'}}>
         <h4>二维参数耦合 profile</h4>
