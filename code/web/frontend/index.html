@@ -523,6 +523,118 @@ function PlaceholderTab({ title, description }) {
   </div></div></div></div>);
 }
 
+/* ===================== 项目结果 Tab ===================== */
+function ResultsTab() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const [profileSel, setProfileSel] = useState('hybrid__G_OH__G_O');
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API_BASE}/api/results/overview`).then(r=>r.json()),
+      fetch(`${API_BASE}/api/results/data-quality`).then(r=>r.json()),
+      fetch(`${API_BASE}/api/results/sensitivity`).then(r=>r.json()),
+      fetch(`${API_BASE}/api/results/recovery-s1`).then(r=>r.json()),
+    ]).then(([ov, dq, sens, s1]) => setData({ov, dq, sens, s1, p2d:null}))
+      .catch(e => setError(String(e)));
+  }, []);
+  // 2D profile 热图数据单独拉取（可切换 profile）
+  useEffect(() => {
+    if (!profileSel) return;
+    fetch(`${API_BASE}/api/results/profile2d?profile=${encodeURIComponent(profileSel)}`)
+      .then(r=>r.json()).then(d=>setData(prev => prev ? {...prev, p2d:d} : prev))
+      .catch(()=>{});
+  }, [profileSel]);
+
+  if (error) return <div className="main"><div className="right-panel single-col"><div className="chart-box large"><div className="placeholder" style={{color:'#e94560',padding:20}}>加载失败：{error}</div></div></div></div>;
+  if (!data) return <div className="main"><div className="right-panel single-col"><div className="chart-box large"><div className="placeholder" style={{color:'#97a2b1',padding:20}}>加载中…</div></div></div></div>;
+
+  // ---- 热图 option ----
+  let heatOpt = null;
+  if (data.p2d && data.p2d.heat) {
+    const { xs, ys, points } = data.p2d.heat;
+    const xi = Object.fromEntries(xs.map((x,i)=>[x,i]));
+    const yi = Object.fromEntries(ys.map((y,i)=>[y,i]));
+    const xlabel = xs.map((x,i)=>({value:x,textStyle:{fontSize:9}}));
+    const ylabel = ys.map((y,i)=>({value:y,textStyle:{fontSize:9}}));
+    const vals = points.map(p => [xi[String(p.x)], yi[String(p.y)], Math.log10(p.loss+1e-9)]);
+    const prof = data.p2d.summaries.find(s=>s.profile_id===profileSel) || {};
+    heatOpt = {
+      tooltip:{position:'top',formatter:(p)=>{const d=points.find(q=>q.x===p.value[0]&&q.y===p.value[1])||points[p.dataIndex];return d?`x=${d.x.toFixed(3)} y=${d.y.toFixed(3)}<br/>loss=${d.loss.toFixed(4)}`:'-';}},
+      grid:{top:30,right:30,bottom:60,left:60},
+      xAxis:{type:'category',data:xlabel,axisLabel:{rotate:45,fontSize:9},name:prof.x_param||'x',nameLocation:'middle',nameGap:35},
+      yAxis:{type:'category',data:ylabel,axisLabel:{fontSize:9},name:prof.y_param||'y',nameLocation:'middle',nameGap:35},
+      visualMap:{min:Math.min(...vals.map(v=>v[2])),max:Math.max(...vals.map(v=>v[2])),orient:'horizontal',left:'center',bottom:0,textStyle:{fontSize:9},inRange:{color:['#1a9641','#f7fbff','#d7191c']}},
+      series:[{type:'heatmap',data:vals,label:{show:false}}],
+    };
+  }
+  // ---- 耦合表 ----
+  const summaries = (data.p2d && data.p2d.summaries) || [];
+  // ---- 参数分类表 ----
+  const sensRows = (data.sens && data.sens.rows) || [];
+  const dqRows = (data.dq && data.dq.rows) || [];
+  const s1 = data.s1 && data.s1.success ? data.s1 : null;
+
+  return (<div className="main">
+    <div className="left-panel">
+      <div className="panel-title">项目结果</div>
+      <div className="section-title">实验数据质量</div>
+      {dqRows.map(r=>(
+        <div key={r.filename} className="param-row" style={{fontSize:11}}>
+          <span style={{width:120,flexShrink:0}}>{r.filename.replace('ftacv','FT')}</span>
+          <span style={{flex:1,color:'#5a6675'}}>f={r.f||'—'} Hz dE={r.dE||'—'}V</span>
+          <span style={{color:r.fit_harmonics?'#2e9d6e':'#e94560',fontSize:10}}>{r.fit_harmonics||'n/a'}</span>
+        </div>
+      ))}
+      <div className="section-title">A6 参数分类</div>
+      {sensRows.map(r=>(
+        <div key={r.parameter} className="param-row" style={{fontSize:11}}>
+          <span style={{width:120,flexShrink:0}}>{r.parameter}</span>
+          <span style={{flex:1,color:r.classification==='identifiable'?'#2e9d6e':r.classification==='coupled'?'#e9a23b':'#e94560'}}>{r.classification}</span>
+          <span style={{color:'#97a2b1',fontSize:10}}>corr={Number(r.max_correlation).toFixed(2)}</span>
+        </div>
+      ))}
+      {s1 && <div className="section-title">A6-v2 S1 合成恢复</div>}
+      {s1 && (
+        <div className="param-row" style={{fontSize:11,flexWrap:'wrap',lineHeight:1.6}}>
+          <span style={{width:'100%'}}>状态：<b style={{color:s1.scientific_gate_passed?'#2e9d6e':'#e94560'}}>{s1.stage_status}</b></span>
+          <span style={{width:'100%',color:'#5a6675'}}>81 jobs × 100 trials · {s1.backend} · {s1.duration_h}h · 0 ODE fail</span>
+          <span style={{width:'100%',color:'#97a2b1',fontSize:10}}>eligible pairs: {s1.eligible_parameter_pairs.length===0?'（无）':s1.eligible_parameter_pairs.join(', ')}</span>
+        </div>
+      )}
+    </div>
+    <div className="right-panel">
+      <div className="chart-box large">
+        <div className="chart-head">二维参数耦合 profile（log₁₀ loss 热图）</div>
+        <div className="chart-body" style={{padding:8}}>
+          <select value={profileSel} onChange={e=>setProfileSel(e.target.value)} style={{marginBottom:6,fontSize:12,padding:'3px 6px'}}>
+            {summaries.map(s=>(<option key={s.profile_id} value={s.profile_id}>{s.profile_id}</option>))}
+          </select>
+        </div>
+        <div style={{flex:1,minHeight:300}} id="heatmap-box">
+          {heatOpt ? <ChartBox id="profile-heat" title="" option={heatOpt}/> : <div style={{padding:20,color:'#97a2b1'}}>加载热图…</div>}
+        </div>
+      </div>
+      <div className="chart-box large">
+        <div className="chart-head">参数对耦合诊断</div>
+        <div style={{overflow:'auto',maxHeight:260}}>
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:11}}>
+            <thead><tr style={{background:'#eef2f7'}}><th style={thStyle}>profile</th><th style={thStyle}>r</th><th style={thStyle}>Δ1x</th><th style={thStyle}>Δ1y</th><th style={thStyle}>耦合</th></tr></thead>
+            <tbody>{summaries.map(s=>(
+              <tr key={s.profile_id} style={{borderBottom:'1px solid #eef2f7'}}>
+                <td style={{padding:'4px 8px'}}>{s.profile_id}</td>
+                <td style={{padding:'4px 8px'}}>{s.pearson_r_in_delta1.toFixed(3)}</td>
+                <td style={{padding:'4px 8px'}}>{s.delta1_x_width.toFixed(3)}</td>
+                <td style={{padding:'4px 8px'}}>{s.delta1_y_width.toFixed(3)}</td>
+                <td style={{padding:'4px 8px',color:s.coupling_strength>0.7?'#e94560':'#2e9d6e'}}>{s.coupling_interpretation}</td>
+              </tr>))}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>);
+}
+const thStyle = {padding:'4px 8px',textAlign:'left'};
+
 /* ===================== App ===================== */
 function App() {
   const [tab,setTab]=useState('sim');
@@ -533,12 +645,13 @@ function App() {
       碱性 OER AEM 工作台<span className="sub">Co₃O₄ / CoOₓ(OH)ᵧ FTacV 参数反演</span>
     </div>
     <div className="tabs">
-      {[{id:'sim',label:'实验 · 正演 · 反演'},{id:'mcmc',label:'MCMC 后验分析'}].map(t=>(
+      {[{id:'sim',label:'实验 · 正演 · 反演'},{id:'mcmc',label:'MCMC 后验分析'},{id:'results',label:'项目结果'}].map(t=>(
         <div key={t.id} className={`tab ${tab===t.id?'active':''}`} onClick={()=>setTab(t.id)}>{t.label}</div>
       ))}
     </div>
     <div style={{display:tab==='sim'?'contents':'none'}}><SimTab expData={expData} setExpData={setExpData} expAnalysis={expAnalysis} setExpAnalysis={setExpAnalysis}/></div>
     <div style={{display:tab==='mcmc'?'contents':'none'}}><PlaceholderTab title="MCMC 后验分析" description="不确定性量化模块接入中..."/></div>
+    <div style={{display:tab==='results'?'contents':'none'}}><ResultsTab/></div>
     <div className="status-bar">
       <span><span className="dot"></span>后端: {API_BASE}</span>
       <span>Python 核心 v0.2 · 碱性 OER AEM 模型</span>

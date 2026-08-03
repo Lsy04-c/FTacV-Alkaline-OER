@@ -288,6 +288,110 @@ async def health():
     return {"status": "ok"}
 
 
+# ===== 项目结果只读 API（展示用，不修改任何结果文件） =====
+
+import csv
+import json as _json
+
+ARCHIVE_ROOT = Path.home() / "OER-FTAcV-archive"
+RESULTS_ROOT = REPO_ROOT / "results"
+
+
+def _read_csv_rows(path: Path) -> List[Dict[str, Any]]:
+    with open(path, newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def _read_json(path: Path) -> Dict[str, Any]:
+    with open(path, encoding="utf-8") as f:
+        return _json.load(f)
+
+
+@app.get("/api/results/overview")
+async def results_overview() -> Dict[str, Any]:
+    """返回可展示的结果模块状态索引。"""
+    dq = RESULTS_ROOT / "diagnostics/data_quality/data_quality_summary.csv"
+    p2d = ARCHIVE_ROOT / "results/1d6bf7a/a6_2d_profiles/20260728_064133/profile_2d_summary.json"
+    sens = RESULTS_ROOT / "formal/architecture_validation/parameter_classification.csv"
+    s1 = ARCHIVE_ROOT / "results/21284b5/pre_experiment_a6_v2_s1_lsoda/20260801_140736/summary.json"
+    return {
+        "data_quality": dq.exists(),
+        "profile2d": p2d.exists(),
+        "sensitivity": sens.exists(),
+        "recovery_s1": s1.exists(),
+        "n_raw_datasets": len(list((REPO_ROOT / "data/raw").glob("ftacv*-ref-*.txt"))),
+    }
+
+
+@app.get("/api/results/data-quality")
+async def results_data_quality() -> Dict[str, Any]:
+    """四组 FTacV 数据质量摘要（谐波 RMS、拟合通道、Tafel/preox 标志）。"""
+    dq = RESULTS_ROOT / "diagnostics/data_quality/data_quality_summary.csv"
+    if not dq.exists():
+        return {"success": False, "error": "data_quality_summary.csv 不存在"}
+    rows = _read_csv_rows(dq)
+    ftacv = [r for r in rows if r.get("filename", "").startswith("ftacv")]
+    return {"success": True, "rows": ftacv}
+
+
+@app.get("/api/results/profile2d")
+async def results_profile2d(profile: str = "hybrid__G_OH__G_O") -> Dict[str, Any]:
+    """12 个 2D 参数耦合 profile 摘要 + 单个 profile 的热图数据。"""
+    base = ARCHIVE_ROOT / "results/1d6bf7a/a6_2d_profiles/20260728_064133"
+    summ = base / "profile_2d_summary.json"
+    if not summ.exists():
+        return {"success": False, "error": "profile_2d_summary.json 不存在"}
+    summaries = _read_json(summ)
+    heat = None
+    rows_path = base / "profile_2d_rows.csv"
+    if rows_path.exists() and profile:
+        rows = _read_csv_rows(rows_path)
+        sel = [r for r in rows if r["profile_id"] == profile]
+        if sel:
+            # 降采样到 40×40 以内，避免传输过大
+            step = max(1, int(len({r['x_coordinate'] for r in sel}) / 40))
+            xs = sorted({float(r['x_coordinate']) for r in sel})[::step]
+            ys = sorted({float(r['y_coordinate']) for r in sel})[::step]
+            xset, yset = set(xs), set(ys)
+            pts = [{"x": float(r["x_coordinate"]), "y": float(r["y_coordinate"]),
+                    "loss": float(r["total_loss"]),
+                    "ok": r["ode_success"] == "True"}
+                   for r in sel if float(r["x_coordinate"]) in xset and float(r["y_coordinate"]) in yset]
+            heat = {"profile": profile, "xs": xs, "ys": ys, "points": pts}
+    return {"success": True, "summaries": summaries, "heat": heat}
+
+
+@app.get("/api/results/sensitivity")
+async def results_sensitivity() -> Dict[str, Any]:
+    """A6 参数分类（可识别/耦合/固定）。"""
+    sens = RESULTS_ROOT / "formal/architecture_validation/parameter_classification.csv"
+    if not sens.exists():
+        return {"success": False, "error": "parameter_classification.csv 不存在"}
+    rows = _read_csv_rows(sens)
+    return {"success": True, "rows": rows}
+
+
+@app.get("/api/results/recovery-s1")
+async def results_recovery_s1() -> Dict[str, Any]:
+    """pre-experiment A6-v2 S1 合成恢复验收结果。"""
+    s1 = ARCHIVE_ROOT / "results/21284b5/pre_experiment_a6_v2_s1_lsoda/20260801_140736/summary.json"
+    if not s1.exists():
+        return {"success": False, "error": "S1 summary 不存在"}
+    d = _read_json(s1)
+    return {
+        "success": True,
+        "stage_status": d.get("stage_status"),
+        "scientific_gate_passed": d.get("scientific_gate_passed"),
+        "eligible_parameter_pairs": d.get("eligible_parameter_pairs"),
+        "job_count": d.get("job_count"),
+        "completed_jobs": d.get("completed_jobs"),
+        "n_ode_fail": d.get("n_ode_fail"),
+        "duration_h": round(d.get("duration_seconds", 0) / 3600, 2),
+        "backend": d.get("backend"),
+        "source_commit": (d.get("source_commit") or "")[:7],
+    }
+
+
 
 
 if __name__ == '__main__':
