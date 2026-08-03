@@ -323,8 +323,10 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
           return [...prev,...added];
         });
       }
-      // 反演结果更新到参数表 → 支持连续反演（下次以本次 best 为初值继续优化）
-      setParams(p=>({...p,...data.best_params}));
+      // 反演结果更新到参数表 → 支持连续反演（下次以本次 best 为初值继续优化）；
+      // 同时同步实验扫描参数，保证「反演后点正演」与「反演参数正演」图严格一致
+      setParams(p=>({...p,...data.best_params,
+        E_start:+m.E_start.toFixed(4),E_end:+m.E_end.toFixed(4),f:+m.f.toFixed(4),dE:+m.dE.toFixed(4)}));
       // 反演完成后立即用 best_params 正演，右栏图实时更新（无需再点正演）
       const simParams={...params,...data.best_params,E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,n_points:512,points_per_cycle:64};
       const simRes=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(simParams)});
