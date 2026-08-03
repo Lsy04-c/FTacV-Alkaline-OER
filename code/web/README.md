@@ -59,15 +59,22 @@ POST /api/simulate
 |-----|------|------|----------|
 | `/api/data/analyze` | POST | 分析上传的数据行 | 请求 `{rows:[[E,i,t]×N], strictness?}`；响应 `meta`(f/dE/v/E窗)、`harmonic_quality`、`E_raw`/`i_raw`/`dc`/`harmonics` |
 | `/api/params/defaults` | GET | 默认模型参数 | 参数名→值映射 |
-| `/api/simulate` | POST | 正演 | 请求模型参数；响应 `i_total`/`tdc`/`dc`/`harmonics`×7/`coverage_*` |
-| `/api/inversion/tpe` | POST | 参数反演 | 请求 `target`(实验特征)+`initial_params`+`fixed_params`+`param_bounds`+`fit_harmonics`+`n_trials`；响应 `best_params`/`best_value`/`history`/`fit_quality` |
+| `/api/simulate` | POST | **提交正演任务** | 请求模型参数；**响应 `{job_id}`**，结果经 `/api/jobs/{id}` 轮询取回 |
+| `/api/inversion/tpe` | POST | **提交反演任务** | 请求 `target`+`initial_params`+`fixed_params`+`param_bounds`+`fit_harmonics`+`n_trials`；**响应 `{job_id}`** |
+| `/api/jobs/{id}` | GET | 查询任务状态 | `running / done / failed / canceled`；done 附完整结果 |
+| `/api/jobs/{id}/cancel` | POST | 取消任务 | 未开始可真正取消；运行中标记 canceled（结果丢弃） |
 | `/api/data/samples` | GET | 内置数据文件列表 | （可选，本机数据源） |
 | `/api/results/*` | GET | 只读展示归档结果 | 各结果模块 |
 | `/api/wf/tasks` `/api/wf/task` | GET | oer-wf 归档任务列表/详情（只读） | 任务状态、run 的 STATUS、结果文件、summary |
 
+**计算任务模型**：`/api/simulate` 和 `/api/inversion/tpe` 是**提交式**接口——
+返回 `job_id`，前端轮询 `/api/jobs/{id}` 取结果（长任务不阻塞 HTTP）。计算在
+进程池（ProcessPoolExecutor）执行，不阻塞事件循环。为以后接远程 SSH（Legion）
+统一"提交→轮询→取回→取消"语义做准备。
+
 **strictness（谐波质量严格度）**：前端把 `strictness`（strict/standard/loose）传给
-`/api/data/analyze`。后端用 `inspect` 检查 `analyze_ftacv_trace` 是否支持该参数——
-支持就转发，不支持就忽略（不报错）。谐波阈值由科学侧配置决定，前端不发明阈值。
+`/api/data/analyze`。科学侧 `analyze_ftacv_trace` 已支持该参数（三档阈值
+strict=0.03/standard=0.02/loose=0.005 相对 H1），谐波阈值由科学侧决定。
 
 ## 5. 接入你自己的计算程序
 
@@ -93,6 +100,12 @@ POST /api/simulate
 | 新模型 | 后端 `/api/simulate` 换成你的正演器 |
 | 新反演算法 | 后端 `/api/inversion/*` 换成你的优化器，保持 `best_params`/`history` 格式 |
 | 新结果展示 | 后端加 `/api/results/*`，前端在②页加卡片 |
+
+## 6.5 打包成 macOS 桌面 App
+
+`src-tauri/` 下有一份 Tauri 项目骨架，能把这个工作台包成双击启动的 `.app`。
+具体编译步骤、会踩的坑、以及这版做了哪些 macOS 视觉调整，看
+[`README-APP.md`](./README-APP.md)。
 
 ## 7. 边界
 

@@ -285,7 +285,8 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
   const [invTrials,setInvTrials]=useState(10); const [invLoading,setInvLoading]=useState(false);
   const [invResult,setInvResult]=useState(null); const [invError,setInvError]=useState(null);
   const [invHistory,setInvHistory]=useState([]); // 同一次数据的累积收敛历史
-  const invAbortRef=useRef(null); // 反演请求的 AbortController，用于「取消」按钮
+  const [simJob,setSimJob]=useState(null);   // 正演任务 job_id（轮询/取消）
+  const [invJob,setInvJob]=useState(null);   // 反演任务 job_id（轮询/取消）
   useEffect(()=>{fetch(`${API_BASE}/api/params/defaults`).then(r=>r.json()).then(setParams).catch(()=>{});},[]);
   const handleFile=async(d)=>{
     setExpData(d);setExpAnalysis(null);
@@ -329,24 +330,43 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
   };
   const sug=suggested();
   const hqChannels=(expAnalysis&&expAnalysis.harmonic_quality&&expAnalysis.harmonic_quality.channels)||[];
+  // 轮询工具：提交后轮询 /api/jobs/{id} 直到终态
+  const pollJob=async(jobId,maxSec=600)=>{
+    for(let i=0;i<maxSec*2;i++){
+      await new Promise(r=>setTimeout(r,500));
+      const s=await fetch(`${API_BASE}/api/jobs/${jobId}`).then(x=>x.json());
+      if(s.status==='done') return {status:'done', result:s.result};
+      if(s.status==='failed') return {status:'failed', error:s.error||'任务失败'};
+      if(s.status==='canceled') return {status:'canceled'};
+    }
+    return {status:'timeout'};
+  };
   const simulate=async()=>{
-    setLoading(true);setError(null);
-    try{const res=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...params})});
+    setLoading(true);setError(null);setSimJob(null);
+    try{
+      const res=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...params})});
       if(!res.ok){setError(`正演请求失败：HTTP ${res.status}`);setLoading(false);return;}
-      const data=await res.json();if(data.success){data.source='manual';setResult(data);}else setError(data.error);
-    }catch(e){setError(e.message);}setLoading(false);
+      const jd=await res.json();
+      if(!jd.success){setError(jd.error||'提交失败');setLoading(false);return;}
+      setSimJob(jd.job_id);
+      const fin=await pollJob(jd.job_id);
+      if(fin.status==='done'&&fin.result&&fin.result.success){fin.result.source='manual';setResult(fin.result);}
+      else if(fin.status==='done') setError((fin.result&&fin.result.error)||'正演失败');
+      else setError(fin.error||(fin.status==='canceled'?'正演已取消':'正演超时'));
+    }catch(e){setError(e.message);}
+    setLoading(false);setSimJob(null);
+  };
+  const cancelSimulate=async()=>{
+    if(simJob){try{await fetch(`${API_BASE}/api/jobs/${simJob}/cancel`,{method:'POST'});}catch(e){}}
+    setLoading(false);setSimJob(null);setError('正演已取消');
   };
   const cancelInversion=()=>{
-    // 注：这只中止前端等待，后端 TPE 任务当前是同步阻塞调用，进程本身不会停。
-    // 真正可中止/可轮询的任务模型需要后端把 /api/inversion/tpe 改成提交+轮询式接口
-    // （见 README 里「统一接入语义」的建议），这里先保证前端不会一直卡住。
-    if(invAbortRef.current) invAbortRef.current.abort();
-    setInvLoading(false);setInvError('已取消等待（后端可能仍在计算，结果不会显示）');
+    if(invJob){fetch(`${API_BASE}/api/jobs/${invJob}/cancel`,{method:'POST'}).catch(()=>{});}
+    setInvLoading(false);setInvJob(null);setInvError('已取消反演');
   };
   const runInversion=async()=>{
     if(!expAnalysis){setInvError('请先导入数据');return;}
-    setInvLoading(true);setInvError(null);setInvResult(null);
-    const ac=new AbortController(); invAbortRef.current=ac;
+    setInvLoading(true);setInvError(null);setInvResult(null);setInvJob(null);
     try{
       const m=expAnalysis.meta;
       // 拟合通道用科学侧建议（而非硬编码 H1-H3）
@@ -360,9 +380,17 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
         fixed_params:{Cdl:params.Cdl,Ru:params.Ru,A:params.A,E0_pre:params.E0_pre,k0_pre:params.k0_pre},
         param_bounds:AEM_PARAM_BOUNDS,fit_harmonics:fit,n_trials:invTrials,
       };
-      const res=await fetch(`${API_BASE}/api/inversion/tpe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ac.signal});
+      const res=await fetch(`${API_BASE}/api/inversion/tpe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       if(!res.ok){setInvError(`反演请求失败：HTTP ${res.status}`);setInvLoading(false);return;}
-      const data=await res.json();if(!data.success){setInvError(data.error);setInvLoading(false);return;}
+      const jd=await res.json();
+      if(!jd.success){setInvError(jd.error||'提交失败');setInvLoading(false);return;}
+      setInvJob(jd.job_id);
+      const fin=await pollJob(jd.job_id,1800); // 反演长任务，允许更久
+      setInvJob(null);
+      if(fin.status==='canceled'){setInvError('反演已取消');setInvLoading(false);return;}
+      if(fin.status!=='done'){setInvError(fin.error||'反演超时');setInvLoading(false);return;}
+      const data=fin.result;
+      if(!data.success){setInvError(data.error||'反演失败');setInvLoading(false);return;}
       setInvResult(data);
       // 收敛历史累积：同一次数据的多次反演追加到同一曲线
       if(data.history&&data.history.length){
@@ -377,17 +405,22 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
           return [...prev,...added];
         });
       }
-      // 反演结果更新到参数表 → 支持连续反演（下次以本次 best 为初值继续优化）；
-      // 同时同步实验扫描参数，保证「反演后点正演」与「反演参数正演」图严格一致
+      // 反演结果更新到参数表 → 支持连续反演；同步实验扫描参数保证正演一致
       setParams(p=>({...p,...data.best_params,
         E_start:+m.E_start.toFixed(4),E_end:+m.E_end.toFixed(4),f:+m.f.toFixed(4),dE:+m.dE.toFixed(4)}));
-      // 反演完成后立即用 best_params 正演，右栏图实时更新（无需再点正演）
+      // 反演完成后用 best_params 正演（提交+轮询），右栏图实时更新
       const simParams={...params,...data.best_params,E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,n_points:512,points_per_cycle:64};
-      const simRes=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(simParams)});
-      const simData=await simRes.json();if(simData.success){simData.source='inversion';setResult(simData);}else setError('反演参数正演失败: '+simData.error);
-    }catch(e){ if(e.name!=='AbortError') setInvError(e.message); }
+      const sr=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(simParams)});
+      const sjd=await sr.json();
+      if(sjd.success){
+        const sf=await pollJob(sjd.job_id);
+        if(sf.status==='done'&&sf.result&&sf.result.success){sf.result.source='inversion';setResult(sf.result);}
+        else setError('反演参数正演失败');
+      } else setError('反演参数正演提交失败');
+    }catch(e){setInvError(e.message);}
     setInvLoading(false);
   };
+
   // 判断参数是否顶到边界（→ 可能未分辨），并给出原因
   const markParam=(k,v)=>{
     const b=AEM_PARAM_BOUNDS[k];
@@ -545,8 +578,11 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
           {expAnalysis&&<button className="btn btn-ghost btn-sm" onClick={()=>{const m=expAnalysis.meta;setParams(p=>({...p,E_start:+m.E_start.toFixed(4),E_end:+m.E_end.toFixed(4),f:+m.f.toFixed(4),dE:+m.dE.toFixed(4),n_points:16384}));}}>同步扫描参数</button>}
         </div>
         {advOpen&&<ParamPanel params={params} onChange={setParams}/>}
-        <button className="btn btn-primary" style={{width:'100%',marginTop:12}} onClick={simulate} disabled={loading}>
-          {loading?'正演中...':'▶ 运行当前参数正演'}</button>
+        <div className="row" style={{marginTop:12,width:'100%'}}>
+          <button className="btn btn-primary" style={{flex:1}} onClick={simulate} disabled={loading}>
+            {loading?'正演中...':'▶ 运行当前参数正演'}</button>
+          {loading&&<button className="btn btn-ghost btn-sm" onClick={cancelSimulate}>取消</button>}
+        </div>
         <div className="row" style={{marginTop:14}}>
           <span className="meta">trials</span>
           <input type="number" min="1" max="200" value={invTrials} onChange={e=>setInvTrials(Math.max(1,parseInt(e.target.value)||1))}

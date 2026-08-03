@@ -64,3 +64,20 @@
 - 前端 `suggested()` 删除 0.03/0.003 兜底分支，直接使用科学侧 `fit_harmonics`；
   strictness 切换时重新调用 analyze（用户已实现的 useEffect）。
 - 测试：642 passed（strictness=None 保持 standard 向后兼容）。
+
+## 追加（2026-08-04）：提交+轮询任务模型
+
+按架构建议，把 /api/simulate 和 /api/inversion/tpe 从"同步阻塞"改为
+"提交 → 轮询 → 取回 → 取消"：
+
+- 后端：
+  - `POST /api/simulate`、`POST /api/inversion/tpe` → 提交任务，返回 `{job_id}`
+  - `GET /api/jobs/{id}` → `running/done/failed/canceled`，done 附结果
+  - `POST /api/jobs/{id}/cancel` → 取消（未开始真正取消，运行中标记丢弃）
+  - 计算在 `ProcessPoolExecutor`（2 workers）执行，不阻塞事件循环；
+    正演/反演核心抽为 `_run_simulate`/`_run_inversion`（模块级，可 pickle）。
+- 前端：正演/反演改为提交 + 轮询 `/api/jobs/{id}`；正演/反演按钮旁加
+  「取消」（POST /api/jobs/{id}/cancel）；反演完成后仍自动用 best_params
+  提交正演更新右栏图。
+- 为以后接远程 SSH（Legion）统一"提交/状态/取消/取回"语义做准备。
+- 验证：TestClient submit→poll→done 通过；浏览器 console 无错误。

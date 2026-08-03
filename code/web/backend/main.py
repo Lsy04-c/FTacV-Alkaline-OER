@@ -1,9 +1,11 @@
 """碱性 OER AEM FTacV 参数反演平台 — FastAPI 后端"""
 
+import concurrent.futures
 import csv
 import inspect
 import json as _json
 import os
+import uuid
 from pathlib import Path
 import sys
 import time
@@ -206,71 +208,49 @@ async def get_default_params():
     return {k: _serialize(params.get(k)) for k in keys}
 
 
-@app.post("/api/simulate")
-async def simulate(p: SimParams) -> Dict[str, Any]:
-    """运行 ODE 仿真 + 谐波提取，返回全部可视化数据。"""
+# ===== 任务模型（提交 → 轮询 → 取回 → 取消） =====
+_JOBS: Dict[str, Dict[str, Any]] = {}
+_POOL = concurrent.futures.ProcessPoolExecutor(max_workers=2)
+
+
+def _run_simulate(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """正演核心（在子进程执行，不阻塞事件循环）。"""
     try:
         params = initialize_oer_parameters()
-        for field, value in p.model_dump().items():
+        for field, value in payload.items():
             if field == 'objective_mode':
                 params[field] = str(value)
             else:
                 params[field] = value
-
         params['n_points'] = min(params['n_points'], 65536)
         params['total_time'] = (params['n_points'] / params['points_per_cycle']) / params['f']
-        # v 依赖 E 范围和 total_time，二者被用户参数覆盖后必须重算，否则扫描范围错误
         params['v'] = (params['E_end'] - params['E_start']) / params['total_time']
         params['t_span'] = np.linspace(0, params['total_time'], params['n_points'])
-
         t0 = time.perf_counter()
         t, y, E_actual_raw, i_total_raw = OERPhysics.solve_ode_system(params)
         elapsed = time.perf_counter() - t0
-
-        # ---- 谐波提取 ----
         df = OERSignal.safe_df(t)
         i_total = np.asarray(i_total_raw).reshape(-1)
         tdc = params['E_start'] + t * params['v']
-
-        # DC 分量（与谐波同流程：FFT 选带 + 边缘加窗）
         I_dc = OERSignal.process_current(i_total, df, params)[:, 0]
-
-        # 1-7 次谐波
         I_harm = OERSignal.extract_harmonics(i_total, df, params)
-
-        # 功率谱
         L = len(i_total)
         Y = np.fft.fft(i_total)
         P2 = np.abs(Y / L)
         P1 = P2[:L // 2 + 1]
         P1[1:-1] = 2 * P1[1:-1]
         f_axis = df * np.arange(L // 2 + 1) / L
-
-        # 截取到 15*f 以内
         f_max = 15 * params['f']
         idx = f_axis <= f_max
-
         return {
-            'success': True,
-            # 总电流曲线
-            'E_actual': _to_list(E_actual_raw),
-            'i_total': _to_list(i_total),
+            'success': True, 'E_actual': _to_list(E_actual_raw), 'i_total': _to_list(i_total),
             'tdc': _to_list(tdc),
-            # 覆盖度
-            'coverage_star': _to_list(y[:, 0]),
-            'coverage_ox':   _to_list(y[:, 1]),
-            'coverage_OH':   _to_list(y[:, 2]),
-            'coverage_O':    _to_list(y[:, 3]),
-            'coverage_OOH':  _to_list(y[:, 4]),
-            # 功率谱
-            'ps_freq': _to_list(f_axis[idx]),
-            'ps_mag':  _to_list(P1[idx]),
-            # DC + 谐波（归一化到各自最大值）
-            'dc':   _to_list(I_dc / max(np.max(I_dc), 1e-30)),
+            'coverage_star': _to_list(y[:, 0]), 'coverage_ox': _to_list(y[:, 1]),
+            'coverage_OH': _to_list(y[:, 2]), 'coverage_O': _to_list(y[:, 3]), 'coverage_OOH': _to_list(y[:, 4]),
+            'ps_freq': _to_list(f_axis[idx]), 'ps_mag': _to_list(P1[idx]),
+            'dc': _to_list(I_dc / max(np.max(I_dc), 1e-30)),
             'harmonics': [_to_list(I_harm[:, k] / max(np.max(np.abs(I_harm[:, k])), 1e-30)) for k in range(7)],
-            # 参数摘要
-            'E01': params['E01'], 'E02': params['E02'],
-            'E03': params['E03'], 'E04': params['E04'],
+            'E01': params['E01'], 'E02': params['E02'], 'E03': params['E03'], 'E04': params['E04'],
             'eta_theoretical': max(params['E01'], params['E02'], params['E03'], params['E04']) - 1.23,
             'time_elapsed': elapsed,
         }
@@ -278,52 +258,107 @@ async def simulate(p: SimParams) -> Dict[str, Any]:
         return {'success': False, 'error': str(e)}
 
 
-@app.post("/api/inversion/tpe")
-async def invert_tpe(req: TPEInversionIn) -> Dict[str, Any]:
-    """运行小预算 TPE 参数反演，并返回拟合完成度提示。"""
+def _run_inversion(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """反演核心（在子进程执行）。"""
     try:
-        c = req.config
-        fit_harmonics = tuple(int(h) for h in ([1, 2, 3, 4, 5, 6, 7] if req.fit_harmonics is None else req.fit_harmonics))
-        param_specs = make_param_specs_from_physical_bounds(req.param_bounds, DEFAULT_PARAM_SPECS)
+        t = payload.get('target') or {}
+        target_in = InversionTargetIn(**t)
+        c = InversionConfigIn(**payload.get('config', {}))
+        fit_harmonics = tuple(int(h) for h in ([1, 2, 3, 4, 5, 6, 7] if payload.get('fit_harmonics') is None else payload.get('fit_harmonics')))
+        param_specs = make_param_specs_from_physical_bounds(payload.get('param_bounds') or {}, DEFAULT_PARAM_SPECS)
         cfg = InversionConfig(
-            E_start=c.E_start,
-            E_end=c.E_end,
-            f=c.f,
-            dE=c.dE,
+            E_start=c.E_start, E_end=c.E_end, f=c.f, dE=c.dE,
             n_points=max(128, min(int(c.n_points), 8192)),
             points_per_cycle=max(16, min(int(c.points_per_cycle), 256)),
             feature_grid_size=max(16, min(int(c.feature_grid_size), 200)),
             param_specs=param_specs,
-            fixed_params=tuple(sorted((str(k), float(v)) for k, v in req.fixed_params.items())),
+            fixed_params=tuple(sorted((str(k), float(v)) for k, v in (payload.get('fixed_params') or {}).items())),
             fit_harmonics=fit_harmonics,
         )
-        n_trials = max(1, min(int(req.n_trials), 200))
-        target = _build_inversion_target(req.target, cfg)
-
+        n_trials = max(1, min(int(payload.get('n_trials') or 20), 200))
+        target = _build_inversion_target(target_in, cfg)
         t0 = time.perf_counter()
-        result = TPEInverter(config=cfg, specs=param_specs, seed=req.seed, initial_params=req.initial_params).run(target, n_trials=n_trials)
+        result = TPEInverter(config=cfg, specs=param_specs, seed=payload.get('seed', 42),
+                             initial_params=payload.get('initial_params')).run(target, n_trials=n_trials)
         elapsed = time.perf_counter() - t0
-
         return {
-            "success": True,
-            "best_value": result.best_value,
-            "best_x": _serialize(result.best_x),
-            "best_params": _serialize(result.best_params),
-            "fit_quality": _serialize(result.fit_quality),
-            "n_trials": result.n_trials,
-            "n_forward": result.n_forward,
-            "n_calls": result.n_calls,
-            "n_ode_fail": result.n_ode_fail,
-            "n_tafel_fail": result.n_tafel_fail,
+            "success": True, "best_value": result.best_value, "best_x": _serialize(result.best_x),
+            "best_params": _serialize(result.best_params), "fit_quality": _serialize(result.fit_quality),
+            "n_trials": result.n_trials, "n_forward": result.n_forward, "n_calls": result.n_calls,
+            "n_ode_fail": result.n_ode_fail, "n_tafel_fail": result.n_tafel_fail,
             "history": _serialize(result.history),
-            "fixed_params": _serialize(req.fixed_params),
-            "param_bounds": _serialize(req.param_bounds),
+            "fixed_params": _serialize(payload.get('fixed_params') or {}),
+            "param_bounds": _serialize(payload.get('param_bounds') or {}),
             "fit_harmonics": _serialize(fit_harmonics),
             "time_elapsed": elapsed,
         }
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
+def _submit_job(fn, payload) -> str:
+    job_id = uuid.uuid4().hex[:12]
+    _JOBS[job_id] = {"status": "running", "result": None, "error": None}
+
+    def _done(f):
+        try:
+            res = f.result()
+            j = _JOBS.get(job_id)
+            if j and j["status"] != "canceled":
+                j["status"] = "done"
+                j["result"] = res
+        except Exception as e:
+            j = _JOBS.get(job_id)
+            if j and j["status"] != "canceled":
+                j["status"] = "failed"
+                j["error"] = str(e)
+
+    fut = _POOL.submit(fn, payload)
+    _JOBS[job_id]["future"] = fut
+    fut.add_done_callback(_done)
+    return job_id
+
+
+@app.post("/api/simulate")
+async def simulate(p: SimParams) -> Dict[str, Any]:
+    """提交正演任务，返回 job_id；结果通过 /api/jobs/{id} 轮询取回。"""
+    job_id = _submit_job(_run_simulate, p.model_dump())
+    return {"success": True, "job_id": job_id, "status": "running"}
+
+
+@app.post("/api/inversion/tpe")
+async def invert_tpe(req: TPEInversionIn) -> Dict[str, Any]:
+    """提交反演任务，返回 job_id；结果通过 /api/jobs/{id} 轮询取回。"""
+    job_id = _submit_job(_run_inversion, req.model_dump())
+    return {"success": True, "job_id": job_id, "status": "running"}
+
+
+@app.get("/api/jobs/{job_id}")
+async def job_status(job_id: str) -> Dict[str, Any]:
+    """查询任务状态：running / done / failed / canceled。done 时附结果。"""
+    j = _JOBS.get(job_id)
+    if not j:
+        return {"success": False, "error": f"job 不存在: {job_id}"}
+    if j["status"] == "done":
+        return {"success": True, "status": "done", "result": j["result"]}
+    if j["status"] == "failed":
+        return {"success": True, "status": "failed", "error": j["error"]}
+    return {"success": True, "status": j["status"]}
+
+
+@app.post("/api/jobs/{job_id}/cancel")
+async def job_cancel(job_id: str) -> Dict[str, Any]:
+    """取消任务：未开始的可真正取消；运行中的标记 canceled（结果丢弃）。"""
+    j = _JOBS.get(job_id)
+    if not j:
+        return {"success": False, "error": f"job 不存在: {job_id}"}
+    if j["status"] == "running":
+        fut = j.get("future")
+        if fut and fut.cancel():
+            j["status"] = "canceled"
+        else:
+            j["status"] = "canceled"  # 运行中：标记，结果由 done_callback 丢弃
+    return {"success": True, "status": j["status"]}
 
 from fastapi.responses import FileResponse
 
