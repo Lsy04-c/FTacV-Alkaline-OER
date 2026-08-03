@@ -3,690 +3,519 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>碱性 OER AEM 工作台</title>
+<title>OER 工作台</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <style>
 :root{
-  --bg:#eef2f7; --card:#ffffff; --border:#e3e8ef; --border-strong:#d4dbe6;
-  --primary:#1976d2; --primary-dark:#1565c0; --primary-soft:#e3f0fd;
-  --text:#2b3440; --text-2:#5a6675; --text-3:#97a2b1;
-  --accent:#e94560; --success:#2e9d6e;
-  --shadow:0 1px 3px rgba(31,45,61,.06),0 1px 2px rgba(31,45,61,.04);
-  --shadow-hover:0 4px 14px rgba(31,45,61,.10);
-  --radius:8px;
+  --bg:#f5f6f8; --card:#ffffff; --border:#e4e7ec; --border-strong:#d3d9e0;
+  --primary:#1677ff; --primary-dark:#0958d9; --primary-soft:#e6f4ff;
+  --text:#26282b; --text-2:#5b6270; --text-3:#9aa2b0;
+  --accent:#d4380d; --success:#389e0d; --warn:#d48806;
+  --radius:10px; --shadow:0 1px 3px rgba(20,30,50,.05),0 1px 2px rgba(20,30,50,.04);
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
-  background:var(--bg); color:var(--text); font-size:14px; -webkit-font-smoothing:antialiased;
-}
-.app{display:flex;flex-direction:column;height:100vh}
-
-/* ===== Header ===== */
-.header{
-  padding:14px 28px; background:linear-gradient(90deg,#1976d2,#1e88e5);
-  color:#fff; font-size:16px; font-weight:600; letter-spacing:.3px;
-  box-shadow:0 2px 6px rgba(25,118,210,.18);
-}
-.header .sub{font-size:11px;font-weight:400;opacity:.85;margin-left:8px}
-
-/* ===== Tabs ===== */
-.tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;gap:4px}
-.tab{
-  padding:11px 18px; cursor:pointer; border-bottom:2px solid transparent;
-  color:var(--text-2); font-size:13px; font-weight:500; transition:all .15s;
-  border-radius:6px 6px 0 0;
-}
-.tab:hover{color:var(--primary);background:var(--primary-soft)}
-.tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
-
-/* ===== Main layout ===== */
-.main{display:flex;flex:1;overflow:hidden;gap:12px;padding:12px}
-
-.left-panel{
-  width:380px; background:var(--card); border:1px solid var(--border);
-  border-radius:var(--radius); padding:16px; overflow-y:auto; flex-shrink:0;
-  box-shadow:var(--shadow);
-}
-.left-panel::-webkit-scrollbar{width:8px}
-.left-panel::-webkit-scrollbar-thumb{background:#cfd8e3;border-radius:4px}
-.left-panel::-webkit-scrollbar-thumb:hover{background:#b6c2d1}
-
-.right-panel{
-  flex:1; overflow-y:auto; display:grid;
-  grid-template-columns:repeat(2,1fr); grid-auto-rows:280px; gap:12px;
-  align-content:start; padding-right:4px;
-}
-.right-panel::-webkit-scrollbar{width:8px}
-.right-panel::-webkit-scrollbar-thumb{background:#cfd8e3;border-radius:4px}
-.right-panel.single-col{grid-template-columns:1fr;grid-auto-rows:1fr}
-
-/* ===== Chart card ===== */
-.chart-box{
-  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
-  box-shadow:var(--shadow); display:flex; flex-direction:column; overflow:hidden;
-  transition:box-shadow .2s,transform .2s; min-height:0;
-}
-.chart-box:hover{box-shadow:var(--shadow-hover);transform:translateY(-1px)}
-.chart-box.large{grid-column:1/-1;grid-row:auto;height:auto}
-.chart-head{
-  padding:8px 14px; border-bottom:1px solid var(--border);
-  font-size:12px; font-weight:600; color:var(--primary);
-  background:linear-gradient(90deg,var(--primary-soft),transparent);
-  display:flex; align-items:center; gap:6px; flex-shrink:0; letter-spacing:.3px;
-}
-.chart-head::before{
-  content:''; width:3px; height:12px; background:var(--primary); border-radius:2px;
-}
-.chart-body{flex:1;min-height:0;position:relative}
-
-/* ===== Param panel ===== */
-.panel-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.panel-title::before{content:'';width:4px;height:14px;background:var(--primary);border-radius:2px}
-.section-title{
-  font-size:11px; font-weight:700; color:var(--primary); margin:14px 0 8px 0;
-  text-transform:uppercase; letter-spacing:1px; padding-bottom:5px;
-  border-bottom:1px dashed var(--border-strong);
-}
-.param-row{display:flex;align-items:center;margin:5px 0;font-size:12px}
-.param-label{width:130px;flex-shrink:0;color:var(--text-2);text-align:right;padding-right:10px;font-variant-numeric:tabular-nums}
-.param-input{
-  flex:1; background:#fbfcfe; border:1px solid var(--border-strong); color:var(--text);
-  padding:5px 9px; border-radius:5px; font-size:12px; width:100%; transition:all .15s;
-}
-.param-input:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(25,118,210,.12);background:#fff}
-.param-unit{width:52px;flex-shrink:0;color:var(--text-3);font-size:11px;padding-left:8px}
-
-.btn{
-  padding:10px 20px; border:none; border-radius:6px; cursor:pointer;
-  font-size:14px; font-weight:600; width:100%; margin-top:16px;
-  transition:all .15s; letter-spacing:.5px;
-}
-.btn-primary{background:var(--primary);color:#fff;box-shadow:0 2px 6px rgba(25,118,210,.25)}
-.btn-primary:hover{background:var(--primary-dark);box-shadow:0 4px 10px rgba(25,118,210,.32)}
-.btn-primary:active{transform:translateY(1px)}
-.btn-primary:disabled{background:#bcc7d4;cursor:not-allowed;box-shadow:none}
-.btn-secondary{
-  margin-top:8px; background:#f0f3f7; border:1px solid var(--border-strong);
-  color:var(--text-2); padding:6px 12px; font-size:12px; border-radius:5px; cursor:pointer;
-  width:100%; transition:all .15s;
-}
-.btn-secondary:hover{background:#e3e9f0;color:var(--text)}
-
-/* ===== Status bar ===== */
-.status-bar{
-  padding:8px 24px; background:var(--card); border-top:1px solid var(--border);
-  font-size:11px; color:var(--text-3); display:flex; justify-content:space-between;
-}
-.status-bar .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--success);margin-right:5px;vertical-align:middle}
-
-/* ===== Misc ===== */
-.placeholder{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-3);font-size:15px;padding:20px;text-align:center}
-.drop-zone{
-  border:2px dashed var(--border-strong); border-radius:8px; padding:16px;
-  text-align:center; color:var(--text-2); font-size:13px; cursor:pointer;
-  margin-bottom:12px; transition:all .2s; background:#fbfcfe;
-}
-.drop-zone:hover,.drop-zone.drag-over{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
-.drop-zone.loaded{border-color:var(--success);color:var(--success);background:#eaf6f0}
-.file-info{font-size:11px;color:var(--text-3);margin-top:5px}
-
-.summary-box{
-  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
-  padding:14px 16px; font-size:12px; box-shadow:var(--shadow);
-  display:flex; flex-direction:column; gap:8px; align-self:start;
-}
-.summary-box .chart-head{margin:-14px -16px 4px -16px;border-radius:var(--radius) var(--radius) 0 0}
-.summary-row{line-height:1.7;color:var(--text-2);font-variant-numeric:tabular-nums}
-.summary-row strong{color:var(--text);font-weight:600}
-.summary-row.meta{color:var(--text-3);font-size:11px;border-top:1px dashed var(--border);padding-top:6px;margin-top:2px}
-
-/* ===== Responsive ===== */
-@media (max-width:1100px){
-  .right-panel{grid-template-columns:1fr}
-}
-@media (max-width:760px){
-  .main{flex-direction:column;padding:8px;gap:8px}
-  .left-panel{width:100%;max-height:42vh}
-  .right-panel{grid-template-columns:1fr}
-  .header{font-size:14px;padding:10px 16px}
-  .header .sub{display:none}
-}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro SC','PingFang SC','Microsoft YaHei',sans-serif;
+  background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased;height:100vh}
+#root{height:100vh}
+.app{display:flex;height:100vh}
+/* ===== 左侧导航 ===== */
+.nav{width:176px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.brand{padding:18px 16px 12px;font-size:15px;font-weight:700;letter-spacing:.3px}
+.brand .sub{font-size:11px;color:var(--text-3);font-weight:400;margin-top:2px}
+.nav-item{padding:10px 16px;cursor:pointer;color:var(--text-2);font-size:13px;display:flex;align-items:center;gap:9px;
+  border-left:3px solid transparent;transition:all .12s}
+.nav-item:hover{background:var(--primary-soft);color:var(--primary)}
+.nav-item.active{background:var(--primary-soft);color:var(--primary);border-left-color:var(--primary);font-weight:600}
+.nav-item .n{width:20px;height:20px;border-radius:50%;background:#eef1f5;color:var(--text-2);font-size:11px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.nav-item.active .n{background:var(--primary);color:#fff}
+.nav-foot{margin-top:auto;padding:14px 16px;font-size:11px;color:var(--text-3);line-height:1.6}
+/* ===== 主区 ===== */
+.main{flex:1;overflow:auto;padding:20px 24px}
+.panel-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.panel-desc{font-size:12px;color:var(--text-2);margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-top:4px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.card h4{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text)}
+.card h4::before{content:'';display:inline-block;width:3px;height:12px;background:var(--primary);border-radius:2px;margin-right:7px;vertical-align:-1px}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:12px;color:var(--text-2);margin-bottom:4px}
+.field input,.field select{width:100%;padding:7px 10px;border:1px solid var(--border-strong);border-radius:7px;font-size:13px;background:#fbfcfe;color:var(--text)}
+.field input:focus,.field select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(22,119,255,.12)}
+.btn{padding:8px 16px;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;transition:all .12s}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-primary:disabled{background:#b9c4d6;cursor:not-allowed}
+.btn-ghost{background:#f0f2f5;color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{background:#e6e9ee}
+.btn-sm{padding:5px 10px;font-size:12px}
+.row{display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.meta{font-size:11px;color:var(--text-2);line-height:1.7}
+.meta strong{color:var(--text)}
+.mono{font-variant-numeric:tabular-nums}
+.hint{font-size:11px;color:var(--text-3);line-height:1.6}
+.ok{color:var(--success)} .warn{color:var(--warn)} .err{color:var(--accent)}
+.chart{height:300px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f2f4f7;text-align:left;padding:6px 10px;color:var(--text-2);font-weight:600}
+td{padding:6px 10px;border-bottom:1px solid #eef1f4}
+.tip{padding:8px 12px;border-radius:7px;font-size:12px;background:#fff7e6;border:1px solid #ffe7ba;color:#874d00}
 </style>
 </head>
 <body>
 <div id="root"></div>
-
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
-const API_BASE = '';  // 同源部署，无需写死地址
+const API_BASE = '';
+
+/* ===================== 图表封装 ===================== */
+function ChartBox({ option, height=300 }) {
+  const ref=useRef(null); const inst=useRef(null);
+  useEffect(()=>{
+    if(!ref.current) return;
+    if(!inst.current) inst.current=echarts.init(ref.current);
+    inst.current.setOption(option,true);
+  },[option]);
+  useEffect(()=>{
+    const el=ref.current; if(!el||!inst.current) return;
+    const ro=new ResizeObserver(()=>inst.current&&inst.current.resize());
+    ro.observe(el);
+    return ()=>{ro.disconnect();inst.current&&inst.current.dispose();inst.current=null;};
+  },[]);
+  return <div ref={ref} className="chart" style={{height}}/>;
+}
 
 /* ===================== 文件拖放 ===================== */
 function FileDropZone({ onFileLoaded, expData }) {
-  const [dragOver, setDragOver] = useState(false);
-  const inputRef = useRef(null);
-  const parseFile = (file) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target.result;
-      const lines = text.trim().split('\n').filter(l => l.trim());
-      const data = lines.map(line => {
-        const cols = line.split(/\s+/);
-        return [parseFloat(cols[0]), parseFloat(cols[1]), parseFloat(cols[2])];
-      }).filter(d => d.every(v => !isNaN(v)));
-      onFileLoaded({ name: file.name, rows: data });
+  const [dragOver,setDragOver]=useState(false);
+  const inputRef=useRef(null);
+  const parseFile=(file)=>{
+    const reader=new FileReader();
+    reader.onload=(e)=>{
+      const text=e.target.result;
+      const lines=text.trim().split('\n').filter(l=>l.trim());
+      const data=lines.map(line=>{const c=line.split(/\s+/);return[parseFloat(c[0]),parseFloat(c[1]),parseFloat(c[2])];}).filter(d=>d.every(v=>!isNaN(v)));
+      onFileLoaded({name:file.name,rows:data});
     };
     reader.readAsText(file);
   };
-  return (
-    <div>
-      <div className={`drop-zone ${dragOver?'drag-over':''} ${expData?'loaded':''}`}
-        onDrop={e=>{e.preventDefault();setDragOver(false);if(e.dataTransfer.files[0])parseFile(e.dataTransfer.files[0]);}}
-        onDragOver={e=>{e.preventDefault();setDragOver(true);}}
-        onDragLeave={()=>setDragOver(false)}
-        onClick={()=>inputRef.current?.click()}>
-        <div>{expData?`✅ ${expData.name}`:'拖放实验数据文件，或点击选择'}</div>
-        {expData&&<div className="file-info">{expData.rows.length.toLocaleString()} 个数据点</div>}
-      </div>
-      <input ref={inputRef} type="file" accept=".txt,.csv,.dat" style={{display:'none'}}
-        onChange={e=>{if(e.target.files[0])parseFile(e.target.files[0]);}}/>
+  return (<div>
+    <div className="drop-zone" style={{border:'1px dashed var(--border-strong)',borderRadius:10,padding:'18px 12px',textAlign:'center',
+      cursor:'pointer',background:dragOver?'var(--primary-soft)':expData?'#f6ffed':'#fafbfc',transition:'all .12s'}}
+      onDrop={e=>{e.preventDefault();setDragOver(false);if(e.dataTransfer.files[0])parseFile(e.dataTransfer.files[0]);}}
+      onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)}
+      onClick={()=>inputRef.current?.click()}>
+      <div style={{fontSize:13}}>{expData?`✅ ${expData.name}`:'拖放数据文件，或点击选择'}</div>
+      {expData&&<div className="meta" style={{marginTop:4}}>{expData.rows.length.toLocaleString()} 个数据点</div>}
     </div>
-  );
+    <input ref={inputRef} type="file" accept=".txt,.csv,.dat" style={{display:'none'}}
+      onChange={e=>{if(e.target.files[0])parseFile(e.target.files[0]);}}/>
+  </div>);
 }
 
-/* ===================== 参数面板 ===================== */
-const PARAM_GROUPS = [
+/* ===================== 参数面板（折叠） ===================== */
+const PARAM_GROUPS=[
   {title:'热力学描述符',params:[
     {key:'G_OH',label:'G_OH',unit:'eV'},{key:'G_O',label:'G_O',unit:'eV'},{key:'scaling_OOH_OH',label:'scaling_OOH_OH',unit:'eV'}]},
-  {title:'预氧化步骤',params:[
-    {key:'E0_pre',label:'E0_pre',unit:'V'},{key:'k0_pre',label:'k0_pre',unit:'s⁻¹'}]},
+  {title:'预氧化',params:[{key:'E0_pre',label:'E0_pre',unit:'V'},{key:'k0_pre',label:'k0_pre',unit:'s⁻¹'}]},
   {title:'AEM 动力学',params:[
-    {key:'k0_1',label:'k0_1 (*→*OH)',unit:'s⁻¹'},{key:'k0_2',label:'k0_2 (*OH→*O)',unit:'s⁻¹'},
-    {key:'k0_3',label:'k0_3 (*O→*OOH)',unit:'s⁻¹'},{key:'k0_4',label:'k0_4 (*OOH→*)',unit:'s⁻¹'}]},
-  {title:'FTacV 扫描',params:[
+    {key:'k0_1',label:'k0_1',unit:'s⁻¹'},{key:'k0_2',label:'k0_2',unit:'s⁻¹'},
+    {key:'k0_3',label:'k0_3',unit:'s⁻¹'},{key:'k0_4',label:'k0_4',unit:'s⁻¹'}]},
+  {title:'扫描',params:[
     {key:'E_start',label:'E_start',unit:'V'},{key:'E_end',label:'E_end',unit:'V'},
     {key:'f',label:'f',unit:'Hz'},{key:'dE',label:'dE',unit:'V'},{key:'n_points',label:'n_points',unit:''}]},
   {title:'电极与电路',params:[
     {key:'Ru',label:'Ru',unit:'Ω'},{key:'Cdl',label:'Cdl',unit:'F/cm²'},{key:'A',label:'A',unit:'cm²'},
     {key:'gamma',label:'gamma',unit:'mol/cm²'},{key:'T',label:'T',unit:'K'},{key:'a',label:'a',unit:''}]},
 ];
-
-function ParamPanel({ params, onChange, onSimulate, loading }) {
+function ParamPanel({params,onChange}) {
   const h=(k,v)=>onChange({...params,[k]:parseFloat(v)||0});
-  return (<div>
-    <div className="panel-title">模型设置</div>
-    {PARAM_GROUPS.map(g=>(<div key={g.title}>
-      <div className="section-title">{g.title}</div>
-      {g.params.map(p=>(<div className="param-row" key={p.key}>
-        <span className="param-label">{p.label}</span>
-        <input className="param-input" type="number" step={p.step||0.01} value={params[p.key]??''} onChange={e=>h(p.key,e.target.value)}/>
-        <span className="param-unit">{p.unit}</span>
+  return PARAM_GROUPS.map(g=>(
+    <div key={g.title} style={{marginBottom:8}}>
+      <div style={{fontSize:11,fontWeight:600,color:'var(--primary)',margin:'8px 0 4px'}}>{g.title}</div>
+      {g.params.map(p=>(<div key={p.key} style={{display:'flex',alignItems:'center',margin:'3px 0'}}>
+        <span style={{width:96,flexShrink:0,fontSize:12,color:'var(--text-2)'}}>{p.label}</span>
+        <input className="mono" type="number" step={p.step||0.01} value={params[p.key]??''}
+          onChange={e=>h(p.key,e.target.value)}
+          style={{flex:1,padding:'4px 8px',border:'1px solid var(--border-strong)',borderRadius:6,fontSize:12,background:'#fbfcfe'}}/>
+        <span style={{width:44,fontSize:11,color:'var(--text-3)',paddingLeft:6}}>{p.unit}</span>
       </div>))}
-    </div>))}
-    <button className="btn btn-primary" onClick={onSimulate} disabled={loading}>
-      {loading?'正演中...':'▶  运行当前参数正演'}
-    </button>
-  </div>);
+    </div>));
 }
 
-/* ===================== ECharts 封装 =====================
-   关键：标题外置到 .chart-head，grid 四边留足 padding，
-   图例置底，ResizeObserver 跟随容器重绘，tooltip confine 防溢出。
-*/
-function ChartBox({ id, title, option, className='' }) {
-  const headRef=useRef(null); const bodyRef=useRef(null); const inst=useRef(null);
-  useEffect(()=>{
-    if(!bodyRef.current) return;
-    if(!inst.current) inst.current=echarts.init(bodyRef.current);
-    inst.current.setOption(option,true);
-  },[option]);
-  useEffect(()=>{
-    const el=bodyRef.current; if(!el||!inst.current) return;
-    const ro=new ResizeObserver(()=>inst.current && inst.current.resize());
-    ro.observe(el);
-    return ()=>{ro.disconnect();inst.current&&inst.current.dispose();inst.current=null;};
-  },[]);
-  return (
-    <div className={`chart-box ${className}`}>
-      <div className="chart-head" ref={headRef}>{title}</div>
-      <div className="chart-body" ref={bodyRef} id={id}/>
+const AEM_PARAM_BOUNDS={k0_1:[1e-2,1e4],k0_2:[1e-2,1e4],k0_3:[1e-2,1e4],k0_4:[1e-2,1e4],
+  G_OH:[0.9,1.7],G_O:[2.3,3.3],scaling_OOH_OH:[2.9,3.5],gamma:[1e-10,1e-8]};
+function formatHarmonics(list){if(!list||!list.length)return '无，仅 DC';return list.map(h=>`H${h}`).join(', ');}
+
+/* ===================== ① 样品与电极 ===================== */
+const CATALYST='四氧化三钴（Co₃O₄）';
+const SUPPORTS=['钛毡','钛箔'];
+const REFERENCES=['Ag/AgCl（饱和 KCl）','Hg/HgO（1 M KOH）','可逆氢电极 RHE'];
+function SampleStep({sample,setSample}) {
+  const f=(k,v)=>setSample(s=>({...s,[k]:v}));
+  return (<>
+    <div className="panel-title">样品与电极</div>
+    <div className="panel-desc">先填写实验信息，模型参数放在后面。</div>
+    <div className="grid">
+      <div className="card">
+        <h4>催化剂</h4>
+        <div className="field"><label>催化剂</label><input value={CATALYST} disabled style={{background:'#f5f6f8'}}/></div>
+        <div className="field"><label>基底</label>
+          <select value={sample.support||''} onChange={e=>f('support',e.target.value)}>
+            <option value="">请选择</option>{SUPPORTS.map(s=><option key={s} value={s}>{s}</option>)}
+          </select></div>
+        <div className="field"><label>电极面积（cm²）</label>
+          <input type="number" value={sample.area??''} onChange={e=>f('area',e.target.value)} placeholder="例如 0.196"/></div>
+        <div className="field"><label>参比电极</label>
+          <select value={sample.reference||''} onChange={e=>f('reference',e.target.value)}>
+            <option value="">请选择</option>{REFERENCES.map(r=><option key={r} value={r}>{r}</option>)}
+          </select></div>
+        <div className="field"><label>电解液（可留空）</label>
+          <input value={sample.electrolyte||''} onChange={e=>f('electrolyte',e.target.value)} placeholder="例如 1 M KOH"/></div>
+        <div className="field"><label>备注（批次、制备等）</label>
+          <textarea value={sample.note||''} onChange={e=>f('note',e.target.value)} rows={2}
+            style={{width:'100%',padding:'7px 10px',border:'1px solid var(--border-strong)',borderRadius:7,fontSize:13,resize:'vertical'}}/></div>
+      </div>
+      <div className="card">
+        <h4>当前登记</h4>
+        <div className="meta" style={{lineHeight:2}}>
+          催化剂：<strong>{CATALYST}</strong><br/>
+          基底：<strong>{sample.support||'未填'}</strong><br/>
+          面积：<strong>{sample.area?`${sample.area} cm²`:'未填'}</strong><br/>
+          参比：<strong>{sample.reference||'未填'}</strong><br/>
+          电解液：<strong>{sample.electrolyte||'未填'}</strong><br/>
+          备注：<strong>{sample.note||'无'}</strong>
+        </div>
+        <div className="hint" style={{marginTop:10}}>这些信息会带入导出的 Markdown 报告，供存档与 AI 分析。</div>
+      </div>
     </div>
-  );
+  </>);
 }
 
-/* 统一绘图区配置：grid 留白充足，避免轴名/图例/标签互相遮挡 */
-const GRID = { top:14, right:20, bottom:42, left:60, containLabel:true };
-const AXIS_LABEL = { fontSize:10, color:'#7a8694' };
-const AXIS_NAME_STYLE = { color:'#5a6675', fontSize:11, fontWeight:500 };
-
-function baseGrid(extra={}){return Object.assign({},GRID,extra);}
-function baseX(name){return {type:'value',name,nameLocation:'center',nameGap:28,nameTextStyle:AXIS_NAME_STYLE,axisLabel:AXIS_LABEL,splitLine:{lineStyle:{color:'#eef2f7'}}};}
-function baseY(name,opt={}){return Object.assign({type:'value',name,nameTextStyle:AXIS_NAME_STYLE,axisLabel:{fontSize:10,formatter:v=>{if(v===0)return'0';const e=Math.floor(Math.log10(Math.abs(v)));return (v/Math.pow(10,e)).toFixed(1)+'e'+e}},splitLine:{lineStyle:{color:'#eef2f7'}}},opt);}
-
-function makeOpt({xName,yName,series,yOpt={},legend=false}){
-  const opt={
-    tooltip:{trigger:'axis',confine:true,axisPointer:{type:'line',lineStyle:{color:'#cfd8e3'}}},
-    grid:baseGrid(),
-    xAxis:baseX(xName),
-    yAxis:baseY(yName,yOpt),
-    series,
-    animation:false,
-  };
-  if(legend) opt.legend={bottom:2,textStyle:{fontSize:10,color:'#5a6675'},itemWidth:14,itemHeight:8,itemGap:10};
-  return opt;
-}
-
-function singleLine(data,color,name){
-  return {type:'line',name,data,smooth:true,symbol:'none',lineStyle:{color:color||'#1976d2',width:1.6}};
-}
-
-const AEM_PARAM_BOUNDS = {
-  k0_1:[1e-2,1e4],
-  k0_2:[1e-2,1e4],
-  k0_3:[1e-2,1e4],
-  k0_4:[1e-2,1e4],
-  G_OH:[0.9,1.7],
-  G_O:[2.3,3.3],
-  scaling_OOH_OH:[2.9,3.5],
-  gamma:[1e-10,1e-8],
-};
-
-function formatHarmonics(list){
-  if(!list||!list.length) return '无，仅 DC/Tafel';
-  return list.map(h=>`H${h}`).join(', ');
-}
-
-/* ===================== Tab1 ===================== */
-function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
-  const [params,setParams]=useState({}); const [loading,setLoading]=useState(false);
-  const [result,setResult]=useState(null); const [error,setError]=useState(null);
-  const [invTrials,setInvTrials]=useState(10); const [invPoints,setInvPoints]=useState(512);
-  const [invLoading,setInvLoading]=useState(false); const [invResult,setInvResult]=useState(null); const [invError,setInvError]=useState(null);
+/* ===================== ② 数据与分析 ===================== */
+const STRICTNESS=[
+  {id:'loose',label:'宽松',desc:'允许更低信噪比的高阶谐波进入建议'},
+  {id:'standard',label:'标准',desc:'按默认可解析性阈值建议'},
+  {id:'strict',label:'严格',desc:'只保留信噪比很高的谐波'},
+];
+function DataStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strictness,setStrictness}) {
   const [sampleFiles,setSampleFiles]=useState([]); const [sampleSel,setSampleSel]=useState('');
-
-  useEffect(()=>{fetch(`${API_BASE}/api/params/defaults`).then(r=>r.json()).then(setParams).catch(()=>{});},[]);
   useEffect(()=>{fetch(`${API_BASE}/api/data/samples`).then(r=>r.json()).then(d=>{if(d.success&&d.files.length){setSampleFiles(d.files);setSampleSel(d.files[0]);}}).catch(()=>{});},[]);
-
-  // 上传后自动识别采集参数并提取实验谐波
   const handleFile=async(d)=>{
-    setExpData(d); setExpAnalysis(null);
-    try{
-      const res=await fetch(`${API_BASE}/api/data/analyze`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:d.rows})});
-      const data=await res.json();
-      if(!data.success) setError('数据解析失败: '+data.error); else setExpAnalysis(data);
+    setExpData(d);setExpAnalysis(null);
+    try{const res=await fetch(`${API_BASE}/api/data/analyze`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:d.rows})});
+      const data=await res.json();if(!data.success)setError('数据解析失败: '+data.error);else setExpAnalysis(data);
     }catch(e){setError('数据解析失败: '+e.message);}
   };
-  const clearExp=()=>{setExpData(null);setExpAnalysis(null);setResult(null);setInvResult(null);setInvError(null);};
-  // 加载内置 FTacV 数据（data/raw 下），走与上传相同的分析链路
   const loadSample=async()=>{
-    if(!sampleSel) return;
-    setExpData({name:sampleSel}); setExpAnalysis(null); setError(null); setInvResult(null);
-    try{
-      const res=await fetch(`${API_BASE}/api/data/analyze-by-file`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:sampleSel})});
-      const data=await res.json();
-      if(!data.success) setError('内置数据解析失败: '+data.error); else setExpAnalysis(data);
+    if(!sampleSel)return;setExpData({name:sampleSel});setExpAnalysis(null);setError(null);
+    try{const res=await fetch(`${API_BASE}/api/data/analyze-by-file`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:sampleSel})});
+      const data=await res.json();if(!data.success)setError('内置数据解析失败: '+data.error);else setExpAnalysis(data);
     }catch(e){setError('内置数据解析失败: '+e.message);}
   };
-  // 同步仿真参数。fast=true：64 周期、扫描速率×4，约 10 秒，定性对比；
-  // fast=false：与实验完全一致的 v 和 f（256 周期），约 1 分钟，定量对比。
-  const syncParams=(fast)=>{
-    if(!expAnalysis) return; const m=expAnalysis.meta;
-    const maxCycles=fast?64:256;
-    const cycles=Math.max(1,Math.min(Math.round(m.f*m.duration),maxCycles));
-    const n=Math.min(Math.pow(2,Math.ceil(Math.log2(cycles*256))),65536);
-    setParams(p=>({...p,E_start:+m.E_start.toFixed(4),E_end:+m.E_end.toFixed(4),f:+m.f.toFixed(4),dE:+m.dE.toFixed(4),n_points:n}));
+  // 建议最高阶：标准档用科学侧 suggested_fit_harmonics；严格/宽松按相对 H1 阈值推断
+  const suggested=()=>{
+    if(!expAnalysis||!expAnalysis.harmonics) return [];
+    const h=expAnalysis.harmonics; // 7 个通道，按相对 H1 RMS
+    const h1=Math.max(Math.sqrt((h[0]||[]).reduce((a,v)=>a+v*v,0)/Math.max((h[0]||[]).length,1)),1e-12);
+    const ratios=h.map((arr,i)=>{const rms=Math.sqrt((arr||[]).reduce((a,v)=>a+v*v,0)/Math.max(arr.length,1));return rms/h1;});
+    const th={loose:0.003,standard:0.01,strict:0.03}[strictness]||0.01;
+    const maxIdx=ratios.reduce((mx,v,i)=>v>th?i:mx,-1);
+    return Array.from({length:maxIdx+1},(_,i)=>i+1);
   };
+  const sug=suggested();
+  return (<>
+    <div className="panel-title">数据与分析</div>
+    <div className="panel-desc">导入 FTacV / CV / LSV，自动识别采集参数并判断谐波可用性。</div>
+    <div className="grid">
+      <div className="card">
+        <h4>导入数据</h4>
+        <FileDropZone onFileLoaded={handleFile} expData={expData}/>
+        {sampleFiles.length>0&&<div className="row" style={{marginTop:10}}>
+          <select value={sampleSel} onChange={e=>setSampleSel(e.target.value)} style={{flex:1,padding:'6px 8px',border:'1px solid var(--border-strong)',borderRadius:7,fontSize:12}}>
+            {sampleFiles.map(f=><option key={f} value={f}>{f.replace('ftacv','FT').replace('-ref','')}</option>)}
+          </select>
+          <button className="btn btn-ghost btn-sm" onClick={loadSample}>加载内置</button>
+        </div>}
+      </div>
+      {expAnalysis&&(<div className="card">
+        <h4>自动识别</h4>
+        <div className="meta" style={{lineHeight:2}}>
+          频率：<strong>{expAnalysis.meta.f.toFixed(2)} Hz</strong> · 振幅：<strong>{expAnalysis.meta.dE.toFixed(3)} V</strong><br/>
+          扫速：<strong>{(expAnalysis.meta.v*1000).toFixed(1)} mV/s</strong> · 范围：<strong>{expAnalysis.meta.E_start.toFixed(3)}→{expAnalysis.meta.E_end.toFixed(3)} V</strong><br/>
+          周期数：<strong>{Math.round(expAnalysis.meta.f*expAnalysis.meta.duration)}</strong>
+          {expAnalysis.calib&&expAnalysis.calib.cdl.success&&<><br/>Cdl·A：<strong>{(expAnalysis.calib.cdl.CdlA*1e6).toFixed(1)} µF</strong>{expAnalysis.calib.tafel.success&&` · Tafel ${expAnalysis.calib.tafel.tafel_slope_mV.toFixed(0)} mV/dec`}</>}
+        </div>
+      </div>)}
+      {expAnalysis&&(<div className="card">
+        <h4>谐波质量</h4>
+        <div className="field"><label>判断严格程度</label>
+          <select value={strictness} onChange={e=>setStrictness(e.target.value)}>
+            {STRICTNESS.map(s=><option key={s.id} value={s.id}>{s.label} — {s.desc}</option>)}
+          </select></div>
+        <div className="meta" style={{marginTop:8}}>
+          建议分析用到第 <strong style={{fontSize:16}}>{sug.length?`H${sug[sug.length-1]}`:'无'}</strong> 阶谐波
+          {sug.length?`（${formatHarmonics(sug)}）`:''}
+        </div>
+        <div className="hint" style={{marginTop:6}}>判断标准：该阶谐波幅值 ≥ 基波 H1 的
+          {strictness==='strict'?' 3%':strictness==='loose'?' 0.3%':' 1%'}。具体阈值由科学侧冻结配置，界面仅为展示层口径。</div>
+      </div>)}
+    </div>
+  </>);
+}
+
+/* ===================== ③ 正演与反演 ===================== */
+function SimInvertStep({expAnalysis,expData,setError,sample}) {
+  const [params,setParams]=useState({}); const [loading,setLoading]=useState(false);
+  const [result,setResult]=useState(null); const [advOpen,setAdvOpen]=useState(false);
+  const [invTrials,setInvTrials]=useState(10); const [invLoading,setInvLoading]=useState(false);
+  const [invResult,setInvResult]=useState(null); const [invError,setInvError]=useState(null);
+  useEffect(()=>{fetch(`${API_BASE}/api/params/defaults`).then(r=>r.json()).then(setParams).catch(()=>{});},[]);
 
   const simulate=async()=>{
-    setLoading(true);setError(null);setInvResult(null);
-    try{
-      const res=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...params})});
-      const data=await res.json();
-      if(data.success){data.source='manual';setResult(data);}else setError(data.error);
-    }catch(e){setError(e.message);}
-    setLoading(false);
+    setLoading(true);setError(null);
+    try{const res=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...params})});
+      const data=await res.json();if(data.success){data.source='manual';setResult(data);}else setError(data.error);
+    }catch(e){setError(e.message);}setLoading(false);
   };
-
   const runInversion=async()=>{
-    if(!expAnalysis) return;
-    setInvLoading(true);setInvError(null);setInvResult(null);setError(null);
+    if(!expAnalysis){setInvError('请先在「数据与分析」导入数据');return;}
+    setInvLoading(true);setInvError(null);setInvResult(null);
     try{
       const m=expAnalysis.meta;
-      const fitHarmonics = expAnalysis.suggested_fit_harmonics || [1,2,3,4,5,6,7];
-      // Tafel 可选：提取失败时传 null，后端自动停用该通道
-      const tafelOk = !!(expAnalysis.calib&&expAnalysis.calib.tafel&&expAnalysis.calib.tafel.success);
+      const tafelOk=!!(expAnalysis.calib&&expAnalysis.calib.tafel&&expAnalysis.calib.tafel.success);
       const payload={
         target:{tdc:expAnalysis.tdc,dc:expAnalysis.dc,harmonics:expAnalysis.harmonics,tafel:tafelOk?expAnalysis.calib.tafel.tafel_slope:null},
-        config:{E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,n_points:invPoints,points_per_cycle:64,feature_grid_size:64},
-        initial_params:{
-          k0_1:params.k0_1,k0_2:params.k0_2,k0_3:params.k0_3,k0_4:params.k0_4,
-          G_OH:params.G_OH,G_O:params.G_O,scaling_OOH_OH:params.scaling_OOH_OH,gamma:params.gamma,
-        },
-        fixed_params:{
-          Cdl:params.Cdl,Ru:params.Ru,A:params.A,E0_pre:params.E0_pre,k0_pre:params.k0_pre,
-        },
-        param_bounds:AEM_PARAM_BOUNDS,
-        fit_harmonics:fitHarmonics,
-        n_trials:invTrials,
+        config:{E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,n_points:512,points_per_cycle:64,feature_grid_size:64},
+        initial_params:{k0_1:params.k0_1,k0_2:params.k0_2,k0_3:params.k0_3,k0_4:params.k0_4,
+          G_OH:params.G_OH,G_O:params.G_O,scaling_OOH_OH:params.scaling_OOH_OH,gamma:params.gamma},
+        fixed_params:{Cdl:params.Cdl,Ru:params.Ru,A:params.A,E0_pre:params.E0_pre,k0_pre:params.k0_pre},
+        param_bounds:AEM_PARAM_BOUNDS,fit_harmonics:[1,2,3],n_trials:invTrials,
       };
       const res=await fetch(`${API_BASE}/api/inversion/tpe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      const data=await res.json();
-      if(!data.success){setInvError(data.error);setInvLoading(false);return;}
+      const data=await res.json();if(!data.success){setInvError(data.error);setInvLoading(false);return;}
       setInvResult(data);
-
-      const simParams={...params,...data.best_params,E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,n_points:invPoints,points_per_cycle:64};
+      const simParams={...params,...data.best_params,E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,n_points:512,points_per_cycle:64};
       const simRes=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(simParams)});
-      const simData=await simRes.json();
-      if(simData.success){simData.source='inversion';setResult(simData);}else setError('反演参数正演失败: '+simData.error);
-    }catch(e){setInvError(e.message);}
-    setInvLoading(false);
+      const simData=await simRes.json();if(simData.success){simData.source='inversion';setResult(simData);}else setError('反演参数正演失败: '+simData.error);
+    }catch(e){setInvError(e.message);}setInvLoading(false);
   };
-
-  const left=(
-    <div className="left-panel">
-      <FileDropZone onFileLoaded={handleFile} expData={expData}/>
-      {sampleFiles.length>0&&(
-        <div style={{margin:'8px 0 4px'}}>
-          <div className="section-title">或加载内置数据</div>
-          <div style={{display:'flex',gap:6}}>
-            <select value={sampleSel} onChange={e=>setSampleSel(e.target.value)} style={{flex:1,padding:'5px 8px',fontSize:12,border:'1px solid var(--border-strong)',borderRadius:5,background:'#fbfcfe',color:'var(--text)'}}>
-              {sampleFiles.map(f=>(<option key={f} value={f}>{f.replace('ftacv','FT').replace('-ref','')}</option>))}
-            </select>
-            <button className="btn-secondary" style={{marginTop:0,width:'auto',padding:'5px 12px'}} onClick={loadSample}>加载</button>
-          </div>
+  // 每阶谐波对比（实验 vs 模型）
+  const perHarmOpt=()=>{
+    if(!expAnalysis||!expAnalysis.harmonics||!result||!result.harmonics) return null;
+    const exp=expAnalysis.harmonics, mod=result.harmonics;
+    const x=Array.from({length:exp[0].length},(_,i)=>i);
+    const series=[];
+    exp.forEach((h,i)=>{series.push({name:`实验 H${i+1}`,type:'line',showSymbol:false,smooth:true,data:h.map(v=>+v.toFixed(5))});});
+    mod.forEach((h,i)=>{series.push({name:`模型 H${i+1}`,type:'line',showSymbol:false,smooth:true,lineStyle:{type:'dashed'},data:h.map(v=>+v.toFixed(5))});});
+    return {tooltip:{trigger:'axis'},legend:{top:0,type:'scroll'},grid:{top:30,right:16,bottom:26,left:44},
+      xAxis:{type:'category',data:x,axisLabel:{fontSize:9},name:'采样点'},
+      yAxis:{type:'value',axisLabel:{fontSize:9},name:'归一化'},
+      series:series};
+  };
+  const mainOpt=()=>{
+    if(!result) return null;
+    const S=[{name:'总电流',type:'line',showSymbol:false,data:result.i_total.map((v,i)=>+v.toFixed(8)),xAxisIndex:1,yAxisIndex:1}];
+    if(expAnalysis){S.push({name:'实验',type:'line',showSymbol:false,lineStyle:{width:1,type:'dashed',color:'#d4380d'},data:expAnalysis.current||[],xAxisIndex:0,yAxisIndex:1});}
+    return {tooltip:{trigger:'axis'},legend:{top:0},grid:[{top:34,left:52,right:20,height:'55%'},{top:'68%',left:52,right:20,bottom:20}],
+      xAxis:[{type:'category',data:result.tdc,axisLabel:{fontSize:9},name:'E / V'},{type:'category',gridIndex:1,data:result.tdc,axisLabel:{fontSize:9},name:'E / V'}],
+      yAxis:[{type:'value',scale:true,axisLabel:{fontSize:9},name:'i / A'},{type:'value',gridIndex:1,axisLabel:{fontSize:9},name:'i / A'}],
+      series:S};
+  };
+  // 导出 Markdown
+  const exportMd=()=>{
+    const s=[]; const now=new Date().toISOString().slice(0,19).replace('T',' ');
+    s.push('# OER-FTAcV 分析报告');s.push('');s.push(`> 生成时间：${now}（本地）`);
+    s.push('');s.push('## 1. 样品与电极');s.push('');
+    s.push('| 项 | 值 |');s.push('|---|---|');
+    s.push('| 催化剂 | 四氧化三钴（Co₃O₄） |');
+    s.push(`| 基底 | ${sample&&sample.support?sample.support:'未填'} |`);
+    s.push(`| 面积 | ${sample&&sample.area?`${sample.area} cm²`:'未填'} |`);
+    s.push(`| 参比电极 | ${sample&&sample.reference?sample.reference:'未填'} |`);
+    s.push(`| 电解液 | ${sample&&sample.electrolyte?sample.electrolyte:'未填'} |`);
+    s.push(`| 备注 | ${sample&&sample.note?sample.note:'无'} |`);
+    if(expAnalysis){const m=expAnalysis.meta;
+      s.push('');s.push('## 2. 数据识别');s.push('');
+      s.push('| 项 | 值 |');s.push('|---|---|');
+      s.push(`| 频率 | ${m.f.toFixed(3)} Hz |`);s.push(`| 振幅 | ${m.dE.toFixed(3)} V |`);
+      s.push(`| 扫速 | ${(m.v*1000).toFixed(1)} mV/s |`);s.push(`| 电位窗 | ${m.E_start.toFixed(3)} → ${m.E_end.toFixed(3)} V |`);
+    }
+    if(invResult){s.push('');s.push('## 3. 诊断反演（口径：诊断性拟合，非正式结论）');s.push('');
+      s.push(`- 目标值：**${invResult.best_value.toFixed(4)}** · trials：${invResult.n_trials} · nfev：${invResult.n_forward}`);
+      s.push(`- 拟合等级：${invResult.fit_quality.level} · 完成度 ${invResult.fit_quality.completion_percent.toFixed(1)}%`);
+      s.push('- 拟合通道：'+formatHarmonics(invResult.fit_harmonics));
+      s.push('');s.push('### 参数');s.push('');s.push('| 参数 | 值 |');s.push('|---|---|');
+      Object.entries(invResult.best_params||{}).forEach(([k,v])=>s.push(`| ${k} | ${+v.toExponential(4)} |`));
+    }
+    s.push('');s.push('## 4. 限制说明');s.push('');
+    s.push('- 本报告为**诊断口径**，不构成正式参数点估计或机理结论。');
+    s.push('- 参数可识别性与补偿关系见项目 A6 分析；真实反演需满足冻结 Gate。');
+    s.push('');s.push('---');s.push('*由 OER 工作台生成*');
+    const blob=new Blob([s.join('\n')],{type:'text/markdown;charset=utf-8'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=`oer-report-${now.slice(0,10)}.md`;a.click();
+  };
+  const ph=perHarmOpt();
+  const mo=mainOpt();
+  return (<>
+    <div className="panel-title">正演与反演</div>
+    <div className="panel-desc">{expAnalysis?`对比数据：${expData?expData.name:'已导入'}`:'未导入数据时仍可正演（单独查看模型）'}</div>
+    <div className="grid">
+      <div className="card">
+        <h4>模型设置</h4>
+        <div className="row" style={{marginTop:0}}>
+          <button className="btn btn-ghost btn-sm" onClick={()=>setAdvOpen(!advOpen)}>{advOpen?'收起参数':'展开参数（高级）'}</button>
+          {expAnalysis&&<button className="btn btn-ghost btn-sm" onClick={()=>{const m=expAnalysis.meta;setParams(p=>({...p,E_start:+m.E_start.toFixed(4),E_end:+m.E_end.toFixed(4),f:+m.f.toFixed(4),dE:+m.dE.toFixed(4),n_points:16384}));}}>同步扫描参数</button>}
         </div>
-      )}
-      {expAnalysis&&(
-        <div className="file-info" style={{marginTop:-6,marginBottom:10,lineHeight:1.8}}>
-          识别: f=<strong>{expAnalysis.meta.f.toFixed(2)} Hz</strong> · dE=<strong>{expAnalysis.meta.dE.toFixed(3)} V</strong> · v=<strong>{(expAnalysis.meta.v*1000).toFixed(1)} mV/s</strong><br/>
-          范围: {expAnalysis.meta.E_start.toFixed(3)} → {expAnalysis.meta.E_end.toFixed(3)} V · {Math.round(expAnalysis.meta.f*expAnalysis.meta.duration)} 周期
-          {expAnalysis.suggested_fit_harmonics&&<>
-            <br/>建议拟合通道: <strong>{formatHarmonics(expAnalysis.suggested_fit_harmonics)}</strong> · 其它谐波仅诊断
-          </>}
-          {expAnalysis.calib&&expAnalysis.calib.cdl.success&&(<>
-            <br/>标定: Cdl·A=<strong>{(expAnalysis.calib.cdl.CdlA*1e6).toFixed(1)} µF</strong>（相位超前 {expAnalysis.calib.cdl.phase_lead_deg.toFixed(0)}°）
-            {expAnalysis.calib.tafel.success&&<> · Tafel=<strong>{expAnalysis.calib.tafel.tafel_slope_mV.toFixed(0)} mV/dec</strong></>}
-            <br/><span style={{color:'#97a2b1'}}>预氧化峰: {expAnalysis.calib.preox.separable?'直流可见（定量仍需反演）':'与 OER 重叠，不可直流分离'} · Γ/Ru 由反演/EIS 获得</span>
-          </>)}
+        {advOpen&&<ParamPanel params={params} onChange={setParams}/>}
+        <button className="btn btn-primary" style={{width:'100%',marginTop:12}} onClick={simulate} disabled={loading}>
+          {loading?'正演中...':'▶ 运行当前参数正演'}</button>
+      </div>
+      <div className="card">
+        <h4>诊断反演</h4>
+        <div className="row" style={{marginTop:0}}>
+          <span className="meta">trials</span>
+          <input type="number" min="1" max="200" value={invTrials} onChange={e=>setInvTrials(Math.max(1,parseInt(e.target.value)||1))}
+            style={{width:70,padding:'5px 8px',border:'1px solid var(--border-strong)',borderRadius:6,fontSize:12}}/>
+          <span className="meta">（诊断用，小预算）</span>
         </div>
-      )}
-      {expAnalysis&&expAnalysis.calib&&expAnalysis.calib.cdl.success&&(
-        <button className="btn-secondary" style={{marginTop:0,marginBottom:4}}
-          onClick={()=>{const A=params.A||0.196;setParams(p=>({...p,Cdl:+(expAnalysis.calib.cdl.CdlA/A).toExponential(4)}));}}>
-          ✓ 应用 Cdl 标定（按当前 A={params.A||0.196} cm² 反解）
-        </button>
-      )}
-      {expAnalysis&&<button className="btn-secondary" style={{marginTop:0,marginBottom:4}} onClick={()=>syncParams(true)}>⟳ 快速同步（64 周期·v×4，约 10 秒）</button>}
-      {expAnalysis&&<button className="btn-secondary" style={{marginTop:0,marginBottom:8}} onClick={()=>syncParams(false)}>⟳ 完整同步（256 周期·与实验一致，约 1 分钟）</button>}
-      {expData&&<button className="btn-secondary" style={{marginTop:0}} onClick={clearExp}>清除实验数据</button>}
-      {expAnalysis&&(
-        <div>
-          <div className="section-title">TPE 机理反演</div>
-          <div className="param-row">
-            <span className="param-label">trials</span>
-            <input className="param-input" type="number" min="1" max="200" value={invTrials} onChange={e=>setInvTrials(Math.max(1,parseInt(e.target.value)||1))}/>
-            <span className="param-unit">次</span>
-          </div>
-          <div className="param-row">
-            <span className="param-label">n_points</span>
-            <input className="param-input" type="number" min="128" max="8192" value={invPoints} onChange={e=>setInvPoints(Math.max(128,parseInt(e.target.value)||512))}/>
-            <span className="param-unit">点</span>
-          </div>
-          <button className="btn btn-primary" style={{marginTop:8}} onClick={runInversion} disabled={invLoading}>
-            {invLoading?'反演中...':'启动反演并显示反演参数正演'}
-          </button>
-          {expAnalysis.calib&&expAnalysis.calib.tafel&&!expAnalysis.calib.tafel.success&&(
-            <div className="summary-row" style={{color:'#e9a23b',marginTop:6,fontSize:11}}>⚠ Tafel 提取失败：本次反演不含 Tafel 通道，仅用 DC+谐波。</div>
-          )}
-          {invError&&<div className="summary-row" style={{color:'#e53935',marginTop:8}}>反演错误: {invError}</div>}
-          {invResult&&<div className="summary-row meta" style={{marginTop:8}}>
-            拟合等级: <strong>{invResult.fit_quality.level}</strong> · 完成度 <strong>{invResult.fit_quality.completion_percent.toFixed(1)}%</strong><br/>
-            拟合通道: <strong>{formatHarmonics(invResult.fit_harmonics)}</strong><br/>
-            {invResult.fit_quality.message}
-          </div>}
-        </div>
-      )}
-      <ParamPanel params={params} onChange={setParams} onSimulate={simulate} loading={loading}/>
-    </div>
-  );
-
-  // 长序列抽稀（显示用，避免 65536 点卡顿）
-  const pairs=(xs,ys,mul=1)=>{const s=Math.max(1,Math.floor(xs.length/6000));const d=[];for(let i=0;i<xs.length;i+=s)d.push([xs[i],ys[i]*mul]);return d;};
-  // 实验叠加线：红色虚线
-  const expLine=(data,name)=>({type:'line',name,data,smooth:true,symbol:'none',lineStyle:{color:'#e94560',width:1.4,type:'dashed'}});
-  if(error) return (<div className="main">{left}<div className="right-panel single-col"><div className="chart-box large"><div className="placeholder" style={{color:'#e53935'}}>错误: {error}</div></div></div></div>);
-  if(!result&&!expAnalysis) return (<div className="main">{left}<div className="right-panel single-col"><div className="chart-box large"><div className="placeholder">上传实验数据后显示实验特征；点击「运行当前参数正演」后叠加模型预测。</div></div></div></div>);
-
-  const E=result?result.E_actual:null; const tdc=result?result.tdc:null;
-  const expTdc=expAnalysis?expAnalysis.tdc:null;
-  const xMin=result&&expTdc?Math.min(tdc[0],expTdc[0]):(result?tdc[0]:expTdc[0]);
-  const xMax=result&&expTdc?Math.max(tdc[tdc.length-1],expTdc[expTdc.length-1]):(result?tdc[tdc.length-1]:expTdc[expTdc.length-1]);
-  const modelLabel=result?.source==='inversion'?'反演参数正演':'当前参数正演';
-  const modelColor=result?.source==='inversion'?'#2e9d6e':'#1976d2';
-
-  // CV 曲线
-  const cvSeries=[];
-  if(result) cvSeries.push(singleLine(pairs(E,result.i_total,1e3),modelColor,modelLabel));
-  if(expData){const s=Math.max(1,Math.floor(expData.rows.length/6000));cvSeries.push(expLine(expData.rows.filter((_,i)=>i%s===0).map(r=>[r[0],r[1]*1e3]),'Experiment'));}
-  const cvOpt=makeOpt({xName:'电位 (V vs RHE)',yName:'i (mA)',series:cvSeries,legend:true});
-
-  // 功率谱（对数纵轴）
-  const psOpt=makeOpt({
-    xName:'频率 (Hz)', yName:'|FFT|',
-    series:result?[singleLine(pairs(result.ps_freq,result.ps_mag),'#7b1fa2','PS')]:[],
-    yOpt:{type:'log',min:1e-6}
-  });
-
-  // 覆盖度
-  const covSeries=result?[
-    {name:'θ_*',type:'line',data:pairs(E,result.coverage_star),smooth:true,symbol:'none',lineStyle:{width:1.4}},
-    {name:'θ_*ox',type:'line',data:pairs(E,result.coverage_ox),smooth:true,symbol:'none',lineStyle:{width:1.4}},
-    {name:'θ_*ox-OH',type:'line',data:pairs(E,result.coverage_OH),smooth:true,symbol:'none',lineStyle:{width:1.4}},
-    {name:'θ_*ox-O',type:'line',data:pairs(E,result.coverage_O),smooth:true,symbol:'none',lineStyle:{width:1.4}},
-    {name:'θ_*ox-OOH',type:'line',data:pairs(E,result.coverage_OOH),smooth:true,symbol:'none',lineStyle:{width:1.4}},
-  ]:[];
-  const covOpt=makeOpt({xName:'电位 (V vs RHE)',yName:'Coverage',series:covSeries,yOpt:{max:1},legend:true});
-
-  // DC 分量（后端返回归一化包络），有实验数据时叠加红色虚线
-  const dcSeries=[];
-  if(result) dcSeries.push(singleLine(pairs(tdc,result.dc),modelColor,modelLabel));
-  if(expAnalysis) dcSeries.push(expLine(pairs(expTdc,expAnalysis.dc),'Exp DC'));
-  const dcOpt=makeOpt({xName:'电位 (V vs RHE)',yName:'归一化强度',series:dcSeries,legend:!!expAnalysis});
-  if(result){dcOpt.xAxis.min=xMin; dcOpt.xAxis.max=xMax;}
-
-  // 谐波（后端返回归一化包络）
-  const harmLabels=['1st 谐波','2nd 谐波','3rd 谐波','4th 谐波','5th 谐波','6th 谐波','7th 谐波'];
-  const harmColors=['#1976d2','#388e3c','#f57c00','#7b1fa2','#c62828','#00838f','#5d4037'];
-
-  return (
-    <div className="main">
-      {left}
-      <div className="right-panel">
-        <ChartBox id="cv"  title="FTacV 总电流：实验 / 正演对比" option={cvOpt}/>
-        <ChartBox id="ps"  title="功率谱 (FFT)"        option={psOpt}/>
-        <ChartBox id="cov" title="OER 表面覆盖度"      option={covOpt}/>
-        <ChartBox id="dc"  title="DC 分量"              option={dcOpt}/>
-        {harmLabels.map((lab,k)=>{
-          const hSeries=[];
-          if(result) hSeries.push(singleLine(pairs(tdc,result.harmonics[k]),modelColor,modelLabel));
-          if(expAnalysis) hSeries.push(expLine(pairs(expTdc,expAnalysis.harmonics[k]),'Exp'));
-          const hOpt=makeOpt({
-            xName:'电位 (V vs RHE)', yName:'归一化强度',
-            series:hSeries, legend:!!expAnalysis
-          });
-          if(result){hOpt.xAxis.min=xMin; hOpt.xAxis.max=xMax;}
-          const active = invResult ? (invResult.fit_harmonics||[]).includes(k+1) : (expAnalysis?.suggested_fit_harmonics||[]).includes(k+1);
-          return <ChartBox key={`h${k}`} id={`h${k}`} title={`${lab}${active?' · 拟合':' · 诊断'}`} option={hOpt}/>;
-        })}
-        <div className="summary-box">
-          <div className="chart-head" style={{marginBottom:4}}>{result?'正演参数摘要':'实验数据摘要'}</div>
-          {result?<>
-            <div className="summary-row">线条含义: <strong>{modelLabel}</strong>，不是未反演前的拟合线</div>
-            <div className="summary-row">E⁰_pre = <strong>{params.E0_pre?.toFixed(2)} V</strong> (预氧化)</div>
-            <div className="summary-row">E⁰₁=<strong>{result.E01?.toFixed(3)}</strong> | E⁰₂=<strong>{result.E02?.toFixed(3)}</strong> | E⁰₃=<strong>{result.E03?.toFixed(3)}</strong> | E⁰₄=<strong>{result.E04?.toFixed(3)}</strong> V</div>
-            <div className="summary-row">η_theoretical = <strong>{result.eta_theoretical?.toFixed(3)} V</strong></div>
-            <div className="summary-row meta">耗时 {result.time_elapsed?.toFixed(1)}s · {result.E_actual?.length} pts</div>
-          </>:<>
-            <div className="summary-row">当前只显示实验数据特征；尚未运行模型正演。</div>
-            <div className="summary-row">反演入口已在左侧，不需要切换到单独优化页。</div>
-          </>}
-          {invResult&&<div className="summary-row meta">反演: {invResult.fit_quality.level} · {invResult.fit_quality.completion_percent.toFixed(1)}% · {formatHarmonics(invResult.fit_harmonics)} · nfev={invResult.n_forward}</div>}
+        <button className="btn btn-primary" style={{width:'100%',marginTop:12}} onClick={runInversion} disabled={invLoading}>
+          {invLoading?'反演中...':'启动诊断反演'}</button>
+        {expAnalysis&&expAnalysis.calib&&expAnalysis.calib.tafel&&!expAnalysis.calib.tafel.success&&
+          <div className="tip" style={{marginTop:10}}>Tafel 提取失败：本次反演不含 Tafel 通道，仅用 DC+谐波。</div>}
+        {!expAnalysis&&<div className="hint" style={{marginTop:10}}>需先在「数据与分析」导入数据才能反演。</div>}
+        {invError&&<div className="err meta" style={{marginTop:10}}>反演错误：{invError}</div>}
+        {invResult&&<div className="meta" style={{marginTop:10}}>
+          目标：<strong>{invResult.best_value.toFixed(4)}</strong> · 等级：<strong>{invResult.fit_quality.level}</strong>
+          · 完成度 <strong>{invResult.fit_quality.completion_percent.toFixed(1)}%</strong><br/>
+          通道：{formatHarmonics(invResult.fit_harmonics)}<br/>{invResult.fit_quality.message}
+        </div>}
+      </div>
+      <div className="card" style={{gridColumn:'1/-1'}}>
+        <h4>正演对比 {result&&result.source==='inversion'&&<span style={{color:'var(--success)',fontWeight:400,fontSize:11}}>（反演参数正演）</span>}</h4>
+        {mo?<ChartBox option={mo} height={360}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>运行正演后在此显示总电流对比曲线</div>}
+      </div>
+      <div className="card" style={{gridColumn:'1/-1'}}>
+        <h4>分阶谐波质量（实验 vs 模型）</h4>
+        {ph?<ChartBox option={ph} height={360}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>导入数据并运行正演后，显示 H1–H7 逐阶对比</div>}
+      </div>
+      <div className="card" style={{gridColumn:'1/-1'}}>
+        <h4>导出报告</h4>
+        <div className="row" style={{marginTop:0}}>
+          <button className="btn btn-ghost" onClick={exportMd}>⬇ 导出 Markdown 报告</button>
+          <span className="meta">含样品信息、识别条件、诊断反演结果与限制说明，供 AI 分析。</span>
         </div>
       </div>
     </div>
-  );
+  </>);
 }
 
-function PlaceholderTab({ title, description }) {
-  return (<div className="main"><div className="right-panel single-col"><div className="chart-box large"><div className="placeholder">
-    <div style={{textAlign:'center'}}>
-      <div style={{fontSize:28,marginBottom:12}}>🚧</div>
-      <div style={{fontSize:16,color:'#5a6675'}}>{title}</div>
-      <div style={{fontSize:13,color:'#5a6675',marginTop:8}}>{description}</div>
-    </div>
-  </div></div></div></div>);
-}
-
-/* ===================== 项目结果 Tab ===================== */
-function ResultsTab() {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
-  const [profileSel, setProfileSel] = useState('hybrid__G_OH__G_O');
-  useEffect(() => {
+/* ===================== ④ 项目结果 ===================== */
+function ResultsStep({setError}) {
+  const [data,setData]=useState(null);
+  const [profileSel,setProfileSel]=useState('hybrid__G_OH__G_O');
+  useEffect(()=>{
     Promise.all([
-      fetch(`${API_BASE}/api/results/overview`).then(r=>r.json()),
       fetch(`${API_BASE}/api/results/data-quality`).then(r=>r.json()),
       fetch(`${API_BASE}/api/results/sensitivity`).then(r=>r.json()),
       fetch(`${API_BASE}/api/results/recovery-s1`).then(r=>r.json()),
-    ]).then(([ov, dq, sens, s1]) => setData({ov, dq, sens, s1, p2d:null}))
-      .catch(e => setError(String(e)));
-  }, []);
-  // 2D profile 热图数据单独拉取（可切换 profile）
-  useEffect(() => {
-    if (!profileSel) return;
-    fetch(`${API_BASE}/api/results/profile2d?profile=${encodeURIComponent(profileSel)}`)
-      .then(r=>r.json()).then(d=>setData(prev => prev ? {...prev, p2d:d} : prev))
-      .catch(()=>{});
-  }, [profileSel]);
-
-  if (error) return <div className="main"><div className="right-panel single-col"><div className="chart-box large"><div className="placeholder" style={{color:'#e94560',padding:20}}>加载失败：{error}</div></div></div></div>;
-  if (!data) return <div className="main"><div className="right-panel single-col"><div className="chart-box large"><div className="placeholder" style={{color:'#97a2b1',padding:20}}>加载中…</div></div></div></div>;
-
-  // ---- 热图 option ----
-  let heatOpt = null;
-  if (data.p2d && data.p2d.heat) {
-    const { xs, ys, points } = data.p2d.heat;
-    const xi = Object.fromEntries(xs.map((x,i)=>[x,i]));
-    const yi = Object.fromEntries(ys.map((y,i)=>[y,i]));
-    const xlabel = xs.map((x,i)=>({value:x,textStyle:{fontSize:9}}));
-    const ylabel = ys.map((y,i)=>({value:y,textStyle:{fontSize:9}}));
-    const vals = points.map(p => [xi[String(p.x)], yi[String(p.y)], Math.log10(p.loss+1e-9)]);
-    const prof = data.p2d.summaries.find(s=>s.profile_id===profileSel) || {};
-    heatOpt = {
-      tooltip:{position:'top',formatter:(p)=>{const d=points.find(q=>q.x===p.value[0]&&q.y===p.value[1])||points[p.dataIndex];return d?`x=${d.x.toFixed(3)} y=${d.y.toFixed(3)}<br/>loss=${d.loss.toFixed(4)}`:'-';}},
-      grid:{top:30,right:30,bottom:60,left:60},
-      xAxis:{type:'category',data:xlabel,axisLabel:{rotate:45,fontSize:9},name:prof.x_param||'x',nameLocation:'middle',nameGap:35},
-      yAxis:{type:'category',data:ylabel,axisLabel:{fontSize:9},name:prof.y_param||'y',nameLocation:'middle',nameGap:35},
+    ]).then(([dq,sens,s1])=>setData({dq,sens,s1,p2d:null})).catch(e=>setError(String(e)));
+  },[]);
+  useEffect(()=>{if(!profileSel)return;fetch(`${API_BASE}/api/results/profile2d?profile=${encodeURIComponent(profileSel)}`)
+    .then(r=>r.json()).then(d=>setData(p=>p?{...p,p2d:d}:p)).catch(()=>{});},[profileSel]);
+  if(!data)return <div className="panel-title">项目结果</div>;
+  const heatOpt=()=>{
+    if(!data.p2d||!data.p2d.heat)return null;
+    const{xs,ys,points}=data.p2d.heat;
+    const xi=Object.fromEntries(xs.map((x,i)=>[x,i])); const yi=Object.fromEntries(ys.map((y,i)=>[y,i]));
+    const vals=points.map(p=>[xi[String(p.x)],yi[String(p.y)],Math.log10(p.loss+1e-9)]);
+    const prof=data.p2d.summaries.find(s=>s.profile_id===profileSel)||{};
+    return{tooltip:{position:'top',formatter:p=>{const d=points[p.dataIndex];return d?`x=${d.x.toFixed(3)} y=${d.y.toFixed(3)}<br/>loss=${d.loss.toFixed(4)}`:'-';}},
+      grid:{top:26,right:24,bottom:64,left:60},
+      xAxis:{type:'category',data:xs.map(x=>({value:x,textStyle:{fontSize:9}})),axisLabel:{rotate:45,fontSize:9},name:prof.x_param||'x',nameLocation:'middle',nameGap:36},
+      yAxis:{type:'category',data:ys.map(y=>({value:y,textStyle:{fontSize:9}})),axisLabel:{fontSize:9},name:prof.y_param||'y',nameLocation:'middle',nameGap:34},
       visualMap:{min:Math.min(...vals.map(v=>v[2])),max:Math.max(...vals.map(v=>v[2])),orient:'horizontal',left:'center',bottom:0,textStyle:{fontSize:9},inRange:{color:['#1a9641','#f7fbff','#d7191c']}},
-      series:[{type:'heatmap',data:vals,label:{show:false}}],
-    };
-  }
-  // ---- 耦合表 ----
-  const summaries = (data.p2d && data.p2d.summaries) || [];
-  // ---- 参数分类表 ----
-  const sensRows = (data.sens && data.sens.rows) || [];
-  const dqRows = (data.dq && data.dq.rows) || [];
-  const s1 = data.s1 && data.s1.success ? data.s1 : null;
-
-  return (<div className="main">
-    <div className="left-panel">
-      <div className="panel-title">项目结果</div>
-      <div className="section-title">实验数据质量</div>
-      {dqRows.map(r=>(
-        <div key={r.filename} className="param-row" style={{fontSize:11}}>
-          <span style={{width:120,flexShrink:0}}>{r.filename.replace('ftacv','FT')}</span>
-          <span style={{flex:1,color:'#5a6675'}}>f={r.f||'—'} Hz dE={r.dE||'—'}V</span>
-          <span style={{color:r.fit_harmonics?'#2e9d6e':'#e94560',fontSize:10}}>{r.fit_harmonics||'n/a'}</span>
-        </div>
-      ))}
-      <div className="section-title">A6 参数分类</div>
-      {sensRows.map(r=>(
-        <div key={r.parameter} className="param-row" style={{fontSize:11}}>
-          <span style={{width:120,flexShrink:0}}>{r.parameter}</span>
-          <span style={{flex:1,color:r.classification==='identifiable'?'#2e9d6e':r.classification==='coupled'?'#e9a23b':'#e94560'}}>{r.classification}</span>
-          <span style={{color:'#97a2b1',fontSize:10}}>corr={Number(r.max_correlation).toFixed(2)}</span>
-        </div>
-      ))}
-      {s1 && <div className="section-title">A6-v2 S1 合成恢复</div>}
-      {s1 && (
-        <div className="param-row" style={{fontSize:11,flexWrap:'wrap',lineHeight:1.6}}>
-          <span style={{width:'100%'}}>状态：<b style={{color:s1.scientific_gate_passed?'#2e9d6e':'#e94560'}}>{s1.stage_status}</b></span>
-          <span style={{width:'100%',color:'#5a6675'}}>81 jobs × 100 trials · {s1.backend} · {s1.duration_h}h · 0 ODE fail</span>
-          <span style={{width:'100%',color:'#97a2b1',fontSize:10}}>eligible pairs: {s1.eligible_parameter_pairs.length===0?'（无）':s1.eligible_parameter_pairs.join(', ')}</span>
-        </div>
-      )}
-    </div>
-    <div className="right-panel">
-      <div className="chart-box large">
-        <div className="chart-head">二维参数耦合 profile（log₁₀ loss 热图）</div>
-        <div className="chart-body" style={{padding:8}}>
-          <select value={profileSel} onChange={e=>setProfileSel(e.target.value)} style={{marginBottom:6,fontSize:12,padding:'3px 6px'}}>
-            {summaries.map(s=>(<option key={s.profile_id} value={s.profile_id}>{s.profile_id}</option>))}
+      series:[{type:'heatmap',data:vals}]};
+  };
+  const ho=heatOpt();
+  const dq=(data.dq&&data.dq.rows)||[]; const sens=(data.sens&&data.sens.rows)||[];
+  const s1=data.s1&&data.s1.success?data.s1:null;
+  return (<>
+    <div className="panel-title">项目结果</div>
+    <div className="panel-desc">当前已归档的正式分析结果（只读展示）。</div>
+    <div className="grid">
+      <div className="card">
+        <h4>实验数据质量</h4>
+        <table><thead><tr><th>数据集</th><th>频率</th><th>振幅</th><th>拟合通道</th></tr></thead>
+        <tbody>{dq.map(r=><tr key={r.filename}><td>{r.filename.replace('ftacv','FT')}</td><td>{r.f||'—'}</td><td>{r.dE||'—'}</td><td>{r.fit_harmonics||'n/a'}</td></tr>)}</tbody></table>
+      </div>
+      <div className="card">
+        <h4>A6 参数分类</h4>
+        <table><thead><tr><th>参数</th><th>分类</th><th>最大相关</th></tr></thead>
+        <tbody>{sens.map(r=><tr key={r.parameter}>
+          <td>{r.parameter}</td><td className={r.classification==='identifiable'?'ok':r.classification==='coupled'?'warn':'err'}>{r.classification}</td>
+          <td>{Number(r.max_correlation).toFixed(2)}</td></tr>)}</tbody></table>
+      </div>
+      <div className="card">
+        <h4>A6-v2 S1 合成恢复</h4>
+        {s1?<div className="meta" style={{lineHeight:2}}>
+          状态：<strong className={s1.scientific_gate_passed?'ok':'err'}>{s1.stage_status}</strong><br/>
+          {s1.job_count} jobs × 100 trials · {s1.backend} · {s1.duration_h}h · {s1.n_ode_fail} ODE fail<br/>
+          <span className="hint">eligible pairs：{s1.eligible_parameter_pairs.length===0?'（无）':s1.eligible_parameter_pairs.join(', ')}</span>
+        </div>:<div className="hint">无 S1 归档</div>}
+      </div>
+      <div className="card" style={{gridColumn:'1/-1'}}>
+        <h4>二维参数耦合 profile</h4>
+        <div className="row" style={{marginTop:0}}>
+          <select value={profileSel} onChange={e=>setProfileSel(e.target.value)} style={{padding:'5px 8px',border:'1px solid var(--border-strong)',borderRadius:6,fontSize:12}}>
+            {(data.p2d&&data.p2d.summaries||[]).map(s=><option key={s.profile_id} value={s.profile_id}>{s.profile_id}</option>)}
           </select>
         </div>
-        <div style={{flex:1,minHeight:300}} id="heatmap-box">
-          {heatOpt ? <ChartBox id="profile-heat" title="" option={heatOpt}/> : <div style={{padding:20,color:'#97a2b1'}}>加载热图…</div>}
-        </div>
-      </div>
-      <div className="chart-box large">
-        <div className="chart-head">参数对耦合诊断</div>
-        <div style={{overflow:'auto',maxHeight:260}}>
-          <table style={{width:'100%',borderCollapse:'collapse',fontSize:11}}>
-            <thead><tr style={{background:'#eef2f7'}}><th style={thStyle}>profile</th><th style={thStyle}>r</th><th style={thStyle}>Δ1x</th><th style={thStyle}>Δ1y</th><th style={thStyle}>耦合</th></tr></thead>
-            <tbody>{summaries.map(s=>(
-              <tr key={s.profile_id} style={{borderBottom:'1px solid #eef2f7'}}>
-                <td style={{padding:'4px 8px'}}>{s.profile_id}</td>
-                <td style={{padding:'4px 8px'}}>{s.pearson_r_in_delta1.toFixed(3)}</td>
-                <td style={{padding:'4px 8px'}}>{s.delta1_x_width.toFixed(3)}</td>
-                <td style={{padding:'4px 8px'}}>{s.delta1_y_width.toFixed(3)}</td>
-                <td style={{padding:'4px 8px',color:s.coupling_strength>0.7?'#e94560':'#2e9d6e'}}>{s.coupling_interpretation}</td>
-              </tr>))}</tbody>
-          </table>
-        </div>
+        {ho?<ChartBox option={ho} height={400}/>:<div className="hint" style={{padding:30,textAlign:'center'}}>加载 profile…</div>}
+        <table style={{marginTop:8}}><thead><tr><th>profile</th><th>r</th><th>Δ1x</th><th>Δ1y</th><th>耦合</th></tr></thead>
+        <tbody>{(data.p2d&&data.p2d.summaries||[]).map(s=><tr key={s.profile_id}>
+          <td>{s.profile_id}</td><td>{s.pearson_r_in_delta1.toFixed(3)}</td><td>{s.delta1_x_width.toFixed(3)}</td><td>{s.delta1_y_width.toFixed(3)}</td>
+          <td className={s.coupling_strength>0.7?'err':'ok'}>{s.coupling_interpretation}</td></tr>)}</tbody></table>
       </div>
     </div>
-  </div>);
+  </>);
 }
-const thStyle = {padding:'4px 8px',textAlign:'left'};
 
 /* ===================== App ===================== */
 function App() {
-  const [tab,setTab]=useState('sim');
+  const [step,setStep]=useState('sample');
+  const [sample,setSample]=useState({});
   const [expData,setExpData]=useState(null);
   const [expAnalysis,setExpAnalysis]=useState(null);
+  const [strictness,setStrictness]=useState('standard');
+  const [error,setError]=useState(null);
+  const steps=[
+    {id:'sample',label:'样品与电极'},
+    {id:'data',label:'数据与分析'},
+    {id:'sim',label:'正演与反演'},
+    {id:'results',label:'项目结果'},
+  ];
   return (<div className="app">
-    <div className="header">
-      碱性 OER AEM 工作台<span className="sub">Co₃O₄ / CoOₓ(OH)ᵧ FTacV 参数反演</span>
+    <div className="nav">
+      <div className="brand">OER 工作台<div className="sub">FTacV 参数反演</div></div>
+      {steps.map((s,i)=>(<div key={s.id} className={`nav-item ${step===s.id?'active':''}`} onClick={()=>setStep(s.id)}>
+        <span className="n">{i+1}</span>{s.label}</div>))}
+      <div className="nav-foot">碱性 OER AEM · Co₃O₄<br/>展示层，计算外接</div>
     </div>
-    <div className="tabs">
-      {[{id:'sim',label:'实验 · 正演 · 反演'},{id:'mcmc',label:'MCMC 后验分析'},{id:'results',label:'项目结果'}].map(t=>(
-        <div key={t.id} className={`tab ${tab===t.id?'active':''}`} onClick={()=>setTab(t.id)}>{t.label}</div>
-      ))}
-    </div>
-    <div style={{display:tab==='sim'?'contents':'none'}}><SimTab expData={expData} setExpData={setExpData} expAnalysis={expAnalysis} setExpAnalysis={setExpAnalysis}/></div>
-    <div style={{display:tab==='mcmc'?'contents':'none'}}><PlaceholderTab title="MCMC 后验分析" description="不确定性量化模块接入中..."/></div>
-    <div style={{display:tab==='results'?'contents':'none'}}><ResultsTab/></div>
-    <div className="status-bar">
-      <span><span className="dot"></span>后端: {API_BASE}</span>
-      <span>Python 核心 v0.2 · 碱性 OER AEM 模型</span>
+    <div className="main">
+      {error&&<div className="tip" style={{background:'#fff1f0',border:'1px solid #ffccc7',color:'#a8071a',marginBottom:12}}>{error}
+        <span style={{float:'right',cursor:'pointer'}} onClick={()=>setError(null)}>✕</span></div>}
+      {step==='sample'&&<SampleStep sample={sample} setSample={setSample}/>}
+      {step==='data'&&<DataStep expData={expData} setExpData={setExpData} expAnalysis={expAnalysis} setExpAnalysis={setExpAnalysis}
+        setError={setError} strictness={strictness} setStrictness={setStrictness}/>}
+      {step==='sim'&&<SimInvertStep expAnalysis={expAnalysis} expData={expData} setError={setError} sample={sample}/>}
+      {step==='results'&&<ResultsStep setError={setError}/>}
     </div>
   </div>);
 }
-
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
