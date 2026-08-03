@@ -249,6 +249,7 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
   const [result,setResult]=useState(null); const [advOpen,setAdvOpen]=useState(false);
   const [invTrials,setInvTrials]=useState(10); const [invLoading,setInvLoading]=useState(false);
   const [invResult,setInvResult]=useState(null); const [invError,setInvError]=useState(null);
+  const [invHistory,setInvHistory]=useState([]); // 同一次数据的累积收敛历史
   useEffect(()=>{fetch(`${API_BASE}/api/params/defaults`).then(r=>r.json()).then(setParams).catch(()=>{});},[]);
   const handleFile=async(d)=>{
     setExpData(d);setExpAnalysis(null);
@@ -309,22 +310,37 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
       const res=await fetch(`${API_BASE}/api/inversion/tpe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const data=await res.json();if(!data.success){setInvError(data.error);setInvLoading(false);return;}
       setInvResult(data);
+      // 收敛历史累积：同一次数据的多次反演追加到同一曲线
+      if(data.history&&data.history.length){
+        setInvHistory(prev=>{
+          const offset=prev.length;
+          let runningBest=prev.length?prev[prev.length-1].best:Infinity;
+          const added=data.history.map(item=>{
+            const v=Number(item.value);
+            if(v<runningBest) runningBest=v;
+            return {trial:offset+Number(item.trial||0), value:v, best:runningBest};
+          });
+          return [...prev,...added];
+        });
+      }
       // 反演结果更新到参数表 → 支持连续反演（下次以本次 best 为初值继续优化）
       setParams(p=>({...p,...data.best_params}));
+      // 反演完成后立即用 best_params 正演，右栏图实时更新（无需再点正演）
       const simParams={...params,...data.best_params,E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,n_points:512,points_per_cycle:64};
       const simRes=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(simParams)});
       const simData=await simRes.json();if(simData.success){simData.source='inversion';setResult(simData);}else setError('反演参数正演失败: '+simData.error);
     }catch(e){setInvError(e.message);}setInvLoading(false);
   };
-  // 反演收敛历史（best_so_far）
+  // 反演收敛历史（跨多次反演累积：loss 散点 + running best 实线）
   const invHistOpt=()=>{
-    if(!invResult||!invResult.history||!invResult.history.length) return null;
-    const h=invResult.history;
-    return {tooltip:{trigger:'axis'},grid:{top:14,right:16,bottom:30,left:56},
+    if(!invHistory.length) return null;
+    return {tooltip:{trigger:'axis'},legend:{top:0,itemWidth:14,itemHeight:8,textStyle:{fontSize:9}},grid:{top:24,right:16,bottom:30,left:56},
       xAxis:{type:'value',name:'trial',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:9}},
       yAxis:{type:'value',scale:true,axisLabel:{fontSize:9,formatter:v=>+v.toExponential(1)},name:'loss'},
-      series:[{name:'best so far',type:'line',showSymbol:false,smooth:true,color:'#1677ff',
-        data:h.map(item=>[item.trial||h.indexOf(item)+1,+Number(item.best_so_far).toExponential(6)])}]};
+      series:[
+        {name:'loss',type:'scatter',symbolSize:4,color:'#9aa2b0',data:invHistory.map(h=>[h.trial,+h.value.toExponential(6)])},
+        {name:'best',type:'line',showSymbol:false,smooth:true,color:'#1677ff',data:invHistory.map(h=>[h.trial,+h.best.toExponential(6)])},
+      ]};
   };
   const exportMd=()=>{
     const s=[]; const now=new Date().toISOString().slice(0,19).replace('T',' ');
@@ -487,9 +503,9 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
           <thead><tr><th>参数</th><th>反演值</th></tr></thead>
           <tbody>{Object.entries(invResult.best_params).map(([k,v])=><tr key={k}>
             <td>{k}</td><td className="mono">{Number(v).toExponential(3)}</td></tr>)}</tbody></table>}
-        {invResult&&invResult.history&&invResult.history.length>0&&(
-          <div style={{marginTop:8}}><div className="hint" style={{marginBottom:2}}>收敛历史</div>
-            <ChartBox option={invHistOpt()} height={150}/></div>)}
+        {invHistory.length>0&&(
+          <div style={{marginTop:8}}><div className="hint" style={{marginBottom:2}}>收敛历史（{invHistory.length} trials · 同一次数据累积）</div>
+            <ChartBox option={invHistOpt()} height={160}/></div>)}
         <div className="row" style={{marginTop:12}}>
           <button className="btn btn-ghost btn-sm" onClick={exportMd}>⬇ 导出 Markdown</button>
         </div>
