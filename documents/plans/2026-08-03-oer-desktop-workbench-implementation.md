@@ -87,6 +87,11 @@
   - [ ] 现有 React+ECharts 单文件嵌入 Tauri 前端
   - [ ] Python 后端作为 sidecar（固定解释器环境）
   - [ ] macOS（Apple Silicon）优先打包
+  - [ ] **CDN 依赖本地化（必做）**：React/ReactDOM/Babel/ECharts 目前从
+    unpkg.com/jsdelivr.net 实时拉取；双击启动的桌面应用若离线会白屏。
+    打包前下载到 `frontend/vendor/` 一起打入安装包。
+  - [ ] **JSX 预编译（必做）**：浏览器实时 Babel 编译改为 esbuild/vite 出
+    bundle——启动更快，且语法错误在编译期发现而非运行时白屏。
 
 - [ ] **B2 双击启动验证**
   - [ ] 桌面程序启动 → 自动拉起后端 → 界面可用，无需手动起服务

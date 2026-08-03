@@ -58,8 +58,23 @@ def _validated_relative_trace(trace: ExperimentalTrace) -> ExperimentalTrace:
     )
 
 
-def analyze_ftacv_trace(trace: ExperimentalTrace) -> dict[str, Any]:
-    """Return sampling metadata, DC, H1-H7 and calibration diagnostics."""
+# 谐波质量严格度 → 相对 H1 的 RMS 阈值（标准档保持原默认 0.02）
+_STRICTNESS_RELATIVE_RMS = {
+    "strict": 0.03,
+    "standard": 0.02,
+    "loose": 0.005,
+}
+
+
+def analyze_ftacv_trace(
+    trace: ExperimentalTrace,
+    strictness: str | None = None,
+) -> dict[str, Any]:
+    """Return sampling metadata, DC, H1-H7 and calibration diagnostics.
+
+    strictness: 'strict' | 'standard' | 'loose'，决定谐波可解析阈值
+    （相对 H1 的 RMS 比例）。None 时按 standard 处理。
+    """
     normalized = _validated_relative_trace(trace)
     e_raw = normalized.potential
     i_raw = normalized.current
@@ -89,7 +104,9 @@ def analyze_ftacv_trace(trace: ExperimentalTrace) -> dict[str, Any]:
     }
     current_dc = OERSignal.extract_dc_fft(i_raw, fs, signal_parameters)
     harmonics = OERSignal.extract_harmonics(i_raw, fs, signal_parameters)
-    harmonic_quality = assess_harmonic_quality(harmonics)
+    rel_threshold = _STRICTNESS_RELATIVE_RMS.get(strictness, _STRICTNESS_RELATIVE_RMS["standard"])
+    harmonic_quality = assess_harmonic_quality(harmonics, min_relative_rms=rel_threshold)
+    harmonic_quality["strictness"] = strictness or "standard"
 
     cut = len(time) // 4
     calibration = calibrate_ftacv(

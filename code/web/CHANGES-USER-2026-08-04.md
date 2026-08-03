@@ -53,3 +53,14 @@
   接口层面的转发准备。
 - **取消反演只是前端体验补丁**，不是真正的任务可中止性。真正的任务模型（提交 /
   查询状态 / 取消 / 取回结果）建议按下面的建议实现。
+
+## 追加（2026-08-04）：strictness 落入科学侧
+
+按用户建议，把谐波质量严格度从"前端兜底阈值"改为科学侧配置：
+- `oer_aem/experimental.py`：`analyze_ftacv_trace(trace, strictness=None)` 新增
+  参数，映射到 `assess_harmonic_quality(min_relative_rms)`：
+  strict→0.03 / standard→0.02（原默认）/ loose→0.005。
+- `harmonic_quality` 增加 `strictness` 字段。
+- 前端 `suggested()` 删除 0.03/0.003 兜底分支，直接使用科学侧 `fit_harmonics`；
+  strictness 切换时重新调用 analyze（用户已实现的 useEffect）。
+- 测试：642 passed（strictness=None 保持 standard 向后兼容）。

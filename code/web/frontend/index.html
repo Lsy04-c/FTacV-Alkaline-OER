@@ -255,16 +255,12 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
       await handleFile({name:f.name,rows});
     }catch(e){setError('本地数据解析失败: '+e.message);}
   };
+  // 谐波建议直接用科学侧结果（analyze 已按当前 strictness 算好，前端不发明阈值）
   const suggested=()=>{
     if(!expAnalysis) return [];
     const hq=expAnalysis.harmonic_quality;
     if(!hq) return expAnalysis.suggested_fit_harmonics||[];
-    // 优先用后端按当前 strictness 返回的 fit_harmonics（见 handleFile 里的 strictness 传参）。
-    // 下面的 0.03/0.003 只是后端尚未针对 strict/loose 返回专门判定时的前端兜底，
-    // 不是正式判据；一旦后端 analyze_ftacv_trace 按 strictness 返回结果，这里应删除兜底分支。
-    if(strictness==='standard') return hq.fit_harmonics||[];
-    const th=strictness==='strict'?0.03:0.003;
-    return (hq.channels||[]).filter(c=>c.relative_rms>=th).map(c=>c.harmonic);
+    return hq.fit_harmonics||[];
   };
   const sug=suggested();
   const hqChannels=(expAnalysis&&expAnalysis.harmonic_quality&&expAnalysis.harmonic_quality.channels)||[];
