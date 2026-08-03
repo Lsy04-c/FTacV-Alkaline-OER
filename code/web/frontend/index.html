@@ -96,6 +96,19 @@ function ChartBox({ option, height=300 }) {
   return <div ref={ref} className="chart" style={{height}}/>;
 }
 
+/* ===================== 三列数据文本解析（.txt/.csv/.dat 共用） ===================== */
+// 之前 FileDropZone / handleFolder+loadLocalFile 各自内联了一份几乎相同的解析逻辑，
+// 且只按空白符切分——真正的逗号分隔 .csv（扩展名已声明支持）会解析失败。
+// 这里统一支持空白符、逗号、分号、Tab，并去掉表头等非数字行。
+function parseTraceText(text){
+  const lines=text.trim().split('\n').filter(l=>l.trim());
+  const rows=lines.map(line=>{
+    const c=line.trim().split(/[\s,;]+/).map(parseFloat);
+    return [c[0],c[1],c[2]];
+  }).filter(d=>d.length===3&&d.every(v=>Number.isFinite(v)));
+  return rows;
+}
+
 /* ===================== 文件拖放 ===================== */
 function FileDropZone({ onFileLoaded, expData }) {
   const [dragOver,setDragOver]=useState(false);
@@ -103,10 +116,7 @@ function FileDropZone({ onFileLoaded, expData }) {
   const parseFile=(file)=>{
     const reader=new FileReader();
     reader.onload=(e)=>{
-      const text=e.target.result;
-      const lines=text.trim().split('\n').filter(l=>l.trim());
-      const data=lines.map(line=>{const c=line.split(/\s+/);return[parseFloat(c[0]),parseFloat(c[1]),parseFloat(c[2])];}).filter(d=>d.every(v=>!isNaN(v)));
-      onFileLoaded({name:file.name,rows:data});
+      onFileLoaded({name:file.name,rows:parseTraceText(e.target.result)});
     };
     reader.readAsText(file);
   };
@@ -189,50 +199,14 @@ function makeOpt({xName,yName,series,yOpt={},legend=false}){
     series};
 }
 
-/* ===================== ① 样品与电极 ===================== */
+/* ===================== ① 样品与电极常量 ===================== */
+// 注：原先这里还有一个独立的 <SampleStep> 组件，但 App 的导航只有「数据与正演」
+// 「项目结果」两步，样品信息实际是作为可折叠面板嵌在 WorkStep 里的（见下方
+// sampleOpen 部分）。SampleStep 从未被渲染，属于死代码，已删除；如果之后想把
+// 「样品与电极」独立成第一步，可以把这段折叠面板的 JSX 抽出来重新做成组件。
 const CATALYST='四氧化三钴（Co₃O₄）';
 const SUPPORTS=['钛毡','钛箔'];
 const REFERENCES=['Ag/AgCl（饱和 KCl）','Hg/HgO（1 M KOH）','可逆氢电极 RHE'];
-function SampleStep({sample,setSample}) {
-  const f=(k,v)=>setSample(s=>({...s,[k]:v}));
-  return (<>
-    <div className="panel-title">样品与电极</div>
-    <div className="panel-desc">先填写实验信息，模型参数放在后面。</div>
-    <div className="grid">
-      <div className="card">
-        <h4>催化剂</h4>
-        <div className="field"><label>催化剂</label><input value={CATALYST} disabled style={{background:'#f5f6f8'}}/></div>
-        <div className="field"><label>基底</label>
-          <select value={sample.support||''} onChange={e=>f('support',e.target.value)}>
-            <option value="">请选择</option>{SUPPORTS.map(s=><option key={s} value={s}>{s}</option>)}
-          </select></div>
-        <div className="field"><label>电极面积（cm²）</label>
-          <input type="number" value={sample.area??''} onChange={e=>f('area',e.target.value)} placeholder="例如 0.196"/></div>
-        <div className="field"><label>参比电极</label>
-          <select value={sample.reference||''} onChange={e=>f('reference',e.target.value)}>
-            <option value="">请选择</option>{REFERENCES.map(r=><option key={r} value={r}>{r}</option>)}
-          </select></div>
-        <div className="field"><label>电解液（可留空）</label>
-          <input value={sample.electrolyte||''} onChange={e=>f('electrolyte',e.target.value)} placeholder="例如 1 M KOH"/></div>
-        <div className="field"><label>备注（批次、制备等）</label>
-          <textarea value={sample.note||''} onChange={e=>f('note',e.target.value)} rows={2}
-            style={{width:'100%',padding:'7px 10px',border:'1px solid var(--border-strong)',borderRadius:7,fontSize:13,resize:'vertical'}}/></div>
-      </div>
-      <div className="card">
-        <h4>当前登记</h4>
-        <div className="meta" style={{lineHeight:2}}>
-          催化剂：<strong>{CATALYST}</strong><br/>
-          基底：<strong>{sample.support||'未填'}</strong><br/>
-          面积：<strong>{sample.area?`${sample.area} cm²`:'未填'}</strong><br/>
-          参比：<strong>{sample.reference||'未填'}</strong><br/>
-          电解液：<strong>{sample.electrolyte||'未填'}</strong><br/>
-          备注：<strong>{sample.note||'无'}</strong>
-        </div>
-        <div className="hint" style={{marginTop:10}}>这些信息会带入导出的 Markdown 报告，供存档与 AI 分析。</div>
-      </div>
-    </div>
-  </>);
-}
 
 /* ===================== ② 数据与正演（合并） ===================== */
 const STRICTNESS=[
@@ -250,13 +224,20 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
   const [invTrials,setInvTrials]=useState(10); const [invLoading,setInvLoading]=useState(false);
   const [invResult,setInvResult]=useState(null); const [invError,setInvError]=useState(null);
   const [invHistory,setInvHistory]=useState([]); // 同一次数据的累积收敛历史
+  const invAbortRef=useRef(null); // 反演请求的 AbortController，用于「取消」按钮
   useEffect(()=>{fetch(`${API_BASE}/api/params/defaults`).then(r=>r.json()).then(setParams).catch(()=>{});},[]);
   const handleFile=async(d)=>{
     setExpData(d);setExpAnalysis(null);
-    try{const res=await fetch(`${API_BASE}/api/data/analyze`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:d.rows})});
+    try{
+      // strictness 一并发给后端：阈值应由科学侧代码/配置决定，前端只负责传递选择，
+      // 不再自行发明一套独立的判定逻辑（见下方 suggested() 的兼容性说明）。
+      const res=await fetch(`${API_BASE}/api/data/analyze`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:d.rows,strictness})});
       const data=await res.json();if(!data.success)setError('数据解析失败: '+data.error);else setExpAnalysis(data);
     }catch(e){setError('数据解析失败: '+e.message);}
   };
+  // 严格程度切换后，用同一份已加载数据重新请求后端判定（而不是仅在前端改阈值）。
+  // 若后端暂未按 strictness 重算，返回内容不变，suggested() 的前端兜底阈值会继续生效。
+  useEffect(()=>{ if(expData&&expData.rows&&expData.rows.length) handleFile(expData); },[strictness]);
   const handleFolder=(e)=>{
     const files=Array.from(e.target.files||[]);
     const txt=files.filter(f=>/\.(txt|csv|dat)$/i.test(f.name));
@@ -269,8 +250,7 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
     setExpData({name:f.name});setExpAnalysis(null);setError(null);
     try{
       const text=await f.text();
-      const lines=text.trim().split('\n').filter(l=>l.trim());
-      const rows=lines.map(line=>{const c=line.split(/\s+/);return[parseFloat(c[0]),parseFloat(c[1]),parseFloat(c[2])];}).filter(d=>d.every(v=>!isNaN(v)));
+      const rows=parseTraceText(text);
       if(rows.length<1024)throw new Error('有效数据点不足 1024');
       await handleFile({name:f.name,rows});
     }catch(e){setError('本地数据解析失败: '+e.message);}
@@ -279,6 +259,9 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
     if(!expAnalysis) return [];
     const hq=expAnalysis.harmonic_quality;
     if(!hq) return expAnalysis.suggested_fit_harmonics||[];
+    // 优先用后端按当前 strictness 返回的 fit_harmonics（见 handleFile 里的 strictness 传参）。
+    // 下面的 0.03/0.003 只是后端尚未针对 strict/loose 返回专门判定时的前端兜底，
+    // 不是正式判据；一旦后端 analyze_ftacv_trace 按 strictness 返回结果，这里应删除兜底分支。
     if(strictness==='standard') return hq.fit_harmonics||[];
     const th=strictness==='strict'?0.03:0.003;
     return (hq.channels||[]).filter(c=>c.relative_rms>=th).map(c=>c.harmonic);
@@ -288,12 +271,21 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
   const simulate=async()=>{
     setLoading(true);setError(null);
     try{const res=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...params})});
+      if(!res.ok){setError(`正演请求失败：HTTP ${res.status}`);setLoading(false);return;}
       const data=await res.json();if(data.success){data.source='manual';setResult(data);}else setError(data.error);
     }catch(e){setError(e.message);}setLoading(false);
+  };
+  const cancelInversion=()=>{
+    // 注：这只中止前端等待，后端 TPE 任务当前是同步阻塞调用，进程本身不会停。
+    // 真正可中止/可轮询的任务模型需要后端把 /api/inversion/tpe 改成提交+轮询式接口
+    // （见 README 里「统一接入语义」的建议），这里先保证前端不会一直卡住。
+    if(invAbortRef.current) invAbortRef.current.abort();
+    setInvLoading(false);setInvError('已取消等待（后端可能仍在计算，结果不会显示）');
   };
   const runInversion=async()=>{
     if(!expAnalysis){setInvError('请先导入数据');return;}
     setInvLoading(true);setInvError(null);setInvResult(null);
+    const ac=new AbortController(); invAbortRef.current=ac;
     try{
       const m=expAnalysis.meta;
       // 拟合通道用科学侧建议（而非硬编码 H1-H3）
@@ -307,7 +299,8 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
         fixed_params:{Cdl:params.Cdl,Ru:params.Ru,A:params.A,E0_pre:params.E0_pre,k0_pre:params.k0_pre},
         param_bounds:AEM_PARAM_BOUNDS,fit_harmonics:fit,n_trials:invTrials,
       };
-      const res=await fetch(`${API_BASE}/api/inversion/tpe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const res=await fetch(`${API_BASE}/api/inversion/tpe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ac.signal});
+      if(!res.ok){setInvError(`反演请求失败：HTTP ${res.status}`);setInvLoading(false);return;}
       const data=await res.json();if(!data.success){setInvError(data.error);setInvLoading(false);return;}
       setInvResult(data);
       // 收敛历史累积：同一次数据的多次反演追加到同一曲线
@@ -331,7 +324,8 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
       const simParams={...params,...data.best_params,E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,n_points:512,points_per_cycle:64};
       const simRes=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(simParams)});
       const simData=await simRes.json();if(simData.success){simData.source='inversion';setResult(simData);}else setError('反演参数正演失败: '+simData.error);
-    }catch(e){setInvError(e.message);}setInvLoading(false);
+    }catch(e){ if(e.name!=='AbortError') setInvError(e.message); }
+    setInvLoading(false);
   };
   // 判断参数是否顶到边界（→ 可能未分辨），并给出原因
   const markParam=(k,v)=>{
@@ -499,8 +493,11 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
           <input type="number" min="1" max="200" value={invTrials} onChange={e=>setInvTrials(Math.max(1,parseInt(e.target.value)||1))}
             style={{width:70,padding:'5px 8px',border:'1px solid var(--border-strong)',borderRadius:6,fontSize:12}}/>
         </div>
-        <button className="btn btn-primary" style={{width:'100%',marginTop:8,background:'var(--warn)'}} onClick={runInversion} disabled={invLoading}>
-          {invLoading?'反演中...':'启动诊断反演'}</button>
+        <div className="row" style={{marginTop:8,gap:8}}>
+          <button className="btn btn-primary" style={{flex:1,background:'var(--warn)'}} onClick={runInversion} disabled={invLoading}>
+            {invLoading?'反演中...':'启动诊断反演'}</button>
+          {invLoading&&<button className="btn btn-ghost btn-sm" onClick={cancelInversion}>取消</button>}
+        </div>
         {expAnalysis&&expAnalysis.calib&&expAnalysis.calib.tafel&&!expAnalysis.calib.tafel.success&&
           <div className="tip" style={{marginTop:10}}>Tafel 提取失败：本次反演不含 Tafel 通道，仅用 DC+谐波。</div>}
         {!expAnalysis&&<div className="hint" style={{marginTop:10}}>需先导入数据才能反演。</div>}

@@ -30,14 +30,19 @@ PYTHONPATH=<你的源码路径> python -m uvicorn backend.main:app --host 0.0.0.
 # 浏览器打开 http://127.0.0.1:7100/
 ```
 
+**环境变量**：
+- `PYTHONPATH`：指向你的科学代码 src（后端 import 所需）。
+- `OER_ARCHIVE_ROOT`（可选）：正式结果归档根目录，默认 `~/OER-FTAcV-archive`。
+  其他项目用它指向自己的结果目录。
+
 前端是静态单文件 `frontend/index.html`，无构建步骤；后端是 `backend/main.py`。
 
 ## 3. 前端页面结构
 
 | 页面 | 功能 |
 |------|------|
-| ① 数据与正演 | 导入数据 → 自动识别 → 谐波质量 → 正演/反演 → 图表对比 |
-| ② 项目结果 | 反演摘要 / 参数可识别性 / 拟合质量 / 数据质量 / 项目结论 |
+| ① 数据与正演 | 导入数据（拖放/文件夹，支持 .txt/.csv/.dat）→ 自动识别 → 谐波质量（严格度三档）→ 正演/反演（可取消）→ 图表对比 |
+| ② 项目结果 | 项目结论 / 反演摘要 / 参数可识别性 / 拟合质量 / oer-wf 任务（只读） |
 
 ## 4. 后端 API 契约
 
@@ -52,12 +57,17 @@ POST /api/simulate
 
 | API | 方法 | 用途 | 关键字段 |
 |-----|------|------|----------|
-| `/api/data/analyze` | POST | 分析上传的数据行 | 请求 `{rows:[[E,i,t]×N]}`；响应 `meta`(f/dE/v/E窗)、`harmonic_quality`、`E_raw`/`i_raw`/`dc`/`harmonics` |
+| `/api/data/analyze` | POST | 分析上传的数据行 | 请求 `{rows:[[E,i,t]×N], strictness?}`；响应 `meta`(f/dE/v/E窗)、`harmonic_quality`、`E_raw`/`i_raw`/`dc`/`harmonics` |
 | `/api/params/defaults` | GET | 默认模型参数 | 参数名→值映射 |
 | `/api/simulate` | POST | 正演 | 请求模型参数；响应 `i_total`/`tdc`/`dc`/`harmonics`×7/`coverage_*` |
 | `/api/inversion/tpe` | POST | 参数反演 | 请求 `target`(实验特征)+`initial_params`+`fixed_params`+`param_bounds`+`fit_harmonics`+`n_trials`；响应 `best_params`/`best_value`/`history`/`fit_quality` |
 | `/api/data/samples` | GET | 内置数据文件列表 | （可选，本机数据源） |
 | `/api/results/*` | GET | 只读展示归档结果 | 各结果模块 |
+| `/api/wf/tasks` `/api/wf/task` | GET | oer-wf 归档任务列表/详情（只读） | 任务状态、run 的 STATUS、结果文件、summary |
+
+**strictness（谐波质量严格度）**：前端把 `strictness`（strict/standard/loose）传给
+`/api/data/analyze`。后端用 `inspect` 检查 `analyze_ftacv_trace` 是否支持该参数——
+支持就转发，不支持就忽略（不报错）。谐波阈值由科学侧配置决定，前端不发明阈值。
 
 ## 5. 接入你自己的计算程序
 

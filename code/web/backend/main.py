@@ -1,5 +1,8 @@
 """碱性 OER AEM FTacV 参数反演平台 — FastAPI 后端"""
 
+import csv
+import inspect
+import json as _json
 import os
 from pathlib import Path
 import sys
@@ -60,6 +63,7 @@ class SimParams(BaseModel):
 class ExpDataIn(BaseModel):
     """实验数据：[[E, i, t], ...]（V, A, s）"""
     rows: List[List[float]]
+    strictness: Optional[str] = None  # 'strict' | 'standard' | 'loose'，见 3.2 节
 
 
 class InversionTargetIn(BaseModel):
@@ -105,6 +109,21 @@ def _serialize(val):
     return val
 
 
+_ANALYZE_ACCEPTS_STRICTNESS = "strictness" in inspect.signature(analyze_ftacv_trace).parameters
+
+
+def _call_analyze(trace, strictness: Optional[str]) -> Dict[str, Any]:
+    """调用 analyze_ftacv_trace，若科学侧尚未支持 strictness 参数则忽略该参数而不报错。
+
+    这样前端可以先把 strictness 传过来；等 oer_aem.experimental.analyze_ftacv_trace
+    加上 strictness 支持后，这里不需要再改——用户选择的严格程度会自动生效，
+    而不是像之前那样完全由前端 JS 里两个写死的阈值（0.03/0.003）决定。
+    """
+    if strictness and _ANALYZE_ACCEPTS_STRICTNESS:
+        return analyze_ftacv_trace(trace, strictness=strictness)
+    return analyze_ftacv_trace(trace)
+
+
 def _build_inversion_target(payload: InversionTargetIn, cfg: InversionConfig) -> Dict[str, Any]:
     tdc = np.asarray(payload.tdc, dtype=float).reshape(-1)
     dc = np.asarray(payload.dc, dtype=float).reshape(-1)
@@ -140,7 +159,7 @@ async def analyze_data(d: ExpDataIn) -> Dict[str, Any]:
         rows = np.asarray(d.rows, dtype=float)
         if rows.ndim != 2 or rows.shape[1] < 3 or rows.shape[0] < 1024:
             return {'success': False, 'error': f'数据形状无效: {rows.shape}（需要 N×3 且 N≥1024）'}
-        return analyze_ftacv_trace(normalize_trace(rows))
+        return _call_analyze(normalize_trace(rows), d.strictness)
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
@@ -157,6 +176,7 @@ async def data_samples() -> Dict[str, Any]:
 
 class FileIn(BaseModel):
     filename: str
+    strictness: Optional[str] = None
 
 
 @app.post("/api/data/analyze-by-file")
@@ -167,7 +187,7 @@ async def analyze_by_file(d: FileIn) -> Dict[str, Any]:
         return {"success": False, "error": f"内置数据不存在: {d.filename}"}
     try:
         trace, _facts = read_strict_experimental_trace(path)
-        return analyze_ftacv_trace(trace)
+        return _call_analyze(trace, d.strictness)
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -317,10 +337,7 @@ async def health():
 
 # ===== 项目结果只读 API（展示用，不修改任何结果文件） =====
 
-import csv
-import json as _json
-
-ARCHIVE_ROOT = Path.home() / "OER-FTAcV-archive"
+ARCHIVE_ROOT = Path(os.environ.get("OER_ARCHIVE_ROOT", str(Path.home() / "OER-FTAcV-archive")))
 RESULTS_ROOT = REPO_ROOT / "results"
 
 
@@ -419,6 +436,20 @@ async def results_recovery_s1() -> Dict[str, Any]:
     }
 
 
+def _safe_archive_path(*parts: str) -> Optional[Path]:
+    """校验 commit/task 等来自请求的路径片段不会逃出 ARCHIVE_ROOT/results。
+
+    之前 /api/wf/task 直接拼接 ARCHIVE_ROOT / commit / task，commit/task 若含
+    "../.."，可以逃到归档目录之外读取任意文件（例如 commit="..", task="../../etc/passwd"）。
+    /api/data/analyze-by-file 已经用 is_relative_to 做了这个校验，这里补齐同样的检查。
+    """
+    root = (ARCHIVE_ROOT / "results").resolve()
+    candidate = root.joinpath(*parts).resolve()
+    if not candidate.is_relative_to(root):
+        return None
+    return candidate
+
+
 @app.get("/api/wf/tasks")
 async def wf_tasks() -> Dict[str, Any]:
     """只读：列出 oer-wf 归档任务（Mac archive/results 下）。"""
@@ -458,7 +489,9 @@ async def wf_tasks() -> Dict[str, Any]:
 @app.get("/api/wf/task")
 async def wf_task(commit: str, task: str) -> Dict[str, Any]:
     """只读：读取某归档任务的全部运行记录与状态。"""
-    base = ARCHIVE_ROOT / "results" / commit / task
+    base = _safe_archive_path(commit, task)
+    if base is None:
+        return {"success": False, "error": "非法路径"}
     if not base.exists():
         return {"success": False, "error": f"任务不存在: {commit}/{task}"}
     runs = []
