@@ -306,8 +306,10 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
   const [result,setResult]=useState(null); const [error,setError]=useState(null);
   const [invTrials,setInvTrials]=useState(10); const [invPoints,setInvPoints]=useState(512);
   const [invLoading,setInvLoading]=useState(false); const [invResult,setInvResult]=useState(null); const [invError,setInvError]=useState(null);
+  const [sampleFiles,setSampleFiles]=useState([]); const [sampleSel,setSampleSel]=useState('');
 
   useEffect(()=>{fetch(`${API_BASE}/api/params/defaults`).then(r=>r.json()).then(setParams).catch(()=>{});},[]);
+  useEffect(()=>{fetch(`${API_BASE}/api/data/samples`).then(r=>r.json()).then(d=>{if(d.success&&d.files.length){setSampleFiles(d.files);setSampleSel(d.files[0]);}}).catch(()=>{});},[]);
 
   // 上传后自动识别采集参数并提取实验谐波
   const handleFile=async(d)=>{
@@ -319,6 +321,16 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
     }catch(e){setError('数据解析失败: '+e.message);}
   };
   const clearExp=()=>{setExpData(null);setExpAnalysis(null);setResult(null);setInvResult(null);setInvError(null);};
+  // 加载内置 FTacV 数据（data/raw 下），走与上传相同的分析链路
+  const loadSample=async()=>{
+    if(!sampleSel) return;
+    setExpData({name:sampleSel}); setExpAnalysis(null); setError(null); setInvResult(null);
+    try{
+      const res=await fetch(`${API_BASE}/api/data/analyze-by-file`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:sampleSel})});
+      const data=await res.json();
+      if(!data.success) setError('内置数据解析失败: '+data.error); else setExpAnalysis(data);
+    }catch(e){setError('内置数据解析失败: '+e.message);}
+  };
   // 同步仿真参数。fast=true：64 周期、扫描速率×4，约 10 秒，定性对比；
   // fast=false：与实验完全一致的 v 和 f（256 周期），约 1 分钟，定量对比。
   const syncParams=(fast)=>{
@@ -340,13 +352,15 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
   };
 
   const runInversion=async()=>{
-    if(!(expAnalysis&&expAnalysis.calib&&expAnalysis.calib.tafel&&expAnalysis.calib.tafel.success)) return;
+    if(!expAnalysis) return;
     setInvLoading(true);setInvError(null);setInvResult(null);setError(null);
     try{
       const m=expAnalysis.meta;
       const fitHarmonics = expAnalysis.suggested_fit_harmonics || [1,2,3,4,5,6,7];
+      // Tafel 可选：提取失败时传 null，后端自动停用该通道
+      const tafelOk = !!(expAnalysis.calib&&expAnalysis.calib.tafel&&expAnalysis.calib.tafel.success);
       const payload={
-        target:{tdc:expAnalysis.tdc,dc:expAnalysis.dc,harmonics:expAnalysis.harmonics,tafel:expAnalysis.calib.tafel.tafel_slope},
+        target:{tdc:expAnalysis.tdc,dc:expAnalysis.dc,harmonics:expAnalysis.harmonics,tafel:tafelOk?expAnalysis.calib.tafel.tafel_slope:null},
         config:{E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,n_points:invPoints,points_per_cycle:64,feature_grid_size:64},
         initial_params:{
           k0_1:params.k0_1,k0_2:params.k0_2,k0_3:params.k0_3,k0_4:params.k0_4,
@@ -375,6 +389,17 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
   const left=(
     <div className="left-panel">
       <FileDropZone onFileLoaded={handleFile} expData={expData}/>
+      {sampleFiles.length>0&&(
+        <div style={{margin:'8px 0 4px'}}>
+          <div className="section-title">或加载内置数据</div>
+          <div style={{display:'flex',gap:6}}>
+            <select value={sampleSel} onChange={e=>setSampleSel(e.target.value)} style={{flex:1,padding:'5px 8px',fontSize:12,border:'1px solid var(--border-strong)',borderRadius:5,background:'#fbfcfe',color:'var(--text)'}}>
+              {sampleFiles.map(f=>(<option key={f} value={f}>{f.replace('ftacv','FT').replace('-ref','')}</option>))}
+            </select>
+            <button className="btn-secondary" style={{marginTop:0,width:'auto',padding:'5px 12px'}} onClick={loadSample}>加载</button>
+          </div>
+        </div>
+      )}
       {expAnalysis&&(
         <div className="file-info" style={{marginTop:-6,marginBottom:10,lineHeight:1.8}}>
           识别: f=<strong>{expAnalysis.meta.f.toFixed(2)} Hz</strong> · dE=<strong>{expAnalysis.meta.dE.toFixed(3)} V</strong> · v=<strong>{(expAnalysis.meta.v*1000).toFixed(1)} mV/s</strong><br/>
@@ -411,9 +436,12 @@ function SimTab({ expData, setExpData, expAnalysis, setExpAnalysis }) {
             <input className="param-input" type="number" min="128" max="8192" value={invPoints} onChange={e=>setInvPoints(Math.max(128,parseInt(e.target.value)||512))}/>
             <span className="param-unit">点</span>
           </div>
-          <button className="btn btn-primary" style={{marginTop:8}} onClick={runInversion} disabled={invLoading||!(expAnalysis.calib&&expAnalysis.calib.tafel&&expAnalysis.calib.tafel.success)}>
+          <button className="btn btn-primary" style={{marginTop:8}} onClick={runInversion} disabled={invLoading}>
             {invLoading?'反演中...':'启动反演并显示反演参数正演'}
           </button>
+          {expAnalysis.calib&&expAnalysis.calib.tafel&&!expAnalysis.calib.tafel.success&&(
+            <div className="summary-row" style={{color:'#e9a23b',marginTop:6,fontSize:11}}>⚠ Tafel 提取失败：本次反演不含 Tafel 通道，仅用 DC+谐波。</div>
+          )}
           {invError&&<div className="summary-row" style={{color:'#e53935',marginTop:8}}>反演错误: {invError}</div>}
           {invResult&&<div className="summary-row meta" style={{marginTop:8}}>
             拟合等级: <strong>{invResult.fit_quality.level}</strong> · 完成度 <strong>{invResult.fit_quality.completion_percent.toFixed(1)}%</strong><br/>

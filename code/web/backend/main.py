@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
 from oer_aem import OERPhysics, OERSignal, initialize_oer_parameters
-from oer_aem.data_contract import normalize_trace
+from oer_aem.data_contract import normalize_trace, read_strict_experimental_trace
 from oer_aem.experimental import analyze_ftacv_trace
 from oer_aem.inversion import (
     DEFAULT_PARAM_SPECS,
@@ -143,6 +143,33 @@ async def analyze_data(d: ExpDataIn) -> Dict[str, Any]:
         return analyze_ftacv_trace(normalize_trace(rows))
     except Exception as e:
         return {'success': False, 'error': str(e)}
+
+
+RAW_DATA_DIR = REPO_ROOT / "data" / "raw"
+
+
+@app.get("/api/data/samples")
+async def data_samples() -> Dict[str, Any]:
+    """列出项目内置的 FTacV 原始数据文件（只读）。"""
+    files = sorted(p.name for p in RAW_DATA_DIR.glob("ftacv*-ref-*.txt"))
+    return {"success": True, "files": files}
+
+
+class FileIn(BaseModel):
+    filename: str
+
+
+@app.post("/api/data/analyze-by-file")
+async def analyze_by_file(d: FileIn) -> Dict[str, Any]:
+    """按文件名读取内置 FTacV 数据并分析，与 /api/data/analyze 同结构。"""
+    path = (RAW_DATA_DIR / d.filename).resolve()
+    if not path.is_relative_to(RAW_DATA_DIR.resolve()) or not path.exists():
+        return {"success": False, "error": f"内置数据不存在: {d.filename}"}
+    try:
+        trace, _facts = read_strict_experimental_trace(path)
+        return analyze_ftacv_trace(trace)
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @app.get("/api/params/defaults")
