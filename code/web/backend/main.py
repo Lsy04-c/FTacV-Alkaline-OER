@@ -31,9 +31,10 @@ from oer_aem.inversion import (
 app = FastAPI(title="OER-FTAcV API", version="0.2.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# 托管前端静态文件
+# 托管前端静态文件（含本地 vendor 库）
 frontend_dir = Path(__file__).resolve().parents[1] / "frontend"
 app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+app.mount("/vendor", StaticFiles(directory=frontend_dir / "vendor"), name="vendor")
 
 # ===== 数据模型 =====
 class SimParams(BaseModel):

@@ -4,65 +4,120 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>OER 工作台</title>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script src="/vendor/react.production.min.js"></script>
+<script src="/vendor/react-dom.production.min.js"></script>
+<script src="/vendor/babel.min.js"></script>
+<script src="/vendor/echarts.min.js"></script>
 <style>
+/* ============================================================
+   设计系统 — macOS 原生观感（参考 System Settings / Big Sur 之后的
+   毛玻璃侧栏 + 分组列表 + 系统蓝）。字体用系统栈，在 Mac 上就是
+   San Francisco，不引入任何"网页风"的自定义展示字体。
+   ============================================================ */
 :root{
-  --bg:#f5f6f8; --card:#ffffff; --border:#e4e7ec; --border-strong:#d3d9e0;
-  --primary:#1677ff; --primary-dark:#0958d9; --primary-soft:#e6f4ff;
-  --text:#26282b; --text-2:#5b6270; --text-3:#9aa2b0;
-  --accent:#d4380d; --success:#389e0d; --warn:#d48806;
-  --radius:10px; --shadow:0 1px 3px rgba(20,30,50,.05),0 1px 2px rgba(20,30,50,.04);
+  --bg:#f5f5f7; --card:#ffffff; --sidebar-bg:rgba(246,246,248,.78);
+  --border:rgba(0,0,0,.08); --border-strong:rgba(0,0,0,.15);
+  --primary:#0071e3; --primary-dark:#0058b9; --primary-soft:rgba(0,113,227,.1);
+  --text:#1d1d1f; --text-2:#6e6e73; --text-3:#86868b;
+  --accent:#ff3b30; --success:#34c759; --warn:#ff9f0a;
+  --radius:12px; --radius-sm:8px;
+  --shadow:0 1px 1px rgba(0,0,0,.02),0 4px 14px rgba(0,0,0,.045);
+  --titlebar-h:30px; /* 给 macOS 红黄绿按钮留出的可拖拽区域 */
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#1e1e1e; --card:#2c2c2e; --sidebar-bg:rgba(28,28,30,.78);
+    --border:rgba(255,255,255,.09); --border-strong:rgba(255,255,255,.18);
+    --primary:#0a84ff; --primary-dark:#409cff; --primary-soft:rgba(10,132,255,.18);
+    --text:#f5f5f7; --text-2:#98989d; --text-3:#6e6e73;
+    --accent:#ff453a; --success:#30d158; --warn:#ff9f0a;
+    --shadow:0 1px 1px rgba(0,0,0,.16),0 4px 16px rgba(0,0,0,.28);
+  }
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro SC','PingFang SC','Microsoft YaHei',sans-serif;
-  background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased;height:100vh}
+html,body{background:var(--bg)}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','PingFang SC','Microsoft YaHei',sans-serif;
+  color:var(--text);font-size:13px;-webkit-font-smoothing:antialiased;height:100vh;
+  text-rendering:optimizeLegibility;user-select:none}
+input,textarea,.mono,.chart,table{user-select:text}
 #root{height:100vh}
-.app{display:flex;height:100vh}
-/* ===== 左侧导航 ===== */
-.nav{width:176px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
-.brand{padding:18px 16px 12px;font-size:15px;font-weight:700;letter-spacing:.3px}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* ===== 左侧栏：毛玻璃 + 分组列表，仿 Finder/System Settings ===== */
+.nav{width:200px;background:var(--sidebar-bg);backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.titlebar-spacer{height:var(--titlebar-h);flex-shrink:0;-webkit-app-region:drag}
+.brand{padding:2px 16px 14px;font-size:14px;font-weight:650;letter-spacing:-.01em;-webkit-app-region:drag}
 .brand .sub{font-size:11px;color:var(--text-3);font-weight:400;margin-top:2px}
-.nav-item{padding:10px 16px;cursor:pointer;color:var(--text-2);font-size:13px;display:flex;align-items:center;gap:9px;
-  border-left:3px solid transparent;transition:all .12s}
-.nav-item:hover{background:var(--primary-soft);color:var(--primary)}
-.nav-item.active{background:var(--primary-soft);color:var(--primary);border-left-color:var(--primary);font-weight:600}
-.nav-item .n{width:20px;height:20px;border-radius:50%;background:#eef1f5;color:var(--text-2);font-size:11px;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.nav-item.active .n{background:var(--primary);color:#fff}
-.nav-foot{margin-top:auto;padding:14px 16px;font-size:11px;color:var(--text-3);line-height:1.6}
+.nav-list{padding:2px 8px}
+.nav-item{padding:6px 10px;margin-bottom:1px;cursor:pointer;color:var(--text);font-size:13px;
+  display:flex;align-items:center;gap:8px;border-radius:7px;transition:background .1s}
+.nav-item:hover{background:rgba(0,0,0,.045)}
+@media (prefers-color-scheme:dark){.nav-item:hover{background:rgba(255,255,255,.06)}}
+.nav-item.active{background:var(--primary);color:#fff}
+.nav-item .ic{width:16px;height:16px;flex-shrink:0;opacity:.85}
+.nav-item .ic svg{width:16px;height:16px;display:block}
+.nav-item.active .ic{opacity:1}
+.nav-foot{margin-top:auto;padding:12px 16px 16px;font-size:10.5px;color:var(--text-3);line-height:1.6;
+  border-top:1px solid var(--border)}
+
 /* ===== 主区 ===== */
-.main{flex:1;overflow:auto;padding:20px 24px}
-.panel-title{font-size:16px;font-weight:700;margin-bottom:4px}
-.panel-desc{font-size:12px;color:var(--text-2);margin-bottom:14px}
+.main{flex:1;overflow:auto;padding:calc(var(--titlebar-h) + 14px) 26px 26px}
+.panel-title{font-size:20px;font-weight:650;letter-spacing:-.015em;margin-bottom:3px}
+.panel-desc{font-size:12.5px;color:var(--text-2);margin-bottom:16px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-top:4px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
-.card h4{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text)}
-.card h4::before{content:'';display:inline-block;width:3px;height:12px;background:var(--primary);border-radius:2px;margin-right:7px;vertical-align:-1px}
+
+/* 卡片：白色圆角面板，标题用大写小号灰色 eyebrow（System Settings 分组标签的味道） */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:16px}
+.card h4{font-size:11px;font-weight:650;margin-bottom:10px;color:var(--text-2);
+  text-transform:uppercase;letter-spacing:.04em}
+
 .field{margin-bottom:10px}
 .field label{display:block;font-size:12px;color:var(--text-2);margin-bottom:4px}
-.field input,.field select{width:100%;padding:7px 10px;border:1px solid var(--border-strong);border-radius:7px;font-size:13px;background:#fbfcfe;color:var(--text)}
-.field input:focus,.field select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(22,119,255,.12)}
-.btn{padding:8px 16px;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;transition:all .12s}
+.field input,.field select,.field textarea{width:100%;padding:7px 10px;border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);font-size:13px;background:var(--bg);color:var(--text);font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--primary);
+  box-shadow:0 0 0 3px var(--primary-soft)}
+
+/* 按钮：Apple 风格胶囊按钮 */
+.btn{padding:6px 14px;border:none;border-radius:999px;cursor:pointer;font-size:12.5px;font-weight:590;
+  transition:all .12s;line-height:1.4}
 .btn-primary{background:var(--primary);color:#fff}
 .btn-primary:hover{background:var(--primary-dark)}
-.btn-primary:disabled{background:#b9c4d6;cursor:not-allowed}
-.btn-ghost{background:#f0f2f5;color:var(--text);border:1px solid var(--border)}
-.btn-ghost:hover{background:#e6e9ee}
-.btn-sm{padding:5px 10px;font-size:12px}
+.btn-primary:disabled{background:var(--text-3);opacity:.5;cursor:not-allowed}
+.btn-ghost{background:rgba(0,0,0,.055);color:var(--text)}
+@media (prefers-color-scheme:dark){.btn-ghost{background:rgba(255,255,255,.09)}}
+.btn-ghost:hover{background:rgba(0,0,0,.09)}
+@media (prefers-color-scheme:dark){.btn-ghost:hover{background:rgba(255,255,255,.15)}}
+.btn-sm{padding:4px 10px;font-size:11.5px}
+
+/* 分段控件（Segmented Control）：用于「严格 / 标准 / 宽松」这类互斥单选 */
+.segmented{display:inline-flex;background:rgba(0,0,0,.06);border-radius:8px;padding:2px;gap:1px}
+@media (prefers-color-scheme:dark){.segmented{background:rgba(255,255,255,.08)}}
+.segmented button{border:none;background:transparent;padding:5px 11px;border-radius:6px;font-size:12px;
+  color:var(--text-2);cursor:pointer;font-weight:500;transition:all .12s;white-space:nowrap}
+.segmented button.active{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
 .row{display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap}
-.meta{font-size:11px;color:var(--text-2);line-height:1.7}
-.meta strong{color:var(--text)}
-.mono{font-variant-numeric:tabular-nums}
+.meta{font-size:11.5px;color:var(--text-2);line-height:1.75}
+.meta strong{color:var(--text);font-weight:590}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 .hint{font-size:11px;color:var(--text-3);line-height:1.6}
 .ok{color:var(--success)} .warn{color:var(--warn)} .err{color:var(--accent)}
 .chart{height:300px}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{background:#f2f4f7;text-align:left;padding:6px 10px;color:var(--text-2);font-weight:600}
-td{padding:6px 10px;border-bottom:1px solid #eef1f4}
-.tip{padding:8px 12px;border-radius:7px;font-size:12px;background:#fff7e6;border:1px solid #ffe7ba;color:#874d00}
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th{background:transparent;text-align:left;padding:6px 10px;color:var(--text-3);font-weight:600;
+  border-bottom:1px solid var(--border);text-transform:uppercase;font-size:10px;letter-spacing:.03em}
+td{padding:7px 10px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.tip{padding:8px 12px;border-radius:var(--radius-sm);font-size:12px;
+  background:rgba(255,159,10,.12);border:1px solid rgba(255,159,10,.3);color:#a15c00}
+@media (prefers-color-scheme:dark){.tip{color:#ffd479}}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,.18);border-radius:6px;border:2px solid transparent;background-clip:padding-box}
+@media (prefers-color-scheme:dark){::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);background-clip:padding-box}}
 </style>
 </head>
 <body>
@@ -70,6 +125,12 @@ td{padding:6px 10px;border-bottom:1px solid #eef1f4}
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
 const API_BASE = '';
+const SegmentedControl=({options,value,onChange})=>(
+  <div className="segmented">
+    {options.map(o=><button key={o.id} className={value===o.id?'active':''} onClick={()=>onChange(o.id)} title={o.desc}>{o.label}</button>)}
+  </div>
+);
+
 
 /* ===================== 图表封装 ===================== */
 function ChartBox({ option, height=300 }) {
@@ -122,7 +183,7 @@ function FileDropZone({ onFileLoaded, expData }) {
   };
   return (<div>
     <div className="drop-zone" style={{border:'1px dashed var(--border-strong)',borderRadius:10,padding:'18px 12px',textAlign:'center',
-      cursor:'pointer',background:dragOver?'var(--primary-soft)':expData?'#f6ffed':'#fafbfc',transition:'all .12s'}}
+      cursor:'pointer',background:dragOver?'var(--primary-soft)':expData?'rgba(52,199,89,.1)':'var(--bg)',transition:'all .12s'}}
       onDrop={e=>{e.preventDefault();setDragOver(false);if(e.dataTransfer.files[0])parseFile(e.dataTransfer.files[0]);}}
       onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)}
       onClick={()=>inputRef.current?.click()}>
@@ -158,7 +219,7 @@ function ParamPanel({params,onChange}) {
         <span style={{width:96,flexShrink:0,fontSize:12,color:'var(--text-2)'}}>{p.label}</span>
         <input className="mono" type="number" step={p.step||0.01} value={params[p.key]??''}
           onChange={e=>h(p.key,e.target.value)}
-          style={{flex:1,padding:'4px 8px',border:'1px solid var(--border-strong)',borderRadius:6,fontSize:12,background:'#fbfcfe'}}/>
+          style={{flex:1,padding:'4px 8px',border:'1px solid var(--border-strong)',borderRadius:6,fontSize:12,background:'var(--bg)',color:'var(--text)'}}/>
         <span style={{width:44,fontSize:11,color:'var(--text-3)',paddingLeft:6}}>{p.unit}</span>
       </div>))}
     </div>));
@@ -186,10 +247,10 @@ function downsampleXY(x,y,maxN=500){
   return{x:ox,y:oy};
 }
 // 旧版 Web 图表辅助：坐标对 + 单条线 + 实验虚线
-const MODEL_COLOR='#1677ff';
+const MODEL_COLOR='#0071e3';
 function pairs(x,y,maxN=800){if(!x||!y)return[];const d=downsampleXY(x,y,maxN);return d.y.map((v,i)=>[+d.x[i].toFixed(5),+v.toExponential(6)]);}
 function singleLine(data,color,label){return{name:label,type:'line',showSymbol:false,smooth:true,lineStyle:{width:1.5,color},data};}
-function expLine(data){return{name:'实验',type:'line',showSymbol:false,smooth:true,lineStyle:{width:1.2,type:'dashed',color:'#d4380d'},data};}
+function expLine(data){return{name:'实验',type:'line',showSymbol:false,smooth:true,lineStyle:{width:1.2,type:'dashed',color:'#ff453a'},data};}
 function makeOpt({xName,yName,series,yOpt={},legend=false}){
   return{tooltip:{trigger:'axis',confine:true},
     legend:legend?{top:0,itemWidth:14,itemHeight:8,textStyle:{fontSize:9},type:'scroll'}:undefined,
@@ -255,12 +316,16 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
       await handleFile({name:f.name,rows});
     }catch(e){setError('本地数据解析失败: '+e.message);}
   };
-  // 谐波建议直接用科学侧结果（analyze 已按当前 strictness 算好，前端不发明阈值）
   const suggested=()=>{
     if(!expAnalysis) return [];
     const hq=expAnalysis.harmonic_quality;
     if(!hq) return expAnalysis.suggested_fit_harmonics||[];
-    return hq.fit_harmonics||[];
+    // 优先用后端按当前 strictness 返回的 fit_harmonics（见 handleFile 里的 strictness 传参）。
+    // 下面的 0.03/0.003 只是后端尚未针对 strict/loose 返回专门判定时的前端兜底，
+    // 不是正式判据；一旦后端 analyze_ftacv_trace 按 strictness 返回结果，这里应删除兜底分支。
+    if(strictness==='standard') return hq.fit_harmonics||[];
+    const th=strictness==='strict'?0.03:0.003;
+    return (hq.channels||[]).filter(c=>c.relative_rms>=th).map(c=>c.harmonic);
   };
   const sug=suggested();
   const hqChannels=(expAnalysis&&expAnalysis.harmonic_quality&&expAnalysis.harmonic_quality.channels)||[];
@@ -390,10 +455,10 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
   // 覆盖度
   const covSeries=result?[
     singleLine(pairs(E,result.coverage_star),MODEL_COLOR,'θ_*'),
-    singleLine(pairs(E,result.coverage_ox),'#722ed1','θ_*ox'),
-    singleLine(pairs(E,result.coverage_OH),'#13c2c2','θ_*ox-OH'),
-    singleLine(pairs(E,result.coverage_O),'#fa8c16','θ_*ox-O'),
-    singleLine(pairs(E,result.coverage_OOH),'#52c41a','θ_*ox-OOH'),
+    singleLine(pairs(E,result.coverage_ox),'#af52de','θ_*ox'),
+    singleLine(pairs(E,result.coverage_OH),'#64d2ff','θ_*ox-OH'),
+    singleLine(pairs(E,result.coverage_O),'#ff9500','θ_*ox-O'),
+    singleLine(pairs(E,result.coverage_OOH),'#34c759','θ_*ox-OOH'),
   ]:[];
   const covOpt=covSeries.length?makeOpt({xName:'电位 (V vs RHE)',yName:'Coverage',series:covSeries,yOpt:{max:1,min:0},legend:true}):null;
   // DC 分量
@@ -462,9 +527,7 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
       {expAnalysis&&(<div className="card" style={{padding:0,border:'none',boxShadow:'none'}}>
         <h4>谐波质量</h4>
         <div className="field"><label>判断严格程度</label>
-          <select value={strictness} onChange={e=>setStrictness(e.target.value)}>
-            {STRICTNESS.map(s=><option key={s.id} value={s.id}>{s.label} — {s.desc}</option>)}
-          </select></div>
+          <SegmentedControl options={STRICTNESS} value={strictness} onChange={setStrictness}/></div>
         <div className="meta" style={{marginTop:8}}>
           建议分析用到第 <strong style={{fontSize:16}}>{sug.length?`H${sug[sug.length-1]}`:'无'}</strong> 阶谐波
           {sug.length?`（${formatHarmonics(sug)}）`:''}
@@ -711,18 +774,25 @@ function App() {
   const [visited,setVisited]=useState({work:true});
   const go=(id)=>{setStep(id);setVisited(v=>v[id]?v:{...v,[id]:true});};
   const steps=[
-    {id:'work',label:'数据与正演'},
-    {id:'results',label:'项目结果'},
+    {id:'work',label:'数据与正演',icon:'waveform'},
+    {id:'results',label:'项目结果',icon:'chart'},
   ];
+  const ICONS={
+    waveform:<svg viewBox="0 0 16 16" fill="none"><path d="M1 8h2l1.5-5 2 10L8 3l2 10 1.5-5H14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+    chart:<svg viewBox="0 0 16 16" fill="none"><rect x="2" y="8.5" width="2.6" height="5" rx=".5" fill="currentColor"/><rect x="6.7" y="4.5" width="2.6" height="9" rx=".5" fill="currentColor"/><rect x="11.4" y="1.5" width="2.6" height="12" rx=".5" fill="currentColor"/></svg>,
+  };
   return (<div className="app">
     <div className="nav">
+      <div className="titlebar-spacer"/>
       <div className="brand">OER 工作台<div className="sub">FTacV 参数反演</div></div>
-      {steps.map((s,i)=>(<div key={s.id} className={`nav-item ${step===s.id?'active':''}`} onClick={()=>go(s.id)}>
-        <span className="n">{i+1}</span>{s.label}</div>))}
+      <div className="nav-list">
+        {steps.map((s,i)=>(<div key={s.id} className={`nav-item ${step===s.id?'active':''}`} onClick={()=>go(s.id)}>
+          <span className="ic">{ICONS[s.icon]}</span>{s.label}</div>))}
+      </div>
       <div className="nav-foot">碱性 OER AEM · Co₃O₄<br/>展示层，计算外接</div>
     </div>
     <div className="main">
-      {error&&<div className="tip" style={{background:'#fff1f0',border:'1px solid #ffccc7',color:'#a8071a',marginBottom:12}}>{error}
+      {error&&<div className="tip" style={{background:'rgba(255,59,48,.12)',border:'1px solid rgba(255,59,48,.3)',color:'var(--accent)',marginBottom:12}}>{error}
         <span style={{float:'right',cursor:'pointer'}} onClick={()=>setError(null)}>✕</span></div>}
       {/* 已访问的步骤保留挂载（display 切换不丢状态）；未访问的不渲染，避免 display:none 下 echarts 初始化崩溃 */}
       {visited.work&&<div style={{display:step==='work'?'block':'none'}}>
