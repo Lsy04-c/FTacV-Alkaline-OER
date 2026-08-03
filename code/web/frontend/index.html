@@ -175,6 +175,19 @@ function downsampleXY(x,y,maxN=500){
   ox.push(x[x.length-1]);oy.push(y[y.length-1]);
   return{x:ox,y:oy};
 }
+// 旧版 Web 图表辅助：坐标对 + 单条线 + 实验虚线
+const MODEL_COLOR='#1677ff';
+function pairs(x,y,maxN=800){if(!x||!y)return[];const d=downsampleXY(x,y,maxN);return d.y.map((v,i)=>[+d.x[i].toFixed(5),+v.toExponential(6)]);}
+function singleLine(data,color,label){return{name:label,type:'line',showSymbol:false,smooth:true,lineStyle:{width:1.5,color},data};}
+function expLine(data){return{name:'实验',type:'line',showSymbol:false,smooth:true,lineStyle:{width:1.2,type:'dashed',color:'#d4380d'},data};}
+function makeOpt({xName,yName,series,yOpt={},legend=false}){
+  return{tooltip:{trigger:'axis',confine:true},
+    legend:legend?{top:0,itemWidth:14,itemHeight:8,textStyle:{fontSize:9},type:'scroll'}:undefined,
+    grid:{top:legend?34:20,right:20,bottom:40,left:62},
+    xAxis:{type:'value',name:xName,nameLocation:'middle',nameGap:30,axisLabel:{fontSize:9},scale:true},
+    yAxis:Object.assign({type:'value',axisLabel:{fontSize:9,formatter:v=>+v.toExponential(1)},name:yName},yOpt),
+    series};
+}
 
 /* ===================== ① 样品与电极 ===================== */
 const CATALYST='四氧化三钴（Co₃O₄）';
@@ -221,22 +234,26 @@ function SampleStep({sample,setSample}) {
   </>);
 }
 
-/* ===================== ② 数据与分析 ===================== */
+/* ===================== ② 数据与正演（合并） ===================== */
 const STRICTNESS=[
   {id:'loose',label:'宽松',desc:'允许更低信噪比的高阶谐波进入建议'},
   {id:'standard',label:'标准',desc:'按默认可解析性阈值建议'},
   {id:'strict',label:'严格',desc:'只保留信噪比很高的谐波'},
 ];
-function DataStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strictness,setStrictness}) {
+function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strictness,setStrictness,sample}) {
   const [localFiles,setLocalFiles]=useState([]); const [localSel,setLocalSel]=useState('');
   const dirRef=useRef(null);
+  const [params,setParams]=useState({}); const [loading,setLoading]=useState(false);
+  const [result,setResult]=useState(null); const [advOpen,setAdvOpen]=useState(false);
+  const [invTrials,setInvTrials]=useState(10); const [invLoading,setInvLoading]=useState(false);
+  const [invResult,setInvResult]=useState(null); const [invError,setInvError]=useState(null);
+  useEffect(()=>{fetch(`${API_BASE}/api/params/defaults`).then(r=>r.json()).then(setParams).catch(()=>{});},[]);
   const handleFile=async(d)=>{
     setExpData(d);setExpAnalysis(null);
     try{const res=await fetch(`${API_BASE}/api/data/analyze`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:d.rows})});
       const data=await res.json();if(!data.success)setError('数据解析失败: '+data.error);else setExpAnalysis(data);
     }catch(e){setError('数据解析失败: '+e.message);}
   };
-  // 选择本地数据文件夹，列出 .txt/.csv/.dat 文件供逐个加载
   const handleFolder=(e)=>{
     const files=Array.from(e.target.files||[]);
     const txt=files.filter(f=>/\.(txt|csv|dat)$/i.test(f.name));
@@ -255,118 +272,16 @@ function DataStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
       await handleFile({name:f.name,rows});
     }catch(e){setError('本地数据解析失败: '+e.message);}
   };
-  // 建议最高阶：直接用科学侧 harmonic_quality（fit/relative_rms）；严格/宽松按相对 H1 阈值
   const suggested=()=>{
     if(!expAnalysis) return [];
     const hq=expAnalysis.harmonic_quality;
     if(!hq) return expAnalysis.suggested_fit_harmonics||[];
     if(strictness==='standard') return hq.fit_harmonics||[];
-    const th=strictness==='strict'?0.03:0.003; // 严格 3% / 宽松 0.3% 相对 H1
+    const th=strictness==='strict'?0.03:0.003;
     return (hq.channels||[]).filter(c=>c.relative_rms>=th).map(c=>c.harmonic);
   };
   const sug=suggested();
   const hqChannels=(expAnalysis&&expAnalysis.harmonic_quality&&expAnalysis.harmonic_quality.channels)||[];
-  // 实验数据图像（导入后立即显示，降采样避免卡死；dataZoom 提供范围选择）
-  const zoom={type:'inside',xAxisIndex:0}; const zoomSlider={type:'slider',xAxisIndex:0,height:16,bottom:0};
-  const expCurveOpt=()=>{
-    if(!expAnalysis||!expAnalysis.E_raw||!expAnalysis.i_raw) return null;
-    const d=downsampleXY(expAnalysis.E_raw,expAnalysis.i_raw,800);
-    return {tooltip:{trigger:'axis'},grid:{top:20,right:24,bottom:40,left:64},
-      dataZoom:[zoom,zoomSlider],
-      xAxis:{type:'value',name:'E / V',nameLocation:'middle',nameGap:30,axisLabel:{fontSize:10},scale:true},
-      yAxis:{type:'value',name:'i / A',axisLabel:{fontSize:9,formatter:v=>+v.toExponential(1)}},
-      series:[{name:'实验电流',type:'line',showSymbol:false,smooth:true,data:d.y.map((v,i)=>[+d.x[i].toFixed(5),+v.toExponential(7)])}]};
-  };
-  // 单阶谐波 option（每阶独立成图）
-  const expHarmOneOpt=(idx)=>{
-    if(!expAnalysis||!expAnalysis.harmonics||!expAnalysis.tdc) return null;
-    const h=expAnalysis.harmonics[idx];
-    if(!h) return null;
-    const x=downsample(expAnalysis.tdc,800);
-    const ds=downsample(h,800);
-    return {tooltip:{trigger:'axis'},grid:{top:14,right:20,bottom:34,left:56},
-      xAxis:{type:'value',name:'E / V',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:9},scale:true},
-      yAxis:{type:'value',axisLabel:{fontSize:8,formatter:v=>+v.toExponential(1)}},
-      series:[{name:`H${idx+1}`,type:'line',showSymbol:false,smooth:true,
-        data:ds.map((v,k)=>[+x[k].toFixed(5),+v.toExponential(7)])}]};
-  };
-  return (<>
-    <div className="panel-title">数据与分析</div>
-    <div className="panel-desc">导入 FTacV / CV / LSV，自动识别采集参数并判断谐波可用性。</div>
-    <div style={{display:'flex',gap:14,alignItems:'flex-start'}}>
-      <div style={{width:330,flexShrink:0}}>
-        <div className="card">
-          <h4>导入数据</h4>
-          <FileDropZone onFileLoaded={handleFile} expData={expData}/>
-          <div className="row" style={{marginTop:10}}>
-            <button className="btn btn-ghost btn-sm" onClick={()=>dirRef.current&&dirRef.current.click()}>📁 选择本地数据文件夹</button>
-            <input ref={dirRef} type="file" webkitdirectory="" multiple style={{display:'none'}} onChange={handleFolder}/>
-          </div>
-          {localFiles.length>0&&<div className="row" style={{marginTop:8}}>
-            <select value={localSel} onChange={e=>setLocalSel(e.target.value)} style={{flex:1,padding:'6px 8px',border:'1px solid var(--border-strong)',borderRadius:7,fontSize:12}}>
-              {localFiles.map(f=><option key={f.name} value={f.name}>{f.name}</option>)}
-            </select>
-            <button className="btn btn-ghost btn-sm" onClick={loadLocalFile}>加载</button>
-          </div>}
-        </div>
-        {expAnalysis&&(<div className="card">
-          <h4>自动识别</h4>
-          <div className="meta" style={{lineHeight:2}}>
-            频率：<strong>{expAnalysis.meta.f.toFixed(2)} Hz</strong> · 振幅：<strong>{expAnalysis.meta.dE.toFixed(3)} V</strong><br/>
-            扫速：<strong>{(expAnalysis.meta.v*1000).toFixed(1)} mV/s</strong> · 范围：<strong>{expAnalysis.meta.E_start.toFixed(3)}→{expAnalysis.meta.E_end.toFixed(3)} V</strong><br/>
-            周期数：<strong>{Math.round(expAnalysis.meta.f*expAnalysis.meta.duration)}</strong>
-            {expAnalysis.calib&&expAnalysis.calib.cdl.success&&<><br/>Cdl·A：<strong>{(expAnalysis.calib.cdl.CdlA*1e6).toFixed(1)} µF</strong>{expAnalysis.calib.tafel.success&&` · Tafel ${expAnalysis.calib.tafel.tafel_slope_mV.toFixed(0)} mV/dec`}</>}
-            {expAnalysis.calib&&<><br/>预氧化峰：<strong>{expAnalysis.calib.preox.separable?'直流可见（定量需反演）':'与 OER 重叠，不可直流分离'}</strong></>}
-          </div>
-        </div>)}
-        {expAnalysis&&(<div className="card">
-          <h4>谐波质量</h4>
-          <div className="field"><label>判断严格程度</label>
-            <select value={strictness} onChange={e=>setStrictness(e.target.value)}>
-              {STRICTNESS.map(s=><option key={s.id} value={s.id}>{s.label} — {s.desc}</option>)}
-            </select></div>
-          <div className="meta" style={{marginTop:8}}>
-            建议分析用到第 <strong style={{fontSize:16}}>{sug.length?`H${sug[sug.length-1]}`:'无'}</strong> 阶谐波
-            {sug.length?`（${formatHarmonics(sug)}）`:''}
-          </div>
-          {hqChannels.length>0&&<table style={{marginTop:8}}>
-            <thead><tr><th>阶</th><th>相对 H1</th><th>判定</th></tr></thead>
-            <tbody>{hqChannels.map(c=><tr key={c.harmonic}>
-              <td>H{c.harmonic}</td>
-              <td>{(c.relative_rms*100).toFixed(1)}%</td>
-              <td className={c.fit?'ok':'warn'}>{c.fit?'可拟合':'仅诊断'}</td>
-            </tr>)}</tbody></table>}
-        </div>)}
-      </div>
-      <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:14}}>
-        {expAnalysis?(<>
-          <div className="card"><h4>实验电流 — 电位</h4>
-            {expCurveOpt()?<ChartBox option={expCurveOpt()} height={300}/>:<div className="hint">无电流数据</div>}
-            <div className="hint" style={{marginTop:4}}>滚轮或底部滑块缩放电位范围。</div>
-          </div>
-          <div className="card"><h4>谐波包络（每阶独立）</h4>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:10}}>
-              {[0,1,2,3,4,5,6].map(i=>(
-                <div key={i}>
-                  <div className="hint" style={{marginBottom:2}}>H{i+1}{hqChannels[i]?`（${(hqChannels[i].relative_rms*100).toFixed(1)}%·${hqChannels[i].fit?'可拟合':'仅诊断'}）`:''}</div>
-                  {expHarmOneOpt(i)?<ChartBox option={expHarmOneOpt(i)} height={170}/>:<div className="hint">无数据</div>}
-                </div>))}
-            </div>
-          </div>
-        </>):<div className="card"><div className="hint" style={{padding:'60px 0',textAlign:'center'}}>导入数据后在此显示实验电流和谐波包络</div></div>}
-      </div>
-    </div>
-  </>);
-}
-
-/* ===================== ③ 正演与反演 ===================== */
-function SimInvertStep({expAnalysis,expData,setError,sample}) {
-  const [params,setParams]=useState({}); const [loading,setLoading]=useState(false);
-  const [result,setResult]=useState(null); const [advOpen,setAdvOpen]=useState(false);
-  const [invTrials,setInvTrials]=useState(10); const [invLoading,setInvLoading]=useState(false);
-  const [invResult,setInvResult]=useState(null); const [invError,setInvError]=useState(null);
-  useEffect(()=>{fetch(`${API_BASE}/api/params/defaults`).then(r=>r.json()).then(setParams).catch(()=>{});},[]);
-
   const simulate=async()=>{
     setLoading(true);setError(null);
     try{const res=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...params})});
@@ -374,7 +289,7 @@ function SimInvertStep({expAnalysis,expData,setError,sample}) {
     }catch(e){setError(e.message);}setLoading(false);
   };
   const runInversion=async()=>{
-    if(!expAnalysis){setInvError('请先在「数据与分析」导入数据');return;}
+    if(!expAnalysis){setInvError('请先导入数据');return;}
     setInvLoading(true);setInvError(null);setInvResult(null);
     try{
       const m=expAnalysis.meta;
@@ -395,38 +310,6 @@ function SimInvertStep({expAnalysis,expData,setError,sample}) {
       const simData=await simRes.json();if(simData.success){simData.source='inversion';setResult(simData);}else setError('反演参数正演失败: '+simData.error);
     }catch(e){setInvError(e.message);}setInvLoading(false);
   };
-  // 每阶谐波对比（实验 vs 模型，降采样避免白屏）
-  // 单阶谐波对比（实验 vs 模型，每阶独立成图）
-  const perHarmOneOpt=(idx)=>{
-    if(!expAnalysis||!expAnalysis.harmonics||!result||!result.harmonics) return null;
-    const exp=expAnalysis.harmonics[idx], mod=result.harmonics[idx];
-    if(!exp||!mod) return null;
-    const x=downsample(expAnalysis.tdc||Array.from({length:exp.length},(_,i)=>i),500);
-    const series=[
-      {name:'实验',type:'line',showSymbol:false,smooth:true,data:downsample(exp,500).map((v,k)=>[+x[k].toFixed(5),+v.toExponential(6)])},
-      {name:'模型',type:'line',showSymbol:false,smooth:true,lineStyle:{type:'dashed',color:'#d4380d'},data:downsample(mod,500).map((v,k)=>[+x[k].toFixed(5),+v.toExponential(6)])},
-    ];
-    return {tooltip:{trigger:'axis'},legend:{top:0,itemWidth:14,itemHeight:8,textStyle:{fontSize:9}},grid:{top:22,right:16,bottom:32,left:54},
-      xAxis:{type:'value',name:'E / V',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:8},scale:true},
-      yAxis:{type:'value',axisLabel:{fontSize:8,formatter:v=>+v.toExponential(1)}},
-      series:series};
-  };
-  const mainOpt=()=>{
-    if(!result) return null;
-    const m=downsampleXY(result.tdc,result.i_total,800);
-    const S=[{name:'模型',type:'line',showSymbol:false,smooth:true,data:m.y.map((v,i)=>[+m.x[i].toFixed(5),+v.toExponential(6)])}];
-    if(expAnalysis&&expAnalysis.E_raw&&expAnalysis.i_raw){
-      const e=downsampleXY(expAnalysis.E_raw,expAnalysis.i_raw,800);
-      S.push({name:'实验',type:'line',showSymbol:false,smooth:true,lineStyle:{width:1.5,type:'dashed',color:'#d4380d'},
-        data:e.y.map((v,i)=>[+e.x[i].toFixed(5),+v.toExponential(6)])});
-    }
-    return {tooltip:{trigger:'axis'},legend:{top:0},grid:{top:34,left:64,right:24,bottom:42},
-      dataZoom:[{type:'inside',xAxisIndex:0},{type:'slider',xAxisIndex:0,height:16,bottom:0}],
-      xAxis:{type:'value',name:'E / V',nameLocation:'middle',nameGap:32,axisLabel:{fontSize:9},scale:true},
-      yAxis:{type:'value',scale:true,axisLabel:{fontSize:9,formatter:v=>+v.toExponential(1)},name:'i / A'},
-      series:S};
-  };
-  // 导出 Markdown
   const exportMd=()=>{
     const s=[]; const now=new Date().toISOString().slice(0,19).replace('T',' ');
     s.push('# OER-FTAcV 分析报告');s.push('');s.push(`> 生成时间：${now}（本地）`);
@@ -459,13 +342,85 @@ function SimInvertStep({expAnalysis,expData,setError,sample}) {
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);
     a.download=`oer-report-${now.slice(0,10)}.md`;a.click();
   };
-  const mo=mainOpt();
-  return (<>
-    <div className="panel-title">正演与反演</div>
-    <div className="panel-desc">{expAnalysis?`对比数据：${expData?expData.name:'已导入'}`:'未导入数据时仍可正演（单独查看模型）'}</div>
-    <div className="grid">
-      <div className="card">
-        <h4>模型设置</h4>
+  // ===== 右栏图表（旧版布局：总电流 / 功率谱 / 覆盖度 / DC / 各阶谐波）=====
+  const modelLabel=result&&result.source==='inversion'?'反演参数正演':'正演';
+  const E=result?result.E_actual:null; const tdc=result?result.tdc:null;
+  const expTdc=expAnalysis?expAnalysis.tdc:null;
+  // 总电流
+  const cvSeries=[];
+  if(result) cvSeries.push(singleLine(pairs(E,result.i_total,800),MODEL_COLOR,modelLabel));
+  if(expAnalysis&&expAnalysis.E_raw&&expAnalysis.i_raw) cvSeries.push(expLine(pairs(expAnalysis.E_raw,expAnalysis.i_raw,800)));
+  const cvOpt=cvSeries.length?makeOpt({xName:'电位 (V vs RHE)',yName:'i (A)',series:cvSeries,legend:true}):null;
+  // 功率谱
+  const psSeries=result?[{name:'功率谱',type:'line',showSymbol:false,smooth:true,data:(result.ps_freq||[]).map((f,i)=>[+f.toFixed(3),+result.ps_mag[i].toExponential(4)])}]:[];
+  const psOpt=psSeries.length?makeOpt({xName:'频率 (Hz)',yName:'|FFT|',series:psSeries}):null;
+  // 覆盖度
+  const covSeries=result?[
+    singleLine(pairs(E,result.coverage_star),MODEL_COLOR,'θ_*'),
+    singleLine(pairs(E,result.coverage_ox),'#722ed1','θ_*ox'),
+    singleLine(pairs(E,result.coverage_OH),'#13c2c2','θ_*ox-OH'),
+    singleLine(pairs(E,result.coverage_O),'#fa8c16','θ_*ox-O'),
+    singleLine(pairs(E,result.coverage_OOH),'#52c41a','θ_*ox-OOH'),
+  ]:[];
+  const covOpt=covSeries.length?makeOpt({xName:'电位 (V vs RHE)',yName:'Coverage',series:covSeries,yOpt:{max:1,min:0},legend:true}):null;
+  // DC 分量
+  const dcSeries=[];
+  if(result) dcSeries.push(singleLine(pairs(tdc,result.dc,800),MODEL_COLOR,modelLabel));
+  if(expAnalysis&&expAnalysis.dc) dcSeries.push(expLine(pairs(expTdc,expAnalysis.dc,800)));
+  const dcOpt=dcSeries.length?makeOpt({xName:'电位 (V vs RHE)',yName:'归一化强度',series:dcSeries,legend:true}):null;
+  // 各阶谐波
+  const hOpts=(result||expAnalysis)?[0,1,2,3,4,5,6].map(k=>{
+    const series=[];
+    if(result) series.push(singleLine(pairs(tdc,result.harmonics[k],800),MODEL_COLOR,modelLabel));
+    if(expAnalysis&&expAnalysis.harmonics) series.push(expLine(pairs(expTdc,expAnalysis.harmonics[k],800)));
+    const active=expAnalysis?((expAnalysis.harmonic_quality&&expAnalysis.harmonic_quality.fit_harmonics||expAnalysis.suggested_fit_harmonics||[]).includes(k+1)):true;
+    return series.length?{opt:makeOpt({xName:'电位 (V vs RHE)',yName:'归一化强度',series,legend:true}),label:`H${k+1}${active?' · 拟合':' · 诊断'}`}:null;
+  }):[];
+  return (<div className="main" style={{display:'flex',gap:14,alignItems:'flex-start'}}>
+    <div className="left-panel" style={{width:340,flexShrink:0,padding:16,background:'var(--card)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflowY:'auto'}}>
+      <div className="panel-title">数据与正演</div>
+      <div className="card" style={{padding:0,border:'none',boxShadow:'none'}}>
+        <h4>导入数据</h4>
+        <FileDropZone onFileLoaded={handleFile} expData={expData}/>
+        <div className="row" style={{marginTop:10}}>
+          <button className="btn btn-ghost btn-sm" onClick={()=>dirRef.current&&dirRef.current.click()}>📁 选择本地数据文件夹</button>
+          <input ref={dirRef} type="file" webkitdirectory="" multiple style={{display:'none'}} onChange={handleFolder}/>
+        </div>
+        {localFiles.length>0&&<div className="row" style={{marginTop:8}}>
+          <select value={localSel} onChange={e=>setLocalSel(e.target.value)} style={{flex:1,padding:'6px 8px',border:'1px solid var(--border-strong)',borderRadius:7,fontSize:12}}>
+            {localFiles.map(f=><option key={f.name} value={f.name}>{f.name}</option>)}
+          </select>
+          <button className="btn btn-ghost btn-sm" onClick={loadLocalFile}>加载</button>
+        </div>}
+      </div>
+      {expAnalysis&&(<div className="card" style={{padding:0,border:'none',boxShadow:'none'}}>
+        <h4>自动识别</h4>
+        <div className="meta" style={{lineHeight:2}}>
+          频率：<strong>{expAnalysis.meta.f.toFixed(2)} Hz</strong> · 振幅：<strong>{expAnalysis.meta.dE.toFixed(3)} V</strong><br/>
+          扫速：<strong>{(expAnalysis.meta.v*1000).toFixed(1)} mV/s</strong> · 范围：<strong>{expAnalysis.meta.E_start.toFixed(3)}→{expAnalysis.meta.E_end.toFixed(3)} V</strong><br/>
+          周期数：<strong>{Math.round(expAnalysis.meta.f*expAnalysis.meta.duration)}</strong>
+          {expAnalysis.calib&&expAnalysis.calib.cdl.success&&<><br/>Cdl·A：<strong>{(expAnalysis.calib.cdl.CdlA*1e6).toFixed(1)} µF</strong>{expAnalysis.calib.tafel.success&&` · Tafel ${expAnalysis.calib.tafel.tafel_slope_mV.toFixed(0)} mV/dec`}</>}
+          {expAnalysis.calib&&<><br/>预氧化峰：<strong>{expAnalysis.calib.preox.separable?'直流可见（定量需反演）':'与 OER 重叠，不可直流分离'}</strong></>}
+        </div>
+      </div>)}
+      {expAnalysis&&(<div className="card" style={{padding:0,border:'none',boxShadow:'none'}}>
+        <h4>谐波质量</h4>
+        <div className="field"><label>判断严格程度</label>
+          <select value={strictness} onChange={e=>setStrictness(e.target.value)}>
+            {STRICTNESS.map(s=><option key={s.id} value={s.id}>{s.label} — {s.desc}</option>)}
+          </select></div>
+        <div className="meta" style={{marginTop:8}}>
+          建议分析用到第 <strong style={{fontSize:16}}>{sug.length?`H${sug[sug.length-1]}`:'无'}</strong> 阶谐波
+          {sug.length?`（${formatHarmonics(sug)}）`:''}
+        </div>
+        {hqChannels.length>0&&<table style={{marginTop:8}}>
+          <thead><tr><th>阶</th><th>相对 H1</th><th>判定</th></tr></thead>
+          <tbody>{hqChannels.map(c=><tr key={c.harmonic}>
+            <td>H{c.harmonic}</td><td>{(c.relative_rms*100).toFixed(1)}%</td>
+            <td className={c.fit?'ok':'warn'}>{c.fit?'可拟合':'仅诊断'}</td></tr>)}</tbody></table>}
+      </div>)}
+      <div className="card" style={{padding:0,border:'none',boxShadow:'none',borderTop:'1px dashed var(--border)',paddingTop:12,marginTop:12}}>
+        <h4>正演与反演</h4>
         <div className="row" style={{marginTop:0}}>
           <button className="btn btn-ghost btn-sm" onClick={()=>setAdvOpen(!advOpen)}>{advOpen?'收起参数':'展开参数（高级）'}</button>
           {expAnalysis&&<button className="btn btn-ghost btn-sm" onClick={()=>{const m=expAnalysis.meta;setParams(p=>({...p,E_start:+m.E_start.toFixed(4),E_end:+m.E_end.toFixed(4),f:+m.f.toFixed(4),dE:+m.dE.toFixed(4),n_points:16384}));}}>同步扫描参数</button>}
@@ -473,50 +428,40 @@ function SimInvertStep({expAnalysis,expData,setError,sample}) {
         {advOpen&&<ParamPanel params={params} onChange={setParams}/>}
         <button className="btn btn-primary" style={{width:'100%',marginTop:12}} onClick={simulate} disabled={loading}>
           {loading?'正演中...':'▶ 运行当前参数正演'}</button>
-      </div>
-      <div className="card">
-        <h4>诊断反演</h4>
-        <div className="row" style={{marginTop:0}}>
+        <div className="row" style={{marginTop:14}}>
           <span className="meta">trials</span>
           <input type="number" min="1" max="200" value={invTrials} onChange={e=>setInvTrials(Math.max(1,parseInt(e.target.value)||1))}
             style={{width:70,padding:'5px 8px',border:'1px solid var(--border-strong)',borderRadius:6,fontSize:12}}/>
-          <span className="meta">（诊断用，小预算）</span>
         </div>
-        <button className="btn btn-primary" style={{width:'100%',marginTop:12}} onClick={runInversion} disabled={invLoading}>
+        <button className="btn btn-primary" style={{width:'100%',marginTop:8,background:'var(--warn)'}} onClick={runInversion} disabled={invLoading}>
           {invLoading?'反演中...':'启动诊断反演'}</button>
         {expAnalysis&&expAnalysis.calib&&expAnalysis.calib.tafel&&!expAnalysis.calib.tafel.success&&
           <div className="tip" style={{marginTop:10}}>Tafel 提取失败：本次反演不含 Tafel 通道，仅用 DC+谐波。</div>}
-        {!expAnalysis&&<div className="hint" style={{marginTop:10}}>需先在「数据与分析」导入数据才能反演。</div>}
+        {!expAnalysis&&<div className="hint" style={{marginTop:10}}>需先导入数据才能反演。</div>}
         {invError&&<div className="err meta" style={{marginTop:10}}>反演错误：{invError}</div>}
         {invResult&&<div className="meta" style={{marginTop:10}}>
           目标：<strong>{invResult.best_value.toFixed(4)}</strong> · 等级：<strong>{invResult.fit_quality.level}</strong>
           · 完成度 <strong>{invResult.fit_quality.completion_percent.toFixed(1)}%</strong><br/>
-          通道：{formatHarmonics(invResult.fit_harmonics)}<br/>{invResult.fit_quality.message}
+          通道：{formatHarmonics(invResult.fit_harmonics)}
         </div>}
-      </div>
-      <div className="card" style={{gridColumn:'1/-1'}}>
-        <h4>正演对比 {result&&result.source==='inversion'&&<span style={{color:'var(--success)',fontWeight:400,fontSize:11}}>（反演参数正演）</span>}</h4>
-        {mo?<ChartBox option={mo} height={360}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>运行正演后在此显示总电流对比曲线</div>}
-      </div>
-      <div className="card" style={{gridColumn:'1/-1'}}>
-        <h4>分阶谐波质量（实验 vs 模型，每阶独立）</h4>
-        {result&&expAnalysis?(<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:10}}>
-          {[0,1,2,3,4,5,6].map(i=>(
-            <div key={i}>
-              <div className="hint" style={{marginBottom:2}}>H{i+1}</div>
-              {perHarmOneOpt(i)?<ChartBox option={perHarmOneOpt(i)} height={180}/>:<div className="hint">无数据</div>}
-            </div>))}
-        </div>):<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>导入数据并运行正演后，显示 H1–H7 逐阶对比</div>}
-      </div>
-      <div className="card" style={{gridColumn:'1/-1'}}>
-        <h4>导出报告</h4>
-        <div className="row" style={{marginTop:0}}>
-          <button className="btn btn-ghost" onClick={exportMd}>⬇ 导出 Markdown 报告</button>
-          <span className="meta">含样品信息、识别条件、诊断反演结果与限制说明，供 AI 分析。</span>
+        <div className="row" style={{marginTop:12}}>
+          <button className="btn btn-ghost btn-sm" onClick={exportMd}>⬇ 导出 Markdown</button>
         </div>
       </div>
     </div>
-  </>);
+    <div style={{flex:1,minWidth:0,display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(340px,1fr))',gap:12,alignContent:'start'}}>
+      <div className="card"><h4>FTacV 总电流：实验 / 正演对比</h4>
+        {cvOpt?<ChartBox option={cvOpt} height={280}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>导入数据并运行正演后对比</div>}</div>
+      <div className="card"><h4>功率谱 (FFT)</h4>
+        {psOpt?<ChartBox option={psOpt} height={280}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>运行正演后显示</div>}</div>
+      <div className="card"><h4>OER 表面覆盖度</h4>
+        {covOpt?<ChartBox option={covOpt} height={280}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>运行正演后显示</div>}</div>
+      <div className="card"><h4>DC 分量</h4>
+        {dcOpt?<ChartBox option={dcOpt} height={280}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>导入数据后对比 DC</div>}</div>
+      {hOpts.map((h,k)=>h&&(<div className="card" key={k}><h4>谐波 {h.label}</h4>
+        <ChartBox option={h.opt} height={260}/></div>))}
+    </div>
+  </div>);
 }
 
 /* ===================== ④ 项目结果 ===================== */
@@ -619,11 +564,8 @@ function App() {
       {/* 已访问的步骤保留挂载（display 切换不丢状态）；未访问的不渲染，避免 display:none 下 echarts 初始化崩溃 */}
       <div style={{display:step==='sample'?'block':'none'}}><SampleStep sample={sample} setSample={setSample}/></div>
       {visited.work&&<div style={{display:step==='work'?'block':'none'}}>
-        {/* ②③ 合并：数据与分析 + 正演与反演在同一页 */}
-        <DataStep expData={expData} setExpData={setExpData} expAnalysis={expAnalysis} setExpAnalysis={setExpAnalysis}
-          setError={setError} strictness={strictness} setStrictness={setStrictness}/>
-        <div style={{borderTop:'1px solid var(--border)',margin:'20px 0'}}/>
-        <SimInvertStep expAnalysis={expAnalysis} expData={expData} setError={setError} sample={sample}/>
+        <WorkStep expData={expData} setExpData={setExpData} expAnalysis={expAnalysis} setExpAnalysis={setExpAnalysis}
+          setError={setError} strictness={strictness} setStrictness={setStrictness} sample={sample}/>
       </div>}
       {visited.results&&<div style={{display:step==='results'?'block':'none'}}><ResultsStep setError={setError}/></div>}
     </div>
