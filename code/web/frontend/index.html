@@ -333,6 +333,15 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
       const simData=await simRes.json();if(simData.success){simData.source='inversion';setResult(simData);}else setError('反演参数正演失败: '+simData.error);
     }catch(e){setInvError(e.message);}setInvLoading(false);
   };
+  // 判断参数是否顶到边界（→ 可能未分辨），并给出原因
+  const markParam=(k,v)=>{
+    const b=AEM_PARAM_BOUNDS[k];
+    if(!b) return null;
+    const [lo,hi]=b; const norm=(Number(v)-lo)/(hi-lo);
+    if(norm<0.02) return '顶下边界·可能未分辨';
+    if(norm>0.98) return '顶上边界·可能未分辨';
+    return null;
+  };
   // 反演收敛历史（跨多次反演累积：loss 散点 + running best 实线）
   const invHistOpt=()=>{
     if(!invHistory.length) return null;
@@ -502,9 +511,11 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
           通道：{formatHarmonics(invResult.fit_harmonics)} · nfev：{invResult.n_forward} · ODE fail：{invResult.n_ode_fail||0}
         </div>}
         {invResult&&invResult.best_params&&<table style={{marginTop:8,fontSize:11}}>
-          <thead><tr><th>参数</th><th>反演值</th></tr></thead>
-          <tbody>{Object.entries(invResult.best_params).map(([k,v])=><tr key={k}>
-            <td>{k}</td><td className="mono">{Number(v).toExponential(3)}</td></tr>)}</tbody></table>}
+          <thead><tr><th>参数</th><th>反演值</th><th>状态</th></tr></thead>
+          <tbody>{Object.entries(invResult.best_params).map(([k,v])=>{const w=markParam(k,v);
+            return <tr key={k}><td>{k}</td><td className="mono">{Number(v).toExponential(3)}</td>
+              <td className={w?'warn':'ok'} style={{fontSize:10}}>{w||'正常'}</td></tr>;})}</tbody></table>
+          <div className="hint" style={{marginTop:4}}>「顶边界」表示该参数被优化器推到边界，可能未被数据分辨（需收紧边界或独立约束）。</div>}
         {invHistory.length>0&&(
           <div style={{marginTop:8}}><div className="hint" style={{marginBottom:2}}>收敛历史（{invHistory.length} trials · 同一次数据累积）</div>
             <ChartBox option={invHistOpt()} height={160}/></div>)}
@@ -583,6 +594,20 @@ function ResultsStep({setError}) {
     <div className="panel-title">项目结果</div>
     <div className="panel-desc">当前已归档的正式分析结果（只读展示）。</div>
     <div className="grid">
+      <div className="card" style={{gridColumn:'1/-1'}}>
+        <h4>项目结论</h4>
+        <div className="meta" style={{lineHeight:1.9}}>
+          <div><strong>G_OH–log₁₀(k0_1) 局部补偿</strong> <span className="warn">[LOCAL_ONLY]</span>：
+            约 <strong>0.11 eV/dec</strong>（0.11324/0.11689/0.10917），与正向 BV 的 (1−α) 尺度一致，
+            但仅限 mixed_a 附近有限协议范围，非全局物理标度。</div>
+          <div><strong>参数耦合</strong>：G_OH↔G_O、k0_3↔G_OH 强补偿（2D profile r≈+0.999/1.000）；
+            k0_2 与其他参数独立，可独立约束。</div>
+          <div><strong>A6 状态</strong>：六参数单点恢复资格失败；k0_4 只能作为固定输入传播；
+            无统一六维线性降维；V4.1 三协议在无噪声合成下无法恢复（S1 DESIGN_INSUFFICIENT）。</div>
+        </div>
+        <div className="hint" style={{marginTop:6}}>完整结论与边界见 <code>documents/project/PROJECT_SUMMARY.md</code>；
+          本窗口为当前项目已确认结论（工程/数值等级），不自动升级为机理结论。</div>
+      </div>
       <div className="card">
         <h4>实验数据质量</h4>
         <table><thead><tr><th>数据集</th><th>频率</th><th>振幅</th><th>拟合通道</th></tr></thead>
