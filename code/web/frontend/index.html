@@ -619,7 +619,7 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
         </div>
       </div>
     </div>
-    <div style={{flex:1,minWidth:0,display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(340px,1fr))',gap:12,alignContent:'start'}}>
+    <div style={{flex:1,minWidth:0,display:'grid',gridTemplateColumns:'repeat(2, minmax(0,1fr))',gap:12,alignContent:'start'}}>
       <div className="card"><h4>FTacV 总电流：实验 / 正演对比</h4>
         {cvOpt?<ChartBox option={cvOpt} height={280}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>导入数据并运行正演后对比</div>}</div>
       <div className="card"><h4>功率谱 (FFT)</h4>
@@ -865,12 +865,11 @@ function App() {
   return (<div className="app">
     <div className="nav">
       <div className="titlebar-spacer"/>
-      <div className="brand">OER 工作台<div className="sub">FTacV 参数反演</div></div>
+      <div className="brand">工作台</div>
       <div className="nav-list">
         {steps.map((s,i)=>(<div key={s.id} className={`nav-item ${step===s.id?'active':''}`} onClick={()=>go(s.id)}>
           <span className="ic">{ICONS[s.icon]}</span>{s.label}</div>))}
       </div>
-      <div className="nav-foot">碱性 OER AEM · Co₃O₄<br/>展示层，计算外接</div>
     </div>
     <div className="main">
       {error&&<div className="tip" style={{background:'rgba(255,59,48,.12)',border:'1px solid rgba(255,59,48,.3)',color:'var(--accent)',marginBottom:12}}>{error}
