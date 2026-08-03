@@ -419,6 +419,82 @@ async def results_recovery_s1() -> Dict[str, Any]:
     }
 
 
+@app.get("/api/wf/tasks")
+async def wf_tasks() -> Dict[str, Any]:
+    """只读：列出 oer-wf 归档任务（Mac archive/results 下）。"""
+    root = ARCHIVE_ROOT / "results"
+    if not root.exists():
+        return {"success": False, "error": f"归档目录不存在: {root}"}
+    tasks = []
+    for commit in sorted(root.iterdir()):
+        if not commit.is_dir():
+            continue
+        for task in sorted(commit.iterdir()):
+            if not task.is_dir():
+                continue
+            runs = sorted([r for r in task.iterdir() if r.is_dir()])
+            if not runs:
+                continue
+            latest = runs[-1]
+            status = "UNKNOWN"
+            sf = latest / "STATUS.json"
+            if sf.exists():
+                try:
+                    status = _read_json(sf).get("status", "UNKNOWN")
+                except Exception:
+                    pass
+            tasks.append({
+                "commit": commit.name,
+                "task": task.name,
+                "runs": len(runs),
+                "latest": latest.name,
+                "status": status,
+                "task_id": f"{commit.name}/{task.name}",
+            })
+    tasks.sort(key=lambda t: t["task_id"])
+    return {"success": True, "tasks": tasks}
+
+
+@app.get("/api/wf/task")
+async def wf_task(commit: str, task: str) -> Dict[str, Any]:
+    """只读：读取某归档任务的全部运行记录与状态。"""
+    base = ARCHIVE_ROOT / "results" / commit / task
+    if not base.exists():
+        return {"success": False, "error": f"任务不存在: {commit}/{task}"}
+    runs = []
+    for r in sorted(base.iterdir()):
+        if not r.is_dir():
+            continue
+        entry = {"timestamp": r.name}
+        sf = r / "STATUS.json"
+        if sf.exists():
+            try:
+                entry["status"] = _read_json(sf)
+            except Exception:
+                entry["status_error"] = "STATUS.json 解析失败"
+        # 列出结果文件
+        files = [f.name for f in sorted(r.iterdir()) if f.is_file()]
+        entry["files"] = files
+        # 常见摘要
+        for name in ("summary.json", "profile_2d_summary.json", "portfolio_recovery.csv"):
+            p = r / name
+            if p.exists():
+                if name.endswith(".json"):
+                    try:
+                        entry["summary"] = _read_json(p)
+                    except Exception:
+                        pass
+                else:
+                    try:
+                        rows = _read_csv_rows(p)
+                        entry["summary"] = {"rows": len(rows), "columns": list(rows[0].keys())[:8] if rows else []}
+                    except Exception:
+                        pass
+                break
+        runs.append(entry)
+    return {"success": True, "task_id": f"{commit}/{task}", "runs": runs}
+
+
 @app.get("/api/results/sensitivity-matrix")
 async def results_sensitivity_matrix() -> Dict[str, Any]:
     """A6 敏感性矩阵（特征 × 参数），供热图展示。"""
