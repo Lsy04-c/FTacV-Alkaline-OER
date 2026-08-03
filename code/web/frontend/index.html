@@ -155,7 +155,7 @@ function ParamPanel({params,onChange}) {
 }
 
 const AEM_PARAM_BOUNDS={k0_1:[1e-2,1e4],k0_2:[1e-2,1e4],k0_3:[1e-2,1e4],k0_4:[1e-2,1e4],
-  G_OH:[0.9,1.7],G_O:[2.3,3.3],scaling_OOH_OH:[2.9,3.5],gamma:[1e-10,1e-8]};
+  G_OH:[0.9,1.7],G_O:[2.3,3.3],scaling_OOH_OH:[2.9,3.5],gamma:[1e-10,1e-7]};
 function formatHarmonics(list){if(!list||!list.length)return '无，仅 DC';return list.map(h=>`H${h}`).join(', ');}
 // 降采样：均匀抽取 maxN 个点，避免 ECharts 渲染几十万点导致白屏
 function downsample(arr,maxN=500){
