@@ -293,6 +293,8 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
     setInvLoading(true);setInvError(null);setInvResult(null);
     try{
       const m=expAnalysis.meta;
+      // 拟合通道用科学侧建议（而非硬编码 H1-H3）
+      const fit=(expAnalysis.harmonic_quality&&expAnalysis.harmonic_quality.fit_harmonics)||expAnalysis.suggested_fit_harmonics||[1,2,3];
       const tafelOk=!!(expAnalysis.calib&&expAnalysis.calib.tafel&&expAnalysis.calib.tafel.success);
       const payload={
         target:{tdc:expAnalysis.tdc,dc:expAnalysis.dc,harmonics:expAnalysis.harmonics,tafel:tafelOk?expAnalysis.calib.tafel.tafel_slope:null},
@@ -300,7 +302,7 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
         initial_params:{k0_1:params.k0_1,k0_2:params.k0_2,k0_3:params.k0_3,k0_4:params.k0_4,
           G_OH:params.G_OH,G_O:params.G_O,scaling_OOH_OH:params.scaling_OOH_OH,gamma:params.gamma},
         fixed_params:{Cdl:params.Cdl,Ru:params.Ru,A:params.A,E0_pre:params.E0_pre,k0_pre:params.k0_pre},
-        param_bounds:AEM_PARAM_BOUNDS,fit_harmonics:[1,2,3],n_trials:invTrials,
+        param_bounds:AEM_PARAM_BOUNDS,fit_harmonics:fit,n_trials:invTrials,
       };
       const res=await fetch(`${API_BASE}/api/inversion/tpe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const data=await res.json();if(!data.success){setInvError(data.error);setInvLoading(false);return;}
@@ -309,6 +311,16 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
       const simRes=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(simParams)});
       const simData=await simRes.json();if(simData.success){simData.source='inversion';setResult(simData);}else setError('反演参数正演失败: '+simData.error);
     }catch(e){setInvError(e.message);}setInvLoading(false);
+  };
+  // 反演收敛历史（best_so_far）
+  const invHistOpt=()=>{
+    if(!invResult||!invResult.history||!invResult.history.length) return null;
+    const h=invResult.history;
+    return {tooltip:{trigger:'axis'},grid:{top:14,right:16,bottom:30,left:56},
+      xAxis:{type:'value',name:'trial',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:9}},
+      yAxis:{type:'value',scale:true,axisLabel:{fontSize:9,formatter:v=>+v.toExponential(1)},name:'loss'},
+      series:[{name:'best so far',type:'line',showSymbol:false,smooth:true,color:'#1677ff',
+        data:h.map(item=>[item.trial||h.indexOf(item)+1,+Number(item.best_so_far).toExponential(6)])}]};
   };
   const exportMd=()=>{
     const s=[]; const now=new Date().toISOString().slice(0,19).replace('T',' ');
@@ -442,8 +454,15 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
         {invResult&&<div className="meta" style={{marginTop:10}}>
           目标：<strong>{invResult.best_value.toFixed(4)}</strong> · 等级：<strong>{invResult.fit_quality.level}</strong>
           · 完成度 <strong>{invResult.fit_quality.completion_percent.toFixed(1)}%</strong><br/>
-          通道：{formatHarmonics(invResult.fit_harmonics)}
+          通道：{formatHarmonics(invResult.fit_harmonics)} · nfev：{invResult.n_forward} · ODE fail：{invResult.n_ode_fail||0}
         </div>}
+        {invResult&&invResult.best_params&&<table style={{marginTop:8,fontSize:11}}>
+          <thead><tr><th>参数</th><th>反演值</th></tr></thead>
+          <tbody>{Object.entries(invResult.best_params).map(([k,v])=><tr key={k}>
+            <td>{k}</td><td className="mono">{Number(v).toExponential(3)}</td></tr>)}</tbody></table>}
+        {invResult&&invResult.history&&invResult.history.length>0&&(
+          <div style={{marginTop:8}}><div className="hint" style={{marginBottom:2}}>收敛历史</div>
+            <ChartBox option={invHistOpt()} height={150}/></div>)}
         <div className="row" style={{marginTop:12}}>
           <button className="btn btn-ghost btn-sm" onClick={exportMd}>⬇ 导出 Markdown</button>
         </div>
