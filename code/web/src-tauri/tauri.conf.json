@@ -1,0 +1,59 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/tooling/cli/schema.json",
+  "build": {
+    "beforeDevCommand": "",
+    "beforeBuildCommand": "",
+    "devPath": "../frontend",
+    "distDir": "../frontend",
+    "withGlobalTauri": false
+  },
+  "package": {
+    "productName": "OER 工作台",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "open": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "targets": [
+        "dmg",
+        "app"
+      ],
+      "identifier": "com.oer-lab.workbench",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "category": "Education",
+      "shortDescription": "OER-FTAcV 参数反演工作台（展示层，计算外接）",
+      "longDescription": "碱性 OER FTacV 微观动力学分析工作台：数据导入、谐波质量判断、正演/诊断反演、结果展示。计算由课题组自有 Python 代码提供，本应用只负责展示与任务编排。"
+    },
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "label": "main",
+        "title": "工作台",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "url": "http://127.0.0.1:7100/",
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "fileDropEnabled": false,
+        "visible": false
+      }
+    ],
+    "macOSPrivateApi": true
+  }
+}
