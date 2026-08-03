@@ -240,8 +240,10 @@ const STRICTNESS=[
   {id:'standard',label:'标准',desc:'按默认可解析性阈值建议'},
   {id:'strict',label:'严格',desc:'只保留信噪比很高的谐波'},
 ];
-function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strictness,setStrictness,sample}) {
+function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strictness,setStrictness,sample,setSample}) {
   const [localFiles,setLocalFiles]=useState([]); const [localSel,setLocalSel]=useState('');
+  const [sampleOpen,setSampleOpen]=useState(false);
+  const sf=(k,v)=>setSample&&setSample(s=>({...s,[k]:v}));
   const dirRef=useRef(null);
   const [params,setParams]=useState({}); const [loading,setLoading]=useState(false);
   const [result,setResult]=useState(null); const [advOpen,setAdvOpen]=useState(false);
@@ -307,6 +309,8 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
       const res=await fetch(`${API_BASE}/api/inversion/tpe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const data=await res.json();if(!data.success){setInvError(data.error);setInvLoading(false);return;}
       setInvResult(data);
+      // 反演结果更新到参数表 → 支持连续反演（下次以本次 best 为初值继续优化）
+      setParams(p=>({...p,...data.best_params}));
       const simParams={...params,...data.best_params,E_start:m.E_start,E_end:m.E_end,f:m.f,dE:m.dE,n_points:512,points_per_cycle:64};
       const simRes=await fetch(`${API_BASE}/api/simulate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(simParams)});
       const simData=await simRes.json();if(simData.success){simData.source='inversion';setResult(simData);}else setError('反演参数正演失败: '+simData.error);
@@ -391,6 +395,29 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
   return (<div className="main" style={{display:'flex',gap:14,alignItems:'flex-start'}}>
     <div className="left-panel" style={{width:340,flexShrink:0,padding:16,background:'var(--card)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflowY:'auto'}}>
       <div className="panel-title">数据与正演</div>
+      {/* 样品与电极（折叠小卡，随报告导出） */}
+      <div style={{marginBottom:10}}>
+        <button className="btn btn-ghost btn-sm" style={{width:'100%',textAlign:'left'}} onClick={()=>setSampleOpen(!sampleOpen)}>
+          {sampleOpen?'▾':'▸'} 样品与电极 {sample&&sample.area?`· ${sample.support||''} ${sample.area}cm²`:'（可折叠）'}
+        </button>
+        {sampleOpen&&<div style={{marginTop:8}}>
+          <div className="field"><label>基底</label>
+            <select value={sample.support||''} onChange={e=>sf('support',e.target.value)}>
+              <option value="">请选择</option>{SUPPORTS.map(s=><option key={s} value={s}>{s}</option>)}
+            </select></div>
+          <div className="field"><label>电极面积（cm²）</label>
+            <input type="number" value={sample.area??''} onChange={e=>sf('area',e.target.value)} placeholder="例如 0.196"/></div>
+          <div className="field"><label>参比电极</label>
+            <select value={sample.reference||''} onChange={e=>sf('reference',e.target.value)}>
+              <option value="">请选择</option>{REFERENCES.map(r=><option key={r} value={r}>{r}</option>)}
+            </select></div>
+          <div className="field"><label>电解液</label>
+            <input value={sample.electrolyte||''} onChange={e=>sf('electrolyte',e.target.value)} placeholder="例如 1 M KOH"/></div>
+          <div className="field"><label>备注</label>
+            <textarea value={sample.note||''} onChange={e=>sf('note',e.target.value)} rows={1}
+              style={{width:'100%',padding:'6px 8px',border:'1px solid var(--border-strong)',borderRadius:6,fontSize:12,resize:'vertical'}}/></div>
+        </div>}
+      </div>
       <div className="card" style={{padding:0,border:'none',boxShadow:'none'}}>
         <h4>导入数据</h4>
         <FileDropZone onFileLoaded={handleFile} expData={expData}/>
@@ -597,17 +624,16 @@ function ResultsStep({setError}) {
 
 /* ===================== App ===================== */
 function App() {
-  const [step,setStep]=useState('sample');
+  const [step,setStep]=useState('work');
   const [sample,setSample]=useState({});
   const [expData,setExpData]=useState(null);
   const [expAnalysis,setExpAnalysis]=useState(null);
   const [strictness,setStrictness]=useState('standard');
   const [error,setError]=useState(null);
   // 惰性挂载：首次进入某步才挂载组件（保证 ChartBox 在可见时初始化），之后保留状态
-  const [visited,setVisited]=useState({sample:true});
+  const [visited,setVisited]=useState({work:true});
   const go=(id)=>{setStep(id);setVisited(v=>v[id]?v:{...v,[id]:true});};
   const steps=[
-    {id:'sample',label:'样品与电极'},
     {id:'work',label:'数据与正演'},
     {id:'results',label:'项目结果'},
   ];
@@ -622,10 +648,9 @@ function App() {
       {error&&<div className="tip" style={{background:'#fff1f0',border:'1px solid #ffccc7',color:'#a8071a',marginBottom:12}}>{error}
         <span style={{float:'right',cursor:'pointer'}} onClick={()=>setError(null)}>✕</span></div>}
       {/* 已访问的步骤保留挂载（display 切换不丢状态）；未访问的不渲染，避免 display:none 下 echarts 初始化崩溃 */}
-      <div style={{display:step==='sample'?'block':'none'}}><SampleStep sample={sample} setSample={setSample}/></div>
       {visited.work&&<div style={{display:step==='work'?'block':'none'}}>
         <WorkStep expData={expData} setExpData={setExpData} expAnalysis={expAnalysis} setExpAnalysis={setExpAnalysis}
-          setError={setError} strictness={strictness} setStrictness={setStrictness} sample={sample}/>
+          setError={setError} strictness={strictness} setStrictness={setStrictness} sample={sample} setSample={setSample}/>
       </div>}
       {visited.results&&<div style={{display:step==='results'?'block':'none'}}><ResultsStep setError={setError}/></div>}
     </div>
