@@ -149,6 +149,24 @@ function ParamPanel({params,onChange}) {
 const AEM_PARAM_BOUNDS={k0_1:[1e-2,1e4],k0_2:[1e-2,1e4],k0_3:[1e-2,1e4],k0_4:[1e-2,1e4],
   G_OH:[0.9,1.7],G_O:[2.3,3.3],scaling_OOH_OH:[2.9,3.5],gamma:[1e-10,1e-8]};
 function formatHarmonics(list){if(!list||!list.length)return '无，仅 DC';return list.map(h=>`H${h}`).join(', ');}
+// 降采样：均匀抽取 maxN 个点，避免 ECharts 渲染几十万点导致白屏
+function downsample(arr,maxN=500){
+  if(!arr||!arr.length)return [];
+  if(arr.length<=maxN)return arr.slice();
+  const step=arr.length/maxN;
+  const out=[];
+  for(let i=0;i<maxN;i++)out.push(arr[Math.floor(i*step)]);
+  out.push(arr[arr.length-1]);
+  return out;
+}
+function downsampleXY(x,y,maxN=500){
+  if(!x||!y)return{x:[],y:[]};
+  if(x.length<=maxN)return{x,y};
+  const step=x.length/maxN; const ox=[],oy=[];
+  for(let i=0;i<maxN;i++){const k=Math.floor(i*step);ox.push(x[k]);oy.push(y[k]);}
+  ox.push(x[x.length-1]);oy.push(y[y.length-1]);
+  return{x:ox,y:oy};
+}
 
 /* ===================== ① 样品与电极 ===================== */
 const CATALYST='四氧化三钴（Co₃O₄）';
@@ -216,17 +234,35 @@ function DataStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
       const data=await res.json();if(!data.success)setError('内置数据解析失败: '+data.error);else setExpAnalysis(data);
     }catch(e){setError('内置数据解析失败: '+e.message);}
   };
-  // 建议最高阶：标准档用科学侧 suggested_fit_harmonics；严格/宽松按相对 H1 阈值推断
+  // 建议最高阶：直接用科学侧 harmonic_quality（fit/relative_rms）；严格/宽松按相对 H1 阈值
   const suggested=()=>{
-    if(!expAnalysis||!expAnalysis.harmonics) return [];
-    const h=expAnalysis.harmonics; // 7 个通道，按相对 H1 RMS
-    const h1=Math.max(Math.sqrt((h[0]||[]).reduce((a,v)=>a+v*v,0)/Math.max((h[0]||[]).length,1)),1e-12);
-    const ratios=h.map((arr,i)=>{const rms=Math.sqrt((arr||[]).reduce((a,v)=>a+v*v,0)/Math.max(arr.length,1));return rms/h1;});
-    const th={loose:0.003,standard:0.01,strict:0.03}[strictness]||0.01;
-    const maxIdx=ratios.reduce((mx,v,i)=>v>th?i:mx,-1);
-    return Array.from({length:maxIdx+1},(_,i)=>i+1);
+    if(!expAnalysis) return [];
+    const hq=expAnalysis.harmonic_quality;
+    if(!hq) return expAnalysis.suggested_fit_harmonics||[];
+    if(strictness==='standard') return hq.fit_harmonics||[];
+    const th=strictness==='strict'?0.03:0.003; // 严格 3% / 宽松 0.3% 相对 H1
+    return (hq.channels||[]).filter(c=>c.relative_rms>=th).map(c=>c.harmonic);
   };
   const sug=suggested();
+  // 实验数据图像（导入后立即显示，降采样避免卡死）
+  const expCurveOpt=()=>{
+    if(!expAnalysis||!expAnalysis.E_raw||!expAnalysis.i_raw) return null;
+    const d=downsampleXY(expAnalysis.E_raw,expAnalysis.i_raw,600);
+    return {tooltip:{trigger:'axis'},grid:{top:20,right:20,bottom:30,left:56},
+      xAxis:{type:'value',name:'E / V',nameLocation:'middle',nameGap:28,axisLabel:{fontSize:9}},
+      yAxis:{type:'value',name:'i / A',axisLabel:{fontSize:9,formatter:v=>+v.toExponential(1)}},
+      series:[{name:'实验电流',type:'line',showSymbol:false,smooth:true,data:d.y.map((v,i)=>[d.x[i],v])}]};
+  };
+  const expHarmOpt=()=>{
+    if(!expAnalysis||!expAnalysis.harmonics||!expAnalysis.tdc) return null;
+    const x=downsample(expAnalysis.tdc,600);
+    const series=(expAnalysis.harmonics||[]).slice(0,4).map((h,i)=>({
+      name:`H${i+1}`,type:'line',showSymbol:false,smooth:true,data:downsample(h,600).map((v,k)=>[x[k],v])}));
+    return {tooltip:{trigger:'axis'},legend:{top:0,type:'scroll'},grid:{top:26,right:20,bottom:30,left:56},
+      xAxis:{type:'value',name:'E / V',nameLocation:'middle',nameGap:28,axisLabel:{fontSize:9}},
+      yAxis:{type:'value',axisLabel:{fontSize:9,formatter:v=>+v.toExponential(1)}},
+      series:series};
+  };
   return (<>
     <div className="panel-title">数据与分析</div>
     <div className="panel-desc">导入 FTacV / CV / LSV，自动识别采集参数并判断谐波可用性。</div>
@@ -262,6 +298,15 @@ function DataStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
         </div>
         <div className="hint" style={{marginTop:6}}>判断标准：该阶谐波幅值 ≥ 基波 H1 的
           {strictness==='strict'?' 3%':strictness==='loose'?' 0.3%':' 1%'}。具体阈值由科学侧冻结配置，界面仅为展示层口径。</div>
+      </div>)}
+      {expAnalysis&&(<div className="card" style={{gridColumn:'1/-1'}}>
+        <h4>实验数据</h4>
+        <div className="grid" style={{gridTemplateColumns:'1fr 1fr',gap:12}}>
+          <div><div className="hint" style={{marginBottom:4}}>电流—电位</div>
+            {expCurveOpt()?<ChartBox option={expCurveOpt()} height={240}/>:<div className="hint">无电流数据</div>}</div>
+          <div><div className="hint" style={{marginBottom:4}}>H1–H4 谐波包络</div>
+            {expHarmOpt()?<ChartBox option={expHarmOpt()} height={240}/>:<div className="hint">无谐波数据</div>}</div>
+        </div>
       </div>)}
     </div>
   </>);
@@ -303,26 +348,31 @@ function SimInvertStep({expAnalysis,expData,setError,sample}) {
       const simData=await simRes.json();if(simData.success){simData.source='inversion';setResult(simData);}else setError('反演参数正演失败: '+simData.error);
     }catch(e){setInvError(e.message);}setInvLoading(false);
   };
-  // 每阶谐波对比（实验 vs 模型）
+  // 每阶谐波对比（实验 vs 模型，降采样避免白屏）
   const perHarmOpt=()=>{
     if(!expAnalysis||!expAnalysis.harmonics||!result||!result.harmonics) return null;
     const exp=expAnalysis.harmonics, mod=result.harmonics;
-    const x=Array.from({length:exp[0].length},(_,i)=>i);
+    const x=downsample(expAnalysis.tdc||Array.from({length:exp[0].length},(_,i)=>i),500);
     const series=[];
-    exp.forEach((h,i)=>{series.push({name:`实验 H${i+1}`,type:'line',showSymbol:false,smooth:true,data:h.map(v=>+v.toFixed(5))});});
-    mod.forEach((h,i)=>{series.push({name:`模型 H${i+1}`,type:'line',showSymbol:false,smooth:true,lineStyle:{type:'dashed'},data:h.map(v=>+v.toFixed(5))});});
-    return {tooltip:{trigger:'axis'},legend:{top:0,type:'scroll'},grid:{top:30,right:16,bottom:26,left:44},
-      xAxis:{type:'category',data:x,axisLabel:{fontSize:9},name:'采样点'},
-      yAxis:{type:'value',axisLabel:{fontSize:9},name:'归一化'},
+    exp.slice(0,4).forEach((h,i)=>{series.push({name:`实验 H${i+1}`,type:'line',showSymbol:false,smooth:true,data:downsample(h,500).map((v,k)=>[x[k],+v.toFixed(6)])});});
+    mod.slice(0,4).forEach((h,i)=>{series.push({name:`模型 H${i+1}`,type:'line',showSymbol:false,smooth:true,lineStyle:{type:'dashed'},data:downsample(h,500).map((v,k)=>[x[k],+v.toFixed(6)])});});
+    return {tooltip:{trigger:'axis'},legend:{top:0,type:'scroll'},grid:{top:30,right:16,bottom:30,left:56},
+      xAxis:{type:'value',name:'E / V',nameLocation:'middle',nameGap:28,axisLabel:{fontSize:9}},
+      yAxis:{type:'value',axisLabel:{fontSize:9,formatter:v=>+v.toExponential(1)},name:'幅值'},
       series:series};
   };
   const mainOpt=()=>{
     if(!result) return null;
-    const S=[{name:'总电流',type:'line',showSymbol:false,data:result.i_total.map((v,i)=>+v.toFixed(8)),xAxisIndex:1,yAxisIndex:1}];
-    if(expAnalysis){S.push({name:'实验',type:'line',showSymbol:false,lineStyle:{width:1,type:'dashed',color:'#d4380d'},data:expAnalysis.current||[],xAxisIndex:0,yAxisIndex:1});}
-    return {tooltip:{trigger:'axis'},legend:{top:0},grid:[{top:34,left:52,right:20,height:'55%'},{top:'68%',left:52,right:20,bottom:20}],
-      xAxis:[{type:'category',data:result.tdc,axisLabel:{fontSize:9},name:'E / V'},{type:'category',gridIndex:1,data:result.tdc,axisLabel:{fontSize:9},name:'E / V'}],
-      yAxis:[{type:'value',scale:true,axisLabel:{fontSize:9},name:'i / A'},{type:'value',gridIndex:1,axisLabel:{fontSize:9},name:'i / A'}],
+    const m=downsampleXY(result.tdc,result.i_total,800);
+    const S=[{name:'模型',type:'line',showSymbol:false,smooth:true,data:m.y.map((v,i)=>[+m.x[i].toFixed(5),+v.toExponential(6)])}];
+    if(expAnalysis&&expAnalysis.E_raw&&expAnalysis.i_raw){
+      const e=downsampleXY(expAnalysis.E_raw,expAnalysis.i_raw,800);
+      S.push({name:'实验',type:'line',showSymbol:false,smooth:true,lineStyle:{width:1.5,type:'dashed',color:'#d4380d'},
+        data:e.y.map((v,i)=>[+e.x[i].toFixed(5),+v.toExponential(6)])});
+    }
+    return {tooltip:{trigger:'axis'},legend:{top:0},grid:{top:34,left:56,right:24,bottom:34},
+      xAxis:{type:'value',name:'E / V',nameLocation:'middle',nameGap:30,axisLabel:{fontSize:9}},
+      yAxis:{type:'value',scale:true,axisLabel:{fontSize:9,formatter:v=>+v.toExponential(1)},name:'i / A'},
       series:S};
   };
   // 导出 Markdown
