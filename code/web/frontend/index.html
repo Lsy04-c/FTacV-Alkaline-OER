@@ -508,7 +508,7 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
     return series.length?{opt:makeOpt({xName:'电位 (V vs RHE)',yName:'归一化强度',series,legend:true}),label:`H${k+1}${active?' · 拟合':' · 诊断'}`}:null;
   }):[];
   return (<div className="main" style={{display:'flex',gap:14,alignItems:'flex-start'}}>
-    <div className="left-panel" style={{width:340,flexShrink:0,padding:16,background:'var(--card)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflowY:'auto'}}>
+    <div className="left-panel" style={{width:'30%',minWidth:280,maxWidth:380,flexShrink:0,padding:16,background:'var(--card)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflowY:'auto'}}>
       <div className="panel-title">数据与正演</div>
       {/* 样品与电极（折叠小卡，随报告导出） */}
       <div style={{marginBottom:10}}>
