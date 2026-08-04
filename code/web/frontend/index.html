@@ -253,10 +253,10 @@ function singleLine(data,color,label){return{name:label,type:'line',showSymbol:f
 function expLine(data){return{name:'实验',type:'line',showSymbol:false,smooth:true,lineStyle:{width:1.2,type:'dashed',color:'#ff453a'},data};}
 function makeOpt({xName,yName,series,yOpt={},legend=false}){
   return{tooltip:{trigger:'axis',confine:true},
-    legend:legend?{top:0,itemWidth:14,itemHeight:8,textStyle:{fontSize:9},type:'scroll'}:undefined,
-    grid:{top:legend?34:20,right:20,bottom:40,left:62},
-    xAxis:{type:'value',name:xName,nameLocation:'middle',nameGap:30,axisLabel:{fontSize:9},scale:true},
-    yAxis:Object.assign({type:'value',axisLabel:{fontSize:9,formatter:v=>+v.toExponential(1)},name:yName},yOpt),
+    legend:legend?{top:0,itemWidth:12,itemHeight:8,itemGap:8,textStyle:{fontSize:8},type:'scroll'}:undefined,
+    grid:{top:legend?40:22,right:22,bottom:44,left:64},
+    xAxis:{type:'value',name:xName,nameLocation:'middle',nameGap:34,axisLabel:{fontSize:8},scale:true},
+    yAxis:Object.assign({type:'value',axisLabel:{fontSize:8,formatter:v=>+v.toExponential(1)},name:yName,nameGap:30},yOpt),
     series};
 }
 
@@ -433,7 +433,7 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
   // 反演收敛历史（跨多次反演累积：loss 散点 + running best 实线）
   const invHistOpt=()=>{
     if(!invHistory.length) return null;
-    return {tooltip:{trigger:'axis'},legend:{top:0,itemWidth:14,itemHeight:8,textStyle:{fontSize:9}},grid:{top:24,right:16,bottom:30,left:56},
+    return {tooltip:{trigger:'axis'},legend:{top:0,itemWidth:12,itemHeight:8,itemGap:8,textStyle:{fontSize:8}},grid:{top:30,right:18,bottom:36,left:58},
       xAxis:{type:'value',name:'trial',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:9}},
       yAxis:{type:'value',scale:true,axisLabel:{fontSize:9,formatter:v=>+v.toExponential(1)},name:'loss'},
       series:[
@@ -508,7 +508,7 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
     return series.length?{opt:makeOpt({xName:'电位 (V vs RHE)',yName:'归一化强度',series,legend:true}),label:`H${k+1}${active?' · 拟合':' · 诊断'}`}:null;
   }):[];
   return (<div className="main" style={{display:'flex',gap:14,alignItems:'flex-start'}}>
-    <div className="left-panel" style={{width:'30%',minWidth:280,maxWidth:380,flexShrink:0,padding:16,background:'var(--card)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflowY:'auto'}}>
+    <div className="left-panel" style={{width:'40%',minWidth:320,maxWidth:460,flexShrink:0,padding:16,background:'var(--card)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflowY:'auto'}}>
       <div className="panel-title">数据与正演</div>
       {/* 样品与电极（折叠小卡，随报告导出） */}
       <div style={{marginBottom:10}}>
