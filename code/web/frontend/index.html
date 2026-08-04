@@ -619,17 +619,17 @@ function WorkStep({expData,setExpData,expAnalysis,setExpAnalysis,setError,strict
         </div>
       </div>
     </div>
-    <div style={{flex:1,minWidth:0,display:'grid',gridTemplateColumns:'repeat(2, minmax(0,1fr))',gap:12,alignContent:'start'}}>
+    <div style={{flex:1,minWidth:0,display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(260px,1fr))',gap:12,alignContent:'start'}}>
       <div className="card"><h4>FTacV 总电流：实验 / 正演对比</h4>
-        {cvOpt?<ChartBox option={cvOpt} height={280}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>导入数据并运行正演后对比</div>}</div>
+        {cvOpt?<ChartBox option={cvOpt} height={230}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>导入数据并运行正演后对比</div>}</div>
       <div className="card"><h4>功率谱 (FFT)</h4>
-        {psOpt?<ChartBox option={psOpt} height={280}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>运行正演后显示</div>}</div>
+        {psOpt?<ChartBox option={psOpt} height={230}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>运行正演后显示</div>}</div>
       <div className="card"><h4>OER 表面覆盖度</h4>
-        {covOpt?<ChartBox option={covOpt} height={280}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>运行正演后显示</div>}</div>
+        {covOpt?<ChartBox option={covOpt} height={230}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>运行正演后显示</div>}</div>
       <div className="card"><h4>DC 分量</h4>
-        {dcOpt?<ChartBox option={dcOpt} height={280}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>导入数据后对比 DC</div>}</div>
+        {dcOpt?<ChartBox option={dcOpt} height={230}/>:<div className="hint" style={{padding:'30px 0',textAlign:'center'}}>导入数据后对比 DC</div>}</div>
       {hOpts.map((h,k)=>h&&(<div className="card" key={k}><h4>谐波 {h.label}</h4>
-        <ChartBox option={h.opt} height={260}/></div>))}
+        <ChartBox option={h.opt} height={210}/></div>))}
     </div>
   </div>);
 }
