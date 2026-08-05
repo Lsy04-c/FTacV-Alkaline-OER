@@ -19,6 +19,7 @@ import argparse
 import json
 import time
 from pathlib import Path
+from typing import Mapping, Optional, Sequence
 
 import numpy as np
 
@@ -41,19 +42,30 @@ TARGET_SEED = 1443515106
 FREE = ["k0_1", "k0_2", "k0_3", "G_OH", "G_O", "scaling_OOH_OH"]
 
 
-def run_raw_cmaes(mode: str, seed: int, trials: int, smoke: bool = False) -> dict:
+def run_raw_cmaes(
+    mode: str,
+    seed: int,
+    trials: int,
+    smoke: bool = False,
+    free_names: Sequence[str] = FREE,
+    fixed_override: Optional[Mapping[str, float]] = None,
+) -> dict:
     truths = truth_library(DEFAULT_PARAM_SPECS)
     truth = next(t for t in truths if t["truth_id"] == "mixed_b")
-    params = truth["parameters"]
+    params = truth["parameters"]  # 真值：用于生成 target 与恢复度量
+    # 优化器的固定参数：可把某个非自由参数钉在大值（准平衡区降维实验）
+    opt_truth = dict(params)
+    if fixed_override:
+        opt_truth.update(fixed_override)
     job = {
         "feature_mode": mode,
         "truth_id": "mixed_b",
-        "truth_params": params,
+        "truth_params": opt_truth,
         "noise_fraction": NOISE_FRACTION,
         "seed": seed,
         "target_seed": TARGET_SEED,
         "trials": trials,
-        "free_parameters": FREE,
+        "free_parameters": list(free_names),
         "backend": "lsoda",
     }
     config, free_specs = build_recovery_problem(job, smoke=smoke)
@@ -128,11 +140,24 @@ def main():
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--trials", type=int, default=500)
     ap.add_argument("--smoke", action="store_true", help="smoke 分辨率（仅自检，landscape 失真）")
+    ap.add_argument("--free", default=",".join(FREE),
+                    help="自由参数（逗号分隔），默认 6 个")
+    ap.add_argument("--fixed-override", default=None,
+                    help="把非自由参数钉在给定值，如 'k0_1=10000'（准平衡区降维）")
     ap.add_argument("--out", default=None, help="结果 JSON 输出路径")
     args = ap.parse_args()
 
+    free_names = [s.strip() for s in args.free.split(",") if s.strip()]
+    fixed_override = None
+    if args.fixed_override:
+        fixed_override = {}
+        for spec in args.fixed_override.split(","):
+            name, _, value = spec.partition("=")
+            fixed_override[name.strip()] = float(value)
+
     t0 = time.perf_counter()
-    res = run_raw_cmaes(args.mode, args.seed, args.trials, smoke=args.smoke)
+    res = run_raw_cmaes(args.mode, args.seed, args.trials, smoke=args.smoke,
+                        free_names=free_names, fixed_override=fixed_override)
     res["runtime_seconds"] = round(time.perf_counter() - t0, 2)
     print(json.dumps(res, indent=2, default=float))
     if args.out:
