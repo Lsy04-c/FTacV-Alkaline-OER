@@ -73,6 +73,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--s1-summary", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--backend", choices=("cn", "lsoda"), default="lsoda")
+    parser.add_argument(
+        "--sampler",
+        choices=("tpe", "cmaes", "random"),
+        default="tpe",
+        help="Optuna sampler for the inversion optimizer",
+    )
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--trials", type=int)
     parser.add_argument(
@@ -234,6 +240,7 @@ def build_jobs(args: argparse.Namespace) -> list[dict]:
     for job in jobs:
         job["free_parameters"] = free_parameters
         job["backend"] = args.backend
+        job["sampler"] = args.sampler
     return jobs
 
 
@@ -539,6 +546,7 @@ def build_inverter(job: dict, config: InversionConfig, free_specs):
         config=config,
         specs=free_specs,
         seed=job["seed"],
+        sampler_name=job.get("sampler", "tpe"),
     )
 
 
@@ -825,6 +833,7 @@ def build_summary(
         ),
         "phase": args.phase,
         "portfolio_stage": portfolio_stage,
+        "sampler": args.sampler,
         "execution_passed": execution_passed,
         "scientific_gate_passed": (
             portfolio_recovery_summary["scientific_gate_passed"]
@@ -1054,6 +1063,7 @@ def main(argv: list[str] | None = None) -> None:
         "phase": args.phase,
         "portfolio_stage": portfolio_stage,
         "noise_fraction": args.noise_fraction,
+        "sampler": args.sampler,
         "workers": args.workers,
         "free_parameters": jobs[0]["free_parameters"] if jobs else [],
         "smoke": smoke_run,

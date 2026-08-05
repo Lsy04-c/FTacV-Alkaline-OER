@@ -1298,12 +1298,16 @@ class TPEInverter:
         seed: Optional[int] = None,
         n_startup_trials: int = 10,
         initial_params: Optional[Mapping[str, float]] = None,
+        sampler_name: str = "tpe",
+        sampler_options: Optional[Mapping[str, Any]] = None,
     ) -> None:
         self.config = config or InversionConfig()
         self.specs = tuple(specs)
         self.seed = self.config.seed if seed is None else seed
         self.n_startup_trials = n_startup_trials
         self.initial_params = dict(initial_params) if initial_params is not None else None
+        self.sampler_name = sampler_name
+        self.sampler_options = dict(sampler_options) if sampler_options else None
 
     def _suggest(self, trial: Any) -> np.ndarray:
         z_values = []
@@ -1324,15 +1328,32 @@ class TPEInverter:
         if n_trials < 1:
             raise ValueError("n_trials must be positive")
         optuna.logging.set_verbosity(optuna.logging.WARNING)
-        sampler = optuna.samplers.TPESampler(
-            seed=self.seed,
-            n_startup_trials=min(self.n_startup_trials, max(1, n_trials)),
-        )
-        study = optuna.create_study(direction="minimize", sampler=sampler)
+        startup = min(self.n_startup_trials, max(1, n_trials))
         initial_x: Optional[np.ndarray] = None
+        initial_z: Optional[np.ndarray] = None
         if self.initial_params is not None:
             initial_x = encode_params(self.initial_params, self.specs)
             initial_z = normalize_vector(initial_x, self.specs)
+        opts = dict(self.sampler_options or {})
+        if self.sampler_name == "cmaes":
+            # Warm start: if initial_params given, seed the CMA-ES mean there so
+            # covariance adaptation starts from a physically informed basin.
+            if initial_z is not None:
+                opts.setdefault("x0", initial_z)
+            sampler = optuna.samplers.CmaEsSampler(
+                seed=self.seed,
+                n_startup_trials=startup,
+                **opts,
+            )
+        elif self.sampler_name == "random":
+            sampler = optuna.samplers.RandomSampler(seed=self.seed)
+        else:
+            sampler = optuna.samplers.TPESampler(
+                seed=self.seed,
+                n_startup_trials=startup,
+            )
+        study = optuna.create_study(direction="minimize", sampler=sampler)
+        if initial_z is not None:
             study.enqueue_trial(
                 {f"z_{name}": float(value) for (name, _, _, _), value in zip(self.specs, initial_z)}
             )
@@ -1352,7 +1373,7 @@ class TPEInverter:
                     "value": float(trial.value),
                     "best_so_far": float(study_.best_value),
                     "n_forward": objective.n_forward,
-                    "source": "initial" if trial.number == 0 and self.initial_params is not None else "tpe",
+                    "source": "initial" if trial.number == 0 and self.initial_params is not None else self.sampler_name,
                 }
             )
 
