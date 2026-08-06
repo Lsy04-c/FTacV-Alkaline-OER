@@ -61,7 +61,8 @@ def _sweep_values(name, truth_val, kind, lo, hi, n=15):
     else:
         vals = [lo + (hi - lo) * t for t in np.linspace(0, 1, n)]
         extra = [truth_val + d for d in (0.0, -0.2, -0.05, 0.05, 0.2)]
-    return sorted(set([round(v, 6) for v in list(vals) + extra]))
+    # 不舍入：保留 truth 精确值，避免 1e-6 匹配失败（如 k0_2=0.2511886…）
+    return sorted(set(list(vals) + extra))
 
 
 def _profile_param(name, truth, free_specs, base_job, base_config, target, smoke):
