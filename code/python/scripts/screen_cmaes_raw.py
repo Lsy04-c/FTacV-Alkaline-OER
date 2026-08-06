@@ -33,6 +33,8 @@ from oer_aem.inversion import (
     InversionObjective,
     decode_vector,
     denormalize_vector,
+    encode_params,
+    normalize_vector,
 )
 from oer_aem.recovery import recovery_metrics, truth_library
 from run_synthetic_recovery import build_recovery_problem, make_synthetic_target
@@ -49,6 +51,7 @@ def run_raw_cmaes(
     smoke: bool = False,
     free_names: Sequence[str] = FREE,
     fixed_override: Optional[Mapping[str, float]] = None,
+    init: str = "mid",
 ) -> dict:
     truths = truth_library(DEFAULT_PARAM_SPECS)
     truth = next(t for t in truths if t["truth_id"] == "mixed_b")
@@ -78,7 +81,11 @@ def run_raw_cmaes(
     bounds = np.tile(np.array([0.0, 1.0]), (dim, 1))
     sigma = 0.25
     popsize = int(4 + 3 * np.log(dim))
-    mean = np.full(dim, 0.5)  # 盒子中点温启动（不取巧，非 truth）
+    if init == "truth":
+        # 温启动到 truth（诊断盆地稳定性：能停住说明纯探索问题）
+        mean = normalize_vector(encode_params(params, free_specs), free_specs)
+    else:
+        mean = np.full(dim, 0.5)  # 盒子中点（默认，不取巧）
     optimizer = cmaes.CMA(mean=mean, sigma=sigma, bounds=bounds, seed=seed,
                           population_size=popsize)
 
@@ -144,6 +151,8 @@ def main():
                     help="自由参数（逗号分隔），默认 6 个")
     ap.add_argument("--fixed-override", default=None,
                     help="把非自由参数钉在给定值，如 'k0_1=10000'（准平衡区降维）")
+    ap.add_argument("--init", default="mid", choices=["mid", "truth"],
+                    help="CMA 初始 mean：mid=盒子中点（默认）；truth=温启动到 truth（诊断盆地稳定性）")
     ap.add_argument("--out", default=None, help="结果 JSON 输出路径")
     args = ap.parse_args()
 
@@ -157,7 +166,8 @@ def main():
 
     t0 = time.perf_counter()
     res = run_raw_cmaes(args.mode, args.seed, args.trials, smoke=args.smoke,
-                        free_names=free_names, fixed_override=fixed_override)
+                        free_names=free_names, fixed_override=fixed_override,
+                        init=args.init)
     res["runtime_seconds"] = round(time.perf_counter() - t0, 2)
     print(json.dumps(res, indent=2, default=float))
     if args.out:
