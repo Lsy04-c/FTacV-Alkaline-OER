@@ -53,6 +53,7 @@ def run_raw_cmaes(
     fixed_override: Optional[Mapping[str, float]] = None,
     init: str = "mid",
     sigma: float = 0.25,
+    init_point: Optional[Mapping[str, float]] = None,
 ) -> dict:
     truths = truth_library(DEFAULT_PARAM_SPECS)
     truth = next(t for t in truths if t["truth_id"] == "mixed_b")
@@ -84,6 +85,14 @@ def run_raw_cmaes(
     if init == "truth":
         # 温启动到 truth（诊断盆地稳定性：能停住说明纯探索问题）
         mean = normalize_vector(encode_params(params, free_specs), free_specs)
+    elif init == "random":
+        # 随机起点（多起点粗搜）
+        mean = np.random.default_rng(seed).uniform(0.0, 1.0, size=dim)
+    elif init == "point" and init_point is not None:
+        # 从指定参数点细化（两阶段：粗搜 best → 小步长 refine）
+        mean = normalize_vector(
+            encode_params({k: v for k, v in init_point.items() if k in [s[0] for s in free_specs]},
+                          free_specs), free_specs)
     else:
         mean = np.full(dim, 0.5)  # 盒子中点（默认，不取巧）
     optimizer = cmaes.CMA(mean=mean, sigma=sigma, bounds=bounds, seed=seed,
@@ -151,8 +160,11 @@ def main():
                     help="自由参数（逗号分隔），默认 6 个")
     ap.add_argument("--fixed-override", default=None,
                     help="把非自由参数钉在给定值，如 'k0_1=10000'（准平衡区降维）")
-    ap.add_argument("--init", default="mid", choices=["mid", "truth"],
-                    help="CMA 初始 mean：mid=盒子中点（默认）；truth=温启动到 truth（诊断盆地稳定性）")
+    ap.add_argument("--init", default="mid", choices=["mid", "truth", "random", "point"],
+                    help="CMA 初始 mean：mid=盒子中点（默认）；truth=温启动；random=随机起点；"
+                         "point=从 --init-point 指定参数点")
+    ap.add_argument("--init-point", default=None,
+                    help="--init point 时的自由参数值，如 'k0_2=0.25,k0_3=158,G_OH=1.4'")
     ap.add_argument("--sigma", type=float, default=0.25,
                     help="CMA 初始步长（z 空间，默认 0.25 ≈ 8 数量级参数 2 decade）")
     ap.add_argument("--out", default=None, help="结果 JSON 输出路径")
@@ -165,11 +177,17 @@ def main():
         for spec in args.fixed_override.split(","):
             name, _, value = spec.partition("=")
             fixed_override[name.strip()] = float(value)
+    init_point = None
+    if args.init_point:
+        init_point = {}
+        for spec in args.init_point.split(","):
+            name, _, value = spec.partition("=")
+            init_point[name.strip()] = float(value)
 
     t0 = time.perf_counter()
     res = run_raw_cmaes(args.mode, args.seed, args.trials, smoke=args.smoke,
                         free_names=free_names, fixed_override=fixed_override,
-                        init=args.init, sigma=args.sigma)
+                        init=args.init, sigma=args.sigma, init_point=init_point)
     res["runtime_seconds"] = round(time.perf_counter() - t0, 2)
     print(json.dumps(res, indent=2, default=float))
     if args.out:
