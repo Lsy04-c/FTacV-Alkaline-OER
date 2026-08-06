@@ -52,6 +52,7 @@ def run_raw_cmaes(
     free_names: Sequence[str] = FREE,
     fixed_override: Optional[Mapping[str, float]] = None,
     init: str = "mid",
+    sigma: float = 0.25,
 ) -> dict:
     truths = truth_library(DEFAULT_PARAM_SPECS)
     truth = next(t for t in truths if t["truth_id"] == "mixed_b")
@@ -79,7 +80,6 @@ def run_raw_cmaes(
 
     dim = len(free_specs)
     bounds = np.tile(np.array([0.0, 1.0]), (dim, 1))
-    sigma = 0.25
     popsize = int(4 + 3 * np.log(dim))
     if init == "truth":
         # 温启动到 truth（诊断盆地稳定性：能停住说明纯探索问题）
@@ -153,6 +153,8 @@ def main():
                     help="把非自由参数钉在给定值，如 'k0_1=10000'（准平衡区降维）")
     ap.add_argument("--init", default="mid", choices=["mid", "truth"],
                     help="CMA 初始 mean：mid=盒子中点（默认）；truth=温启动到 truth（诊断盆地稳定性）")
+    ap.add_argument("--sigma", type=float, default=0.25,
+                    help="CMA 初始步长（z 空间，默认 0.25 ≈ 8 数量级参数 2 decade）")
     ap.add_argument("--out", default=None, help="结果 JSON 输出路径")
     args = ap.parse_args()
 
@@ -167,7 +169,7 @@ def main():
     t0 = time.perf_counter()
     res = run_raw_cmaes(args.mode, args.seed, args.trials, smoke=args.smoke,
                         free_names=free_names, fixed_override=fixed_override,
-                        init=args.init)
+                        init=args.init, sigma=args.sigma)
     res["runtime_seconds"] = round(time.perf_counter() - t0, 2)
     print(json.dumps(res, indent=2, default=float))
     if args.out:
