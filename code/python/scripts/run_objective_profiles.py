@@ -288,6 +288,20 @@ def main(argv: list[str] | None = None) -> None:
         )
         for task in tasks
     )
+    configuration = {
+        "n_points": 256 if args.smoke else 8192,
+        "points_per_cycle": 32,
+        "feature_grid_size": 128,
+        "fit_harmonics": [1, 2, 3],
+        "feature_modes": list(FEATURE_MODES),
+        "profile_parameters": list(PROFILE_PARAMETERS),
+        "truth_id": "mixed_b",
+        "grid_points": args.grid_points,
+        "solver_backend": "lsoda",
+        "noise_fraction": 0.0,
+        "workers": min(args.workers, len(tasks)),
+        "smoke": args.smoke,
+    }
     summary = {
         "infrastructure_passed": bool(
             len(results) == len(tasks)
@@ -305,6 +319,7 @@ def main(argv: list[str] | None = None) -> None:
         "duration_seconds": time.perf_counter() - started,
         "source_commit": source_commit,
         "dirty": dirty,
+        "configuration": configuration,
         "profiles": summaries,
         "decision": (
             "diagnostic_only; inspect preregistered profile gates before "
@@ -327,20 +342,7 @@ def main(argv: list[str] | None = None) -> None:
             if argv is None
             else [sys.executable, *argv]
         ),
-        "configuration": {
-            "n_points": 256 if args.smoke else 8192,
-            "points_per_cycle": 32,
-            "feature_grid_size": 128,
-            "fit_harmonics": [1, 2, 3],
-            "feature_modes": list(FEATURE_MODES),
-            "profile_parameters": list(PROFILE_PARAMETERS),
-            "truth_id": "mixed_b",
-            "grid_points": args.grid_points,
-            "solver_backend": "lsoda",
-            "noise_fraction": 0.0,
-            "workers": min(args.workers, len(tasks)),
-            "smoke": args.smoke,
-        },
+        "configuration": configuration,
         "tasks": tasks,
         "environment": {
             "python": platform.python_version(),

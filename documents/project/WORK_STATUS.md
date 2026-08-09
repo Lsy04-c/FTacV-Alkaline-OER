@@ -2343,3 +2343,12 @@ H1-H7压力测试：
   truth-init 小步长和低 loss 都是 **M0 合成、给定其余 truth 的条件诊断**。它们不能单独
   证明结构可辨识/不可辨识、真实 Co3O4 参数可恢复或物理机理成立。正式升级需要重优化 profile、
   多个 truth、噪声与 holdout，及未来 A1 实验数据验收。
+
+## 85. Formal profile→CMA 接口预检修复（2026-08-09）
+
+- 预检发现 `run_objective_profiles.py` 仅在 `run_manifest.json` 写冻结配置，而 formal
+  CMA 的 profile 契约从 `profile_summary.json` 校验同一配置；原实现会让正式 profile 即使
+  数值成功也在消费端被拒绝。这是证据接口断裂，不是数值/科学失败。
+- 已将唯一配置记录同时写入 summary 和 manifest，并以回归测试锁定。正式 profile 仍须在
+  clean worktree 运行，CMA 同时核对 profile `source_commit` 与当前执行 commit；当前
+  dirty 主工作树不会启动 formal 计算。

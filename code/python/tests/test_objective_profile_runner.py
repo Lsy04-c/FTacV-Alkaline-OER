@@ -113,3 +113,17 @@ def test_smoke_main_writes_hashed_profile_outputs(tmp_path):
     }
     assert summary["completed_profiles"] == 1
     assert summary["expected_profiles"] == 1
+    assert summary["configuration"] == {
+        "n_points": 256,
+        "points_per_cycle": 32,
+        "feature_grid_size": 128,
+        "fit_harmonics": [1, 2, 3],
+        "feature_modes": list(EXPECTED_MODES),
+        "profile_parameters": list(EXPECTED_PARAMETERS),
+        "truth_id": "mixed_b",
+        "grid_points": 3,
+        "solver_backend": "lsoda",
+        "noise_fraction": 0.0,
+        "workers": 1,
+        "smoke": True,
+    }
