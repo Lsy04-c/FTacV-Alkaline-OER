@@ -2122,3 +2122,224 @@ H1-H7压力测试：
 - 边界：本结论只针对 S1 单 forward 的 wall-time 构成与并行现状；
   若未来恢复实验引入更长协议或更大参数空间，可重新评估；CN 相位诊断
   属于独立路线，不因本评估自动开启。
+
+## 70. k0_1 条件式合成 profile + Tafel 模型扫描（2026-08-06）
+
+- 背景：A6 合成恢复（k0_4+γ 固定，6 参数自由）遗留问题——k0_1 无法可靠恢复；
+  区分优化器局限与当前协议下的条件式不敏感；该阶段不判定结构可辨识性。
+- 代码：TPEInverter 加 `sampler_name`/`sampler_options`（`c45fb18`）；
+  新增 raw-cmaes 适配版驱动 `code/python/scripts/screen_cmaes_raw.py`（`fb1b218`）。
+- 实验（Legion，legacy 全量 8192 点，100 trials）：systemd 单元 `oer-cmaes-screen`
+  （`systemd-run --user`，脱离 ssh、可中断管理），3 seed（7/17/27）并行。
+- 结果（k0_1 NBE）：
+  - TPE（归档 100t）：0.51–0.64（低 3.7–5.2 个数量级）
+  - cmaes_raw（本会话 100t）：0.20–0.34（低 1.6–2.7 个数量级）
+  - k0_2/k0_3/G_OH 两者都能恢复（多数 seed NBE≤0.1；CMA 恢复 G_OH=1.4007 精确）
+  - → 问题特定于 k0_1，换优化器（raw cmaes 适配版）无效。
+- k0_1 单独 profile（其余 5 参数全部固定 truth，全量）：obj 从 398 到盒子上界 1e5
+  （高 2.4 个数量级）是水平平台（1.00–1.02×），向下 k0_1<~100 才陡升。
+  → **k0_1 单边可辨：只能定下界（≳~100–160），不能定值。**
+- 耦合伙伴已核实固定在 truth 模型取值：G_OH(=E01，`apply_alkaline_aem` 每次重算)、
+  θ_ox（k0_pre=500 / E0_pre=1.45 默认值 = 合成 target 生成值）。
+- Tafel 验证：模型表观 Tafel 对 k0_1 完全免疫（3.98→3.98e4 恒定 125.9 mV/dec），
+  对 G_OH 敏感（1.1→1.4 时 103→126）；文献 Co3O4 典型 40–90，模型 truth 落 ~120 机理极限。
+- 机制根源：step-1 速率 = `k0_1·exp(b·RTF·(φ_s−E01))·θ_ox`，`E01=G_OH` →
+  **k0_1↔G_OH 指数耦合**；θ_ox 由预氧化步（k0_pre/E0_pre）决定 → **k0_1↔θ_ox 补偿**。
+- 条件结论：在其余参数固定 truth 的 M0 切片中 k0_1 高值区平台；同预算换优化器未解决。
+  不能据此断言结构不可辨或真实体系参数不可恢复，详见 §84。
+- 留痕：`documents/research/2026-08-06-k01-identifiability-conclusion.md`（`bbb5925`）。
+- 方法学教训：smoke 分辨率（256 点）landscape 失真（truth 点 Tafel 特征提取失败，
+  obj=20 vs 全量 0.015），**筛选/恢复必须全量 8192 点**；optuna 4.9.0 弃用
+  CmaEsSampler 的 `restart_strategy`/`x0`，适配测试需用 raw cmaes 包。
+- 证据：Legion `worktrees/fb1b218/a6_cmaes_screen/screen_log/cmaes_raw_seed{7,17,27}.json`；
+  TPE 归档 `~/OER-FTAcV-archive/results/6400989/a6_recovery_k0_123/20260805_165514/`。
+
+## 71. 条件式敏感性剖面报告（2026-08-06）
+
+- 工具：新增 `code/python/scripts/screen_identifiability.py`（提交 `2583330`，修复 `54a0d34`）——
+  对指定参数做 1-D 目标函数剖面（其余固定 truth，全量 8192 点），自动分类 sharp/one-sided/flat，
+  并落实 A 报告约定（k0_1 标 non-identifiable，只报下界 + 与 G_OH 的 stiff 组合，不报点估计）。
+- Legion 全量 profile（7 参数并行，systemd 单元 `oer-identifiability2`）：
+  - **sharp（可辨，唯一最小值在 truth）**：k0_2、k0_3、G_OH、G_O、scaling
+  - **one-sided（只有下界，向上平）**：k0_1（within2x=[119, 1e5]，下界≳119）、
+    k0_pre（within2x=[100, 1e5]，下界≳100）
+- 条件结论：k0_1/k0_pre 的 truth-fixed 切片为单边平台，其余五个切片较窄；这只是候选
+  自由坐标的筛选证据，正式报告仍不报 k0_1/k0_pre 点估计，详见 §84。
+- 证据：Legion `worktrees/54a0d34/a6_identifiability/screen_log/prof_*.json`。
+- 备注：k0_2 单参数剖面 sharp（可辨），但 6 参数恢复里它 NBE 0.07–0.23——sharp 谷存在但
+  优化器 100 trials 未必找到，属探索问题；与 k0_1 的结构不可辨是两回事。
+
+## 72. 固定互补参数的合成恢复诊断（2026-08-07）
+
+- 恢复契约 C：只在有效（sharp）坐标上优化，inactive 方向（k0_1、k0_pre）固定并传播不确定度。
+- 运行（Legion systemd `oer-stiff-coord`，全量，3 seed × 100 trials）：
+  自由 = k0_2/k0_3/G_OH/G_O/scaling（5 sharp），固定 = k0_1=1e3、k0_pre=1e3（平台值）。
+- 结果（obj 0.63–2.4，地板 0.015 的 40–160×）：
+  - best seed（7）：k0_2 NBE 0.042、k0_3 0.081、G_OH 0.036、G_O 0.033、scaling 0.175；
+  - seed 17：G_OH 0.017、G_O 0.020（极好）；
+  - 对比实验 A（只固定 k0_1）：seed 7 obj 1.80→0.63、G_OH NBE 0.215→0.036。
+- 条件结论：给定该固定值与合成 truth 后误差降低；不能将其升级为 stiff/sloppy 的全空间
+  结论或真实数据恢复能力，详见 §84。
+- 报告契约：k0_1 ≳119、k0_pre ≳100（到盒子上界），不报点估计。
+- 证据：Legion `worktrees/54a0d34/a6_stiff_coord/screen_log/stiff_seed{7,17,27}.json`。
+
+## 73. truth-init 局部盆地与优化器步长（2026-08-07）
+
+- 温启动到 truth（`ddb89b3` --init truth）：默认 sigma=0.25 时 obj 漂到 1.1–2.0
+  （地板 70–130×）——**从 truth 出发也逃逸**。
+- 小步长验证（`6b2bd18` --sigma 0.02 + --init truth，全量 3 seed × 100 trials）：
+  **obj 0.017–0.036（地板 0.015 上），5 个 sharp 参数 NBE ≤ 0.024（2–3% 内）**。
+- 根因：sharp 盆地宽度 < 0.5 decade，CMA-ES 默认 sigma=0.25 ≈ 2 decade（8 数量级 log 参数），
+  第一代采样即逃出盆地 → 之前所有恢复 obj 0.6–2.4 是步长失配，非结构。
+- 局部数值结论：小步长可在 truth 初始化附近保持低损失；无先验恢复尚未成立，k0_1/k0_pre
+  的平台观察也仅限条件切片，详见 §84。
+- 证据：Mac 归档 `~/OER-FTAcV-archive/results/{ddb89b3/a6_warmstart, 6b2bd18/a6_sigmasmall}/`。
+
+## 74. 原始框架的条件证据范围（2026-08-07）
+
+- 原始框架曾把 truth-fixed 条件剖面和优化表现混同为全空间结论；现统一按 §84 限定为
+  M0 合成诊断。无先验两阶段失败仍是当前最强的恢复边界证据。
+
+## 75. 两阶段合成恢复：无先验失败（2026-08-07）
+
+- 测试（`af3acb5` --init random/point，Legion `oer-twostage`）：
+  Stage 1 12 随机起点粗搜（sigma 0.25, 100 trials）→ 最优 → Stage 2 小步长细化（sigma 0.02）。
+- 结果：Stage 1 最优 obj 0.66（参数远于 truth）；Stage 2 refine 到 obj 0.31–0.34
+  （更优局部极小），但 NBE 仍 0.13–0.66——**没进 truth 盆地（0.015）**。
+- 结论：无先验两阶段随机搜索**找不到 sharp 盆地**（窄井体积分数 ~1e-6，1200 evals 不够）；
+  细化只是练低错误局部极小。**恢复必须依赖物理先验（initial_params）**——验证了 Web
+  工作台 initial_params 机制的设计。
+- 当前边界：无先验两阶段未恢复合成 truth；不能用 truth-init 结果声称参数可恢复，详见 §84。
+- 证据：Mac 归档 `~/OER-FTAcV-archive/results/af3acb5/a6_twostage/`。
+
+## 76. 补实验接入与计算加速框架第一阶段（2026-08-08）
+
+- 参数角色：新增 `validate_free_parameters`；固定角色（含 `gamma`、`k0_4`、
+  `scaling_OOH_OH`、尺度与预氧化输入）不能静默进入正式自由向量；诊断必须显式
+  `allow_diagnostic=True`。合成 truth 的 `gamma` 统一为编码网格中点 `10^-8.5`，
+  不再随 truth pattern 随机变化。
+- 步长策略：新增 `search_policy.py`，CMA sigma 由 profile 半宽派生，正式上限
+  `0.10`、下限 `0.005`；缺 profile 或使用历史 `0.25` 时拒绝，诊断可显式放行。
+- 实验接入：新增 `post_experiment.py` 与 `build_post_experiment_bundle.py`，严格读取
+  三列原始 FTacV，输出 `targets.npz` + 带输入哈希的 `bundle_summary.json`；未收集数据或
+  缺 `Ru/CdlA/A/GammaA/load` 独立记录时只返回等待状态，不启动反演。
+- C++：`oer_cn_solver.cpp` 的 Newton 迭代改用解析 Jacobian，增加非法输入/非有限输出状态码；
+  仍标记为 CN `screen-only`，Gate A3 失败结论不变，LSODA/BDF 仍是正式后端。
+- 验证：聚焦测试 19 项通过；Python 全量测试 **653 passed**；macOS C++ bridge 构建与测试通过。
+- 未完成：旧版 8 维 synthetic runner 尚未切换到严格角色拒绝；C++ 批量 ABI、Linux 独立构建、
+  LSODA/CN 科学对照 benchmark 和真实 collected bundle 重建测试待后续阶段完成。
+
+## 77. 参数固定/搜索可配置接口（2026-08-08）
+
+- 新增 `ParameterSelection` 与 `build_parameter_selection()`：任务可显式指定
+  `free_names`、`fixed_values`、`diagnostic_names`，统一生成自由 specs、固定参数和角色证据。
+- 强制覆盖所有搜索参数，拒绝遗漏、重复、冲突、非有限值和越界固定值；`A/Cdl/Ru`
+  等运行时量可作为显式固定输入。将其改为自由参数时，必须另外提供有边界依据的自定义
+  `ParamSpec`，不会偷偷使用默认范围。
+- 当前固定角色（含 `gamma`）需要显式 `allow_role_override=True` 才能重开，且应只用于
+  诊断或新的证据门；旧版 runner 尚未迁移，避免破坏历史结果可复现性。
+
+## 78. Formal 参数选择版本化入口（2026-08-09）
+
+- `run_synthetic_recovery.py` 新增 `--parameter-selection` schema v1，仅在 formal
+  legacy recovery 的显式 opt-in 模式启用；缺少 fixed 值、非法 schema、角色证据不一致、
+  `gamma` formal override 都会拒绝。
+- explicit job 记录 `original_truth_params`、`effective_truth_params`、角色证据及
+  SHA-256；worker、job input hash、resume fingerprint、provenance 和 summary 均绑定该哈希。
+- 未提供 selection 文件时，旧 runner 保持 `legacy` 模式和历史 job/hash 语义；portfolio/
+  pre-experiment 路径暂不迁移。
+- Luna 实现后由 Sol 独立复核 **PASS**；本机复跑 focused tests **89 passed**，
+  Python 编译和 `git diff --check` 通过。
+- Sol 残余风险：哈希是完整性校验而非签名；拥有写权限者可重写内容并重算哈希，正式结果仍需
+  commit、输入文件和外部归档共同留痕。
+
+## 79. CN screen-only 批量接口（2026-08-09）
+
+- C++ 新增 `oer_cn_solve_batch`：连续参数块逐案例求解，返回独立 status；失败案例不会被
+  静默转成 NaN 或删除。
+- Python `cpp_bridge.solve_cn_batch()` 已接入，验证了批量结果与单案例结果逐点一致、混合分辨率
+  拒绝和逐案例状态保留。
+- macOS C++17 编译通过；bridge 测试 3 passed。8 个 32 点 screen case 的本机微基准约
+  `1.12×` 相对 Python 循环调用加速，说明批量 ABI 主要减少调用开销，不能宣称数量级加速。
+- 科学边界不变：CN 仍是 screen-only；A3 等价性失败，正式路径继续使用 LSODA/BDF。
+- 主 Agent 在本轮变更后运行 Python 全量测试：**672 passed**；`gpt-5.6-sol` reviewer
+  对 formal selection 与 batch ABI 复核为 PASS。
+
+## 80. Solver equivalence smoke 修复与科学失败记录（2026-08-09）
+
+- 发现 `validate_solver_equivalence.py` 的配置错误：使用 `lockin_only` 却读取
+  `complex_harmonics`，真实运行会在比较阶段 `KeyError`，此前不能视为有效 benchmark。
+- 已修正为 `hybrid`，增加配置回归测试；2-sample、32 points/cycle、8 cycles smoke
+  产出 14 行完整 CSV。
+- 科学结果：FAIL，10 项超阈值；sample 1 的 current NRMSE 为 0.014697，H6 peak shift
+  0.00589189 V，H7 global amplitude relative error 0.154503。未调阈值、未授权 CN
+  进入 formal，LSODA/BDF 仍为正式后端。
+- 验证：solver equivalence + C++ bridge 测试 9 passed，`git diff --check` 通过。
+- Sol 指出的 CLI 失败退出码/summary 测试缺口已补齐；solver-equivalence 测试 7 passed，
+  Python 全量回归 **673 passed**。
+
+## 81. CN Newton 安全门与自适应细分复核（2026-08-09）
+
+- C++ CN 求解器继续保持 screen-only：未收敛的 Newton 隐式步现在返回 `-4`，不再把
+  有限但未收敛的状态写成成功；稳态初始化失败仍返回 `-2`；line search 只有在隐式
+  残差严格下降时才接受候选步。
+- 对单个输出区间增加失败后内部二分（1、2、4、…、64 个 CN 子步）；成功的普通区间仍
+  使用 1 步。`CN_MIN_SUBDIVISIONS` 仅作为编译期诊断开关，默认值为 1；本机最终恢复
+  默认构建，未把 force-8 诊断库当作正式后端。
+- 24 samples、seed 17、128 points/cycle、256 cycles 的完整比较仍为 **FAIL**：
+  20/24 案例完成 CN，4 案例返回 `-4`（时间步/细分未收敛；`-2` 仍专指稳态初始化）；
+  结果 CSV 为 140 个谐波行加 4 个失败记录，
+  未满足完整 168 行验收。通过案例仍出现 lock-in H2/H3 等相位超门，另有 sample 20
+  的 DC NRMSE=0.0607 超过 0.01；未调整阈值。
+- 受控 force-8 编译诊断改善了部分 current/DC 误差，但仍有未收敛案例且 lock-in 相位
+  问题未消失，不能据此宣称 CN 与 LSODA 等价。证据目录：
+  `results/diagnostics/solver_equivalence_status_20260809/`；此前无状态码细分证据保留在
+  `results/diagnostics/solver_equivalence_substep_20260809/`，更早的无细分证据保留在
+  `results/diagnostics/solver_equivalence_backtracking_20260809/`。
+- CSV 现在保留 `lsoda_status`/`cn_status`，4 个失败样本均明确为 `cn_status=-4`，
+  消除了稳态失败与时间步失败混淆；这只是可观测性修复，不改变科学 FAIL。
+- 本机验证：C++ bridge + solver-equivalence **11 passed**；Python 全量回归
+  **677 passed**；`git diff --check` 通过。正式计算仍必须使用 LSODA/BDF，CN 仅可作
+  候选筛选/性能诊断；下一步不再以调阈值或继续堆 CN 补丁为路线，除非出现新的物理/数值
+  证据门。
+
+## 82. 实验 target bundle 可重复性与哈希冲突测试（2026-08-09）
+
+- 为 `build_post_experiment_bundle` 增加 collected 三列 FTacV fixture 的端到端测试：
+  两次独立构建的 `targets.npz` 哈希与关键数组一致，证明当前 bundle 输出可重建。
+- 增加原始文件内容被修改后的冲突测试：manifest 中声明哈希与实际文件不一致时返回
+  `FAIL_STRUCTURE`，不生成 `targets.npz`，不会把被篡改数据送入后续反演。
+- bundle 测试结果：**4 passed**。这只验证数据契约和留痕，不代表实验数据已收集或满足
+  Gate A1；真实数据仍需独立输入、批次元数据和完整 A1 审计。
+
+## 83. Profile 驱动 CMA 步长与来源绑定（2026-08-09）
+
+- 正式 `screen_cmaes_raw` 不再接受裸 `--profile-half-width`；必须读取带 SHA-256 的
+  `profile_summary.json`，按当前 feature mode 选择 profile，并覆盖全部 free 参数。
+- 公共 sigma 由各 free 参数 `delta_1_width/2` 的最小值，经既有 safety/floor/cap
+  派生；profile 缺失、重复、跨 mode 歧义、非正/越界宽度或未知语义均拒绝。
+- profile 源路径、哈希、参数宽度和选择规则写入 job、search_policy 和 provenance；
+  裸数字仍可用于 diagnostic，避免与历史诊断结果混淆。
+- 进一步绑定 profile 生成配置：`truth_id=mixed_b`、LSODA、非 smoke、8192 点、32
+  points/cycle、128 feature grid、H1-H3、41 profile grid、零噪声；配置不匹配时拒绝。
+- 正式 profile 还必须证明真值是全局最小、没有远端近似谷、所有采样点有限且 ODE/Tafel
+  失败数为零，避免用局部补偿谷反向决定搜索步长。
+- focused 测试：`17 passed`；随后 Python 全量回归 `681 passed`，`git diff --check`
+  通过。尚未用真实 formal profile 启动新恢复，避免在没有重新注册 profile 证据前改变
+  正式结果。
+
+## 84. Formal 边界与合成解释口径修正（2026-08-09）
+
+- Sol 只读复核发现，旧版 synthetic runner 的 `formal` 入口仍可不带显式参数角色文件，且
+  接受 CN；这会让 `gamma` 等固定角色在 legacy 默认自由向量中出现，并绕开「CN 仅
+  screen-only」的科学边界。现已改为：该 runner 只接受 LSODA；任何 `formal` 任务必须传
+  `--parameter-selection`，缺失时 fail closed。pre-experiment 的冻结 pair 本身只含
+  `k0_2/k0_3/G_OH/G_O`，仍强制 LSODA。
+- `diagnostic` 参数现在是「数值固定、角色可见」的第三类，已补回归测试；此前接口把它同时
+  要求固定又禁止固定，属于未触发的逻辑矛盾，不影响已归档结果。
+- post-experiment bundle 现附当前 A6 参数角色策略哈希及 source commit/dirty 记录；它仍
+  **只表示输入包可重建，不授权反演**。未来正式反演必须另传含具体固定值的 selection 证据。
+- 对 §70–75、83 的科学口径作追溯性限制：其中“sharp/one-sided”、truth-fixed 1-D profile、
+  truth-init 小步长和低 loss 都是 **M0 合成、给定其余 truth 的条件诊断**。它们不能单独
+  证明结构可辨识/不可辨识、真实 Co3O4 参数可恢复或物理机理成立。正式升级需要重优化 profile、
+  多个 truth、噪声与 holdout，及未来 A1 实验数据验收。
