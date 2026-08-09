@@ -2377,3 +2377,22 @@ H1-H7压力测试：
   `/home/lsy/OER-FTAcV/results/formal/objective_profiles/10abd5f-profile-20260809-foreground/`；
   Mac clean worktree
   `results/formal/objective_profiles/10abd5f-profile-20260809-foreground/`。
+
+## 87. 现有 CHI CV 的只读 Tafel 审计（2026-08-09）
+
+- 新增 `cv_tafel_audit.py` 和 `audit_chi_cv_tafel.py`。审计器解析 CHI header，
+  在最高电位转折处拆分 forward/reverse，禁止按电位平均两支；输出永远标为
+  `EXPLORATORY_ONLY`，并记录输入 SHA-256、原始电流候选、正反扫滞后和四个
+  未解析 blocker（RHE、iR、面积、稳态）。它不导入反演模块，也不改动
+  `measure_tafel` 或 formal objective。超过两个最高电位点的平台因扫描支归属
+  不可判定而 fail-closed，禁止静默丢弃中间点。单支候选还必须在一个连续电流窗内
+  跨至少一个 decade、电流随电位单调，且线性回归 `R² ≥ 0.98`；任一条件不满足
+  即不输出斜率。
+- 三条 0.1 V/s CV 均生成了诊断 JSON，但没有产生可报告的原始电流候选斜率：
+  `cv-ftacv2` 的正反扫均在候选电流窗内重新进入，属不连续窗口；
+  `cv2-ftacv8` 与 `cv4-ftacv3` 的正反扫均不足一个电流 decade。中位正反扫
+  电流差分别为 31.8、35.0、39.7 µA。审计器对此 fail-closed，禁止把离散点
+  拼接成表观 Tafel 斜率。
+- 判定：没有任何现有 CV 可升级为 `validated_apparent_tafel`；它们不能接入
+  formal profile、CMA 或真实反演，也不改变第 86 节的 FAIL。经科学审查重跑的
+  诊断文件位于 `results/diagnostics/cv_tafel_audit_20260809_v3/`，仅保留本机/归档。

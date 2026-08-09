@@ -29,6 +29,10 @@ A1 `FAIL_METADATA`、A3 `FAIL` 或 A6 `FAIL_RECOVERY`。单协议六参数恢复
 formal CMA 的 profile contract；CMA 未启动。不得删除失败点、放宽门或以
 单独通过的 `k0_2` 外推该四参数集。
 
+三条已有 CHI CV 已完成只读双支审计，全部为 `EXPLORATORY_ONLY`：正反扫存在
+明显电流滞后，且 RHE 换算、iR、面积与稳态信息均不可追溯。它们只能用于后续
+LSV/稳态实验设计，不能作为 Tafel 约束或改变上述 CMA 结论。
+
 当前主线：
 
 ```text
