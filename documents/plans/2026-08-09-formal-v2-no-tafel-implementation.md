@@ -138,3 +138,7 @@ python code/python/scripts/run_objective_profiles.py \
 ```
 
 验收 20 profiles、820 rows、LSODA/8192/32ppc/H1-H3/zero-noise、contract 与 commit 一致、全部有限、truth global-minimum、无 ODE failure；再按新的 profile contract 决定是否可以运行 recovery。Tafel 不得作为此运行的 fail gate。
+
+验收必须调用 `code/python/scripts/validate_formal_profile_contract.py`，将只读
+`acceptance_formal_v2.json` 写入结果目录；validator 的 `PASS` 仅证明 profile 证据完整，
+不自动授权 CMA 或真实反演。

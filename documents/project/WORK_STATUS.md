@@ -2415,5 +2415,19 @@ H1-H7压力测试：
 - 本机 smoke 验收：profile runner 7 项测试通过；formal-v2 smoke 的 manifest/summary
   一致记录 `tafel_channel_mode=disabled` 且 `tafel_failures=0`。旧结果未修改。
 - 边界：formal-v2 的目标通道不同，不能与 legacy-v1 loss/width 直接比较；它只允许
-  重新评价“移除非科学罚分后的合成可恢复性”。正式 LSODA profile、recovery 与 CMA
-  尚未启动，必须先完成全量测试、Sol 质检和独立 profile gate。
+  重新评价“移除非科学罚分后的合成可恢复性”。正式 LSODA profile 已在 Legion 启动，
+  但尚未读取终态或验收；recovery 与 CMA 尚未启动，必须先通过独立 profile gate。
+
+## 89. Formal-v2 profile 只读验收器（2026-08-09）
+
+- 新增 `validate_formal_profile_contract.py`，不读取远端状态、不改写 profile 输出。它一次
+  核验 `profile_rows.csv`、`profile_summary.json`、`run_manifest.json` 的 manifest 哈希、
+  commit/clean state、LSODA/8192/32ppc/H1-H3/zero-noise 配置、20 个 profile 与 820 行、
+  每 profile 41 点、所有有限值、truth global-minimum、零 ODE/Tafel failure。
+- 它还从每个 worker profile summary 重算 feature contract schema-v2 的 SHA-256，并要求
+  `formal-v2-no-tafel → disabled`、Tafel channel 明确 inactive，避免仅凭顶层配置误判。
+  失败分类为 `FAIL_STRUCTURE`、`FAIL_CONTRACT` 或 `FAIL_NUMERICAL`，CLI 拒绝覆盖已有报告。
+- 当前仅完成本机合成 fixture 验证（13 passed）：完整证据为 `PASS`；并已验证篡改 task
+  身份/真值、伪造 H7 通道语义、错误 truth 坐标、错误归一化、幅度/相位配对、lock-in mask
+  点数、启用但不可用通道的失败原因或 Tafel 布尔状态，均会 fail-closed。正式远端输出完成后
+  才可运行该验收器并更新 Gate。

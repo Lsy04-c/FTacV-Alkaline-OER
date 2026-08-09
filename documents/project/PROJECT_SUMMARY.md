@@ -165,6 +165,7 @@ Gate 不是简单的全部 PASS 串联：失败 Gate 会改变允许路线。例
 | TPE 适配 | `inversion.TPEInverter` | 目标、边界、预算 | `InversionResult` | 已实现；当前禁止正式真实反演 |
 | 敏感性 | `importance.py`、`identifiability.py` | 参数和冻结特征 | 有符号敏感性、相关和分类 | 局部诊断，不证明联合可恢复 |
 | Profile | `profiling.py`、`run_objective_profiles.py` | 参数网格 | 单/二维目标地形 | 诊断用 |
+| Formal-v2 profile 验收 | `validate_formal_profile_contract.py` | profile CSV、summary、manifest、冻结 commit | PASS / 结构、契约或数值失败报告 | 只读；不授权 CMA |
 | 合成恢复 | `recovery.py`、`run_synthetic_recovery.py` | 真值、噪声、seed、算法 | 逐 study 结果和 recovery gate | A6 当前失败 |
 | 优化器比较 | `optimizers.py`、`optimizer_benchmark.py` | 固定调用预算 | TPE/Sobol/DE 轨迹 | 开发证据不能覆盖确认失败 |
 | Web API | `code/web/backend/main.py` | JSON/实验数据 | analyze、simulate、TPE 响应 | 原型可用；非当前主线 |
