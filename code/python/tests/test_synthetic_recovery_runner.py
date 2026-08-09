@@ -7,6 +7,7 @@ import math
 import pytest
 import yaml
 
+from oer_aem.inversion import DEFAULT_PARAM_SPECS, decode_vector
 from scripts import run_synthetic_recovery as recovery_runner
 from scripts.run_synthetic_recovery import (
     WORKFLOW_OWNED_FILES,
@@ -63,7 +64,126 @@ def test_pre_experiment_s1_builds_frozen_81_job_matrix(tmp_path):
     assert {job["noise_fraction"] for job in jobs} == {0.0}
 
 
-def test_pre_experiment_s0_uses_three_structural_jobs_and_allows_cn(tmp_path):
+def _write_parameter_selection(path, *, free_names=("k0_2", "k0_3"), **extra):
+    midpoint = decode_vector(
+        [(low + high) / 2 for _, _, low, high in DEFAULT_PARAM_SPECS]
+    )
+    fixed = {
+        name: midpoint[name]
+        for name, *_ in DEFAULT_PARAM_SPECS
+        if name not in set(free_names)
+    }
+    fixed["k0_1"] = 10000.0
+    payload = {
+        "schema_version": 1,
+        "free_names": list(free_names),
+        "fixed_values": fixed,
+        **extra,
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return payload
+
+
+def test_explicit_parameter_selection_is_versioned_and_hash_bound(tmp_path):
+    selection_path = tmp_path / "selection.json"
+    _write_parameter_selection(selection_path)
+    args = parse_args(
+        [
+            "--phase",
+            "formal",
+            "--noise-fraction",
+            "0",
+            "--trials",
+            "1",
+            "--parameter-selection",
+            str(selection_path),
+            "--output",
+            str(tmp_path / "out"),
+        ]
+    )
+    jobs = limit_jobs(build_jobs(args), 1)
+    job = jobs[0]
+    assert recovery_runner.parameter_selection_mode(args) == "explicit_v1"
+    assert job["parameter_selection_mode"] == "explicit_v1"
+    assert job["parameter_selection"]["role_groups"]["free"] == ["k0_2", "k0_3"]
+    assert job["parameter_selection"]["diagnostic_parameters"] == []
+    assert job["parameter_selection"]["role_override"] is False
+    assert job["original_truth_params"]["k0_1"] != job["truth_params"]["k0_1"]
+    assert job["truth_params"]["k0_1"] == pytest.approx(10000.0)
+    provenance = recovery_runner.parameter_selection_provenance(args, jobs)
+    assert provenance["parameter_selection_mode"] == "explicit_v1"
+    assert provenance["parameter_selection"] == job["parameter_selection"]
+    assert provenance["parameter_selection_sha256"] == job[
+        "parameter_selection_sha256"
+    ]
+    first_hash = recovery_runner.job_input_hash(job, smoke=True)
+    tampered = {**job, "parameter_selection_sha256": "0" * 64}
+    with pytest.raises(ValueError, match="hash mismatch"):
+        recovery_runner.job_input_hash(tampered, smoke=True)
+
+
+def test_formal_selection_rejects_missing_fixed_values_and_role_override(tmp_path):
+    missing_path = tmp_path / "missing.json"
+    payload = _write_parameter_selection(missing_path)
+    payload["fixed_values"].pop("gamma")
+    missing_path.write_text(json.dumps(payload), encoding="utf-8")
+    common = [
+        "--phase",
+        "formal",
+        "--noise-fraction",
+        "0",
+        "--trials",
+        "1",
+        "--parameter-selection",
+        str(missing_path),
+        "--output",
+        str(tmp_path / "out-missing"),
+    ]
+    with pytest.raises(ValueError, match="incomplete"):
+        build_jobs(parse_args(common))
+
+    override_path = tmp_path / "override.json"
+    _write_parameter_selection(
+        override_path,
+        free_names=("gamma", "k0_2"),
+        allow_role_override=True,
+    )
+    override_args = parse_args(
+        [
+            "--phase",
+            "formal",
+            "--noise-fraction",
+            "0",
+            "--trials",
+            "1",
+            "--parameter-selection",
+            str(override_path),
+            "--output",
+            str(tmp_path / "out-override"),
+        ]
+    )
+    with pytest.raises(ValueError, match="formal"):
+        build_jobs(override_args)
+
+
+def test_formal_runner_requires_explicit_selection_input(tmp_path):
+    args = parse_args(
+        [
+            "--phase",
+            "formal",
+            "--noise-fraction",
+            "0",
+            "--trials",
+            "1",
+            "--output",
+            str(tmp_path / "legacy"),
+        ]
+    )
+    with pytest.raises(ValueError, match="parameter-selection"):
+        build_jobs(args)
+
+
+def test_pre_experiment_s0_rejects_cn_screen_backend(tmp_path):
     args = parse_args(
         [
             "--pre-experiment-spec",
@@ -77,12 +197,8 @@ def test_pre_experiment_s0_uses_three_structural_jobs_and_allows_cn(tmp_path):
         ]
     )
 
-    jobs = build_jobs(args)
-
-    assert len(jobs) == 3
-    assert [job["portfolio_id"] for job in jobs] == ["P0", "P1", "P2"]
-    assert {job["backend"] for job in jobs} == {"cn"}
-    assert {job["trials"] for job in jobs} == {3}
+    with pytest.raises(ValueError, match="screen-only"):
+        build_jobs(args)
 
 
 def test_pre_experiment_s1_smoke_flag_routes_to_s0_matrix(tmp_path):
@@ -315,7 +431,7 @@ def test_parse_args_defaults_to_lsoda_backend(tmp_path):
     assert args.backend == "lsoda"
 
 
-def test_explicit_cn_backend_is_preserved_in_config_and_jobs(tmp_path):
+def test_recovery_runner_rejects_cn_screen_backend(tmp_path):
     args = parse_args(
         [
             "--phase",
@@ -329,14 +445,11 @@ def test_explicit_cn_backend_is_preserved_in_config_and_jobs(tmp_path):
         ]
     )
 
-    config = build_config(args, feature_mode="hybrid", seed=17)
-    jobs = build_jobs(args)
-
-    assert config.solver_backend == "cn"
-    assert {job["backend"] for job in jobs} == {"cn"}
+    with pytest.raises(ValueError, match="screen-only"):
+        build_jobs(args)
 
 
-def test_resume_fingerprint_changes_when_only_backend_changes(tmp_path):
+def test_recovery_runner_rejects_cn_before_resume_fingerprint_creation(tmp_path):
     common = [
         "--phase",
         "pilot",
@@ -351,36 +464,13 @@ def test_resume_fingerprint_changes_when_only_backend_changes(tmp_path):
     lsoda_args = parse_args(common)
     cn_args = parse_args([*common, "--backend", "cn"])
 
-    lsoda_jobs = build_jobs(lsoda_args)
-    cn_jobs = build_jobs(cn_args)
-
-    lsoda_resume = recovery_runner.build_resume_metadata(
-        lsoda_args,
-        lsoda_jobs,
-        {"source_commit": "deadbeef", "dirty": False},
-        None,
-    )
-    cn_resume = recovery_runner.build_resume_metadata(
-        cn_args,
-        cn_jobs,
-        {"source_commit": "deadbeef", "dirty": False},
-        None,
-    )
-
-    assert lsoda_resume["resume_fingerprint"] != cn_resume["resume_fingerprint"]
-    assert {job["backend"] for job in lsoda_jobs} == {"lsoda"}
-    assert {job["backend"] for job in cn_jobs} == {"cn"}
+    assert {job["backend"] for job in build_jobs(lsoda_args)} == {"lsoda"}
+    with pytest.raises(ValueError, match="screen-only"):
+        build_jobs(cn_args)
 
 
-def test_validate_backend_rejects_cn_when_cpp_bridge_unavailable(monkeypatch):
-    from oer_aem import cpp_bridge
-
-    monkeypatch.setattr(cpp_bridge, "is_available", lambda: False)
-
-    with pytest.raises(
-        RuntimeError,
-        match="CN backend requested but unavailable; fallback is forbidden",
-    ):
+def test_validate_backend_rejects_cn_as_screen_only():
+    with pytest.raises(ValueError, match="screen-only"):
         validate_backend("cn")
 
 
@@ -422,6 +512,8 @@ def test_pilot_builds_36_budget_jobs(tmp_path):
 
 
 def test_formal_runner_can_freeze_hybrid_as_the_only_feature_mode(tmp_path):
+    selection = tmp_path / "selection.json"
+    _write_parameter_selection(selection)
     args = parse_args(
         [
             "--phase",
@@ -430,6 +522,8 @@ def test_formal_runner_can_freeze_hybrid_as_the_only_feature_mode(tmp_path):
             "0.0015",
             "--trials",
             "100",
+            "--parameter-selection",
+            str(selection),
             "--feature-modes",
             "hybrid",
             "--output",
@@ -555,6 +649,8 @@ def test_checkpoint_hash_mismatch_when_backend_changes(tmp_path):
 
 
 def test_formal_builds_72_jobs_at_selected_budget(tmp_path):
+    selection = tmp_path / "selection.json"
+    _write_parameter_selection(selection)
     args = parse_args(
         [
             "--phase",
@@ -563,6 +659,8 @@ def test_formal_builds_72_jobs_at_selected_budget(tmp_path):
             "0.0015",
             "--trials",
             "50",
+            "--parameter-selection",
+            str(selection),
             "--output",
             str(tmp_path / "formal"),
         ]
@@ -575,12 +673,16 @@ def test_formal_builds_72_jobs_at_selected_budget(tmp_path):
 
 
 def test_formal_requires_selected_trial_budget(tmp_path):
+    selection = tmp_path / "selection.json"
+    _write_parameter_selection(selection)
     args = parse_args(
         [
             "--phase",
             "formal",
             "--noise-fraction",
             "0.0015",
+            "--parameter-selection",
+            str(selection),
             "--output",
             str(tmp_path / "formal"),
         ]
@@ -591,6 +693,8 @@ def test_formal_requires_selected_trial_budget(tmp_path):
 
 
 def test_smoke_job_runs_without_truth_initialization(tmp_path):
+    selection = tmp_path / "selection.json"
+    _write_parameter_selection(selection)
     args = parse_args(
         [
             "--phase",
@@ -599,6 +703,8 @@ def test_smoke_job_runs_without_truth_initialization(tmp_path):
             "0.0015",
             "--trials",
             "2",
+            "--parameter-selection",
+            str(selection),
             "--output",
             str(tmp_path / "formal"),
             "--smoke",
@@ -612,14 +718,8 @@ def test_smoke_job_runs_without_truth_initialization(tmp_path):
     assert row["n_trials"] == 2
     assert row["job_id"] == job["job_id"]
     assert set(row["parameter_metrics"]) == {
-        "k0_1",
         "k0_2",
         "k0_3",
-        "k0_4",
-        "G_OH",
-        "G_O",
-        "scaling_OOH_OH",
-        "gamma",
         "boundary_hits",
         "max_normalized_bound_error",
     }
@@ -646,6 +746,8 @@ def test_dry_run_writes_job_plan_without_computation(tmp_path):
 
 def test_smoke_main_checkpoints_one_completed_job(tmp_path):
     output = tmp_path / "smoke"
+    selection = tmp_path / "selection.json"
+    _write_parameter_selection(selection)
 
     main(
         [
@@ -655,6 +757,8 @@ def test_smoke_main_checkpoints_one_completed_job(tmp_path):
             "0.0015",
             "--trials",
             "1",
+            "--parameter-selection",
+            str(selection),
             "--output",
             str(output),
             "--workers",
@@ -1167,6 +1271,8 @@ def test_main_writes_consistent_structured_provenance(monkeypatch, tmp_path):
         "summarize_recovery",
         lambda rows, parameter_names: {},
     )
+    selection = tmp_path / "selection.json"
+    _write_parameter_selection(selection)
 
     main(
         [
@@ -1176,6 +1282,8 @@ def test_main_writes_consistent_structured_provenance(monkeypatch, tmp_path):
             "0.0015",
             "--trials",
             "1",
+            "--parameter-selection",
+            str(selection),
             "--output",
             str(output),
             "--workers",

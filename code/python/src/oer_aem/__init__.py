@@ -48,6 +48,7 @@ from .importance import (
     PERTURBATION_RULES,
     DEFAULT_PHYSICAL_BOUNDS,
 )
+from .recovery import ParameterSelection, build_parameter_selection
 
 __all__ = [
     "apply_alkaline_aem",
@@ -83,4 +84,6 @@ __all__ = [
     "analyze_parameter_importance",
     "PERTURBATION_RULES",
     "DEFAULT_PHYSICAL_BOUNDS",
+    "ParameterSelection",
+    "build_parameter_selection",
 ]

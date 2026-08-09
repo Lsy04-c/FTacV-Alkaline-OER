@@ -216,6 +216,42 @@ wf git-check                                       # 8. 交付检查
 git commit -m "..." && git push                    # 9. 人工确认提交
 ```
 
+### 7.1 采样器筛选路径（raw-cmaes，非 oer-wf 管线）
+
+对合成恢复做「换算法 / 适配版采样器」筛选时，oer-wf 管线不直接支持：optuna 4.9.0
+已弃用 `CmaEsSampler` 的 `restart_strategy`（自动回退 None）与 `x0`（整个 run 退化成
+RandomSampler），适配测试必须用 raw `cmaes` 包。该工具的 **formal** 路径必须在干净
+worktree 内运行，并读取同一 commit、LSODA、全量 profile summary；缺任一证据时拒绝。
+
+1. **驱动**：`code/python/scripts/screen_cmaes_raw.py` —— raw `cmaes` 包
+   （`CMA(mean,sigma,bounds)` + `ask()`/`tell()`，cmaes 0.13 的 `ask()` 一次返回一个个体）。
+   参数角色由显式选择证据固定；formal sigma 取每个 free 参数 profile 的 `delta_1_width/2`
+   中最窄值，再经 safety/floor/cap 派生。历史 `sigma=0.25` 或裸数字宽度只能加
+   `--diagnostic` 作为诊断，不能生成 formal 证据。`--smoke` 仅作本地机制自检（256 点
+   landscape 失真，正式筛选必须全量 8192 点）。
+2. **依赖**：venv 装 **`cmaes`** 包（optuna 的 `CmaEsSampler` 需要的是 `cmaes`，
+   不是 Hansen 原版 `cma`）：
+   ```bash
+   .venv/bin/pip install cmaes
+   ```
+3. **提交 → Legion 建 worktree**：Mac 提交并推送驱动 → `ssh legion "git fetch origin"` →
+   `git worktree add worktrees/<commit>/<name> <commit>`（用主仓库 `.venv/bin/python`）。
+4. **启动（systemd，脱离 ssh）**：不用 `ssh ... 'bash -s'`（ssh 断线会 SIGHUP 杀死进程组）：
+   ```bash
+   ssh legion "systemd-run --user --unit=oer-cmaes-screen --collect \
+     -p WorkingDirectory=/home/lsy/OER-FTAcV/worktrees/<commit>/<name> \
+     /bin/bash /home/lsy/OER-FTAcV/worktrees/<commit>/<name>/screen_launcher.sh"
+   ```
+   launcher 内部对多个 seed 并行调用驱动并 `wait`，日志落 `screen_log/`。
+5. **状态 / 日志**：`systemctl --user status oer-cmaes-screen`、
+   `journalctl --user -u oer-cmaes-screen -f`。
+6. **注意**：驱动只在全部 trials 跑完一次性写 JSON，中途 kill 不留部分输出；
+   若需「中断也留进度」，要加每代检查点（2026-08-06 尚未加）。
+7. **证据边界**：历史全量 8192 点、3 seed、100 trials 的运行时间约 28 min/seed
+   （≈20 s/forward，按归档 pilot runtime 反推）。其中 truth-fixed profile、温启动和
+   低损失只构成合成诊断，不构成真实参数可恢复或结构可辨识结论；口径见
+   `documents/research/2026-08-06-k01-identifiability-conclusion.md`。
+
 ---
 
 ## 8. task_spec.yaml 格式

@@ -17,16 +17,60 @@
 """
 import argparse
 import json
+import subprocess
+import sys
 import time
+from dataclasses import replace
 from pathlib import Path
 from typing import Mapping, Optional, Sequence
 
 import numpy as np
 
-try:
-    import cmaes
-except ImportError as e:  # pragma: no cover
-    raise SystemExit("需要 cmaes 包: pip install cmaes") from e
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "code" / "python" / "src"))
+
+
+def _load_cmaes():
+    """Load the optional raw-CMA dependency at execution time.
+
+    Keeping this import lazy lets callers inspect/validate a search contract
+    without the optional optimizer installed, while the runtime error remains
+    explicit and auditable when an actual CMA run is requested.
+    """
+    try:
+        import cmaes
+    except ImportError as exc:  # pragma: no cover - depends on environment
+        raise RuntimeError(
+            "raw CMA-ES requires the optional 'cmaes' package; "
+            "install it with 'pip install cmaes'"
+        ) from exc
+    return cmaes
+
+
+def _formal_execution_provenance() -> dict[str, object]:
+    """Require a clean checkout and bind a formal run to its source commit."""
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        dirty = bool(
+            subprocess.run(
+                ["git", "status", "--porcelain=v1"],
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise RuntimeError("formal CMA requires a Git worktree with a resolvable commit") from exc
+    if not commit or dirty:
+        raise ValueError("formal CMA requires a clean worktree")
+    return {"source_commit": commit, "dirty": False}
 
 from oer_aem.inversion import (
     DEFAULT_PARAM_SPECS,
@@ -36,12 +80,20 @@ from oer_aem.inversion import (
     encode_params,
     normalize_vector,
 )
-from oer_aem.recovery import recovery_metrics, truth_library
+from oer_aem.recovery import recovery_metrics, truth_library, validate_free_parameters
+from oer_aem.search_policy import (
+    build_scientific_parameter_selection,
+    derive_cma_sigma,
+    load_profile_sigma_contract,
+    selection_evidence_hash,
+    validate_cma_sigma,
+    validate_parameter_selection_evidence,
+)
 from run_synthetic_recovery import build_recovery_problem, make_synthetic_target
 
 NOISE_FRACTION = 0.001495726085983469
 TARGET_SEED = 1443515106
-FREE = ["k0_1", "k0_2", "k0_3", "G_OH", "G_O", "scaling_OOH_OH"]
+FREE = ["k0_2", "k0_3", "G_OH", "G_O"]
 
 
 def run_raw_cmaes(
@@ -54,14 +106,69 @@ def run_raw_cmaes(
     init: str = "mid",
     sigma: float = 0.25,
     init_point: Optional[Mapping[str, float]] = None,
+    profile_half_width: Optional[float] = None,
+    profile_summary: Optional[Path] = None,
+    diagnostic: bool = False,
 ) -> dict:
+    validate_free_parameters(free_names, allow_diagnostic=diagnostic)
+    if profile_half_width is not None and profile_summary is not None:
+        raise ValueError("provide either profile_summary or profile_half_width, not both")
+    profile_contract = None
+    execution_provenance = None
+    if profile_summary is not None:
+        if not diagnostic:
+            execution_provenance = _formal_execution_provenance()
+        profile_contract = load_profile_sigma_contract(
+            profile_summary,
+            free_names,
+            feature_mode=mode,
+            expected_truth_id="mixed_b",
+            expected_configuration={
+                "n_points": 8192,
+                "points_per_cycle": 32,
+                "feature_grid_size": 128,
+                "fit_harmonics": [1, 2, 3],
+                "grid_points": 41,
+                "noise_fraction": 0.0,
+            },
+            expected_source_commit=(
+                str(execution_provenance["source_commit"])
+                if execution_provenance is not None
+                else None
+            ),
+        )
+        profile_half_width = float(profile_contract["selected_half_width"])
+    elif profile_half_width is None and not diagnostic:
+        raise ValueError("formal CMA screening requires a profile summary")
+    elif profile_half_width is not None and not diagnostic:
+        raise ValueError(
+            "formal CMA screening requires a hashed profile summary; "
+            "numeric half-width is diagnostic-only"
+        )
+    if profile_half_width is not None:
+        sigma = derive_cma_sigma(profile_half_width)
+    validate_cma_sigma(sigma, diagnostic=diagnostic)
+    cmaes = _load_cmaes()
     truths = truth_library(DEFAULT_PARAM_SPECS)
     truth = next(t for t in truths if t["truth_id"] == "mixed_b")
     params = truth["parameters"]  # 真值：用于生成 target 与恢复度量
-    # 优化器的固定参数：可把某个非自由参数钉在大值（准平衡区降维实验）
+    selection = build_scientific_parameter_selection(
+        params,
+        free_names=free_names,
+        fixed_override=fixed_override,
+        specs=DEFAULT_PARAM_SPECS,
+        diagnostic=diagnostic,
+    )
+    selection_evidence = selection.to_evidence()
+    validate_parameter_selection_evidence(selection_evidence, formal=not diagnostic)
+    selection_hash = selection_evidence_hash(selection_evidence)
+    original_truth = dict(params)
+    # 优化器的固定参数：可把某个非自由参数钉在大值（准平衡区降维实验）。
+    # The selection is the source of truth; do not reconstruct fixed values by
+    # subtracting free names again in the runner.
     opt_truth = dict(params)
-    if fixed_override:
-        opt_truth.update(fixed_override)
+    opt_truth.update(dict(selection.fixed_params))
+    effective_truth = dict(opt_truth)
     job = {
         "feature_mode": mode,
         "truth_id": "mixed_b",
@@ -72,10 +179,21 @@ def run_raw_cmaes(
         "trials": trials,
         "free_parameters": list(free_names),
         "backend": "lsoda",
+        # Keep role evidence on the job payload so any downstream input-hash
+        # implementation binds the scientific assignment, not only the truth.
+        "parameter_selection": selection_evidence,
+        "parameter_selection_sha256": selection_hash,
+        "profile_source": profile_contract,
     }
     config, free_specs = build_recovery_problem(job, smoke=smoke)
+    if free_specs != selection.free_specs:
+        raise RuntimeError("runner free specs diverged from parameter selection")
+    config = replace(config, fixed_params=selection.fixed_params)
     target = make_synthetic_target(
-        params, config=config, noise_fraction=NOISE_FRACTION, seed=TARGET_SEED
+        effective_truth,
+        config=config,
+        noise_fraction=NOISE_FRACTION,
+        seed=TARGET_SEED,
     )
     objective = InversionObjective(target, config, free_specs)
 
@@ -84,7 +202,7 @@ def run_raw_cmaes(
     popsize = int(4 + 3 * np.log(dim))
     if init == "truth":
         # 温启动到 truth（诊断盆地稳定性：能停住说明纯探索问题）
-        mean = normalize_vector(encode_params(params, free_specs), free_specs)
+        mean = normalize_vector(encode_params(effective_truth, free_specs), free_specs)
     elif init == "random":
         # 随机起点（多起点粗搜）
         mean = np.random.default_rng(seed).uniform(0.0, 1.0, size=dim)
@@ -127,7 +245,9 @@ def run_raw_cmaes(
 
     enc_best = denormalize_vector(best_z, free_specs) if best_z is not None else None
     best_params = decode_vector(enc_best, free_specs) if enc_best is not None else {}
-    metrics = recovery_metrics(truth=params, estimate=best_params, specs=free_specs)
+    metrics = recovery_metrics(
+        truth=effective_truth, estimate=best_params, specs=free_specs
+    )
     return {
         "mode": mode,
         "seed": seed,
@@ -141,7 +261,25 @@ def run_raw_cmaes(
         "n_feature_fail": int(objective.n_feature_fail),
         "n_tafel_fail": int(objective.n_tafel_fail),
         "n_restarts": int(n_restarts),
-        "truth": params,
+        "search_policy": {
+            "diagnostic": bool(diagnostic),
+            "profile_half_width": None if profile_half_width is None else float(profile_half_width),
+            "profile_source": profile_contract,
+            "execution_source": execution_provenance,
+            "sigma": float(sigma),
+            "role_policy": "diagnostic_opt_in" if diagnostic else "formal_fixed_roles",
+            "parameter_selection": selection_evidence,
+            "selection_evidence_sha256": selection_hash,
+        },
+        "provenance": {
+            "parameter_selection": selection_evidence,
+            "parameter_selection_sha256": selection_hash,
+            "profile_source": profile_contract,
+            "execution_source": execution_provenance,
+        },
+        "original_truth": original_truth,
+        "effective_truth": effective_truth,
+        "truth": effective_truth,
         "metrics": {
             name: {"normalized_bound_error": metrics[name]["normalized_bound_error"]}
             for name, *_ in free_specs
@@ -166,7 +304,13 @@ def main():
     ap.add_argument("--init-point", default=None,
                     help="--init point 时的自由参数值，如 'k0_2=0.25,k0_3=158,G_OH=1.4'")
     ap.add_argument("--sigma", type=float, default=0.25,
-                    help="CMA 初始步长（z 空间，默认 0.25 ≈ 8 数量级参数 2 decade）")
+                    help="CMA 初始步长（z 空间）；正式路径需由 --profile-half-width 派生")
+    ap.add_argument("--profile-half-width", type=float, default=None,
+                    help="profile 在归一化坐标中的半宽；仅诊断路径允许裸数字")
+    ap.add_argument("--profile-summary", type=Path, default=None,
+                    help="正式 profile_summary.json；按所有 free 参数的最窄宽度派生 sigma")
+    ap.add_argument("--diagnostic", action="store_true",
+                    help="允许固定角色/大步长，仅用于诊断，不得作为 formal 证据")
     ap.add_argument("--out", default=None, help="结果 JSON 输出路径")
     args = ap.parse_args()
 
@@ -187,7 +331,10 @@ def main():
     t0 = time.perf_counter()
     res = run_raw_cmaes(args.mode, args.seed, args.trials, smoke=args.smoke,
                         free_names=free_names, fixed_override=fixed_override,
-                        init=args.init, sigma=args.sigma, init_point=init_point)
+                        init=args.init, sigma=args.sigma, init_point=init_point,
+                        profile_half_width=args.profile_half_width,
+                        profile_summary=args.profile_summary,
+                        diagnostic=args.diagnostic)
     res["runtime_seconds"] = round(time.perf_counter() - t0, 2)
     print(json.dumps(res, indent=2, default=float))
     if args.out:

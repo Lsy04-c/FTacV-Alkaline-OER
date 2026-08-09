@@ -18,6 +18,7 @@ import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -32,11 +33,17 @@ from oer_aem.inversion import (
 )
 from oer_aem.recovery import (
     build_budget_pilot_jobs,
+    build_parameter_selection,
     build_recovery_jobs,
     recovery_metrics,
     select_trial_budget,
     summarize_recovery,
     truth_library,
+    ParameterSelection,
+)
+from oer_aem.search_policy import (
+    selection_evidence_hash,
+    validate_parameter_selection_evidence,
 )
 from oer_aem.portfolio_recovery import (
     PortfolioObjective,
@@ -52,6 +59,7 @@ from oer_aem.portfolio_recovery import (
 FEATURE_MODES = ("legacy", "complex_snr", "lockin_only", "hybrid")
 OPTIMIZER_SEEDS = (7, 17, 27)
 PILOT_BUDGETS = (20, 50, 100)
+PARAMETER_SELECTION_SCHEMA_VERSION = 1
 WORKFLOW_OWNED_FILES = {
     "STATUS.json",
     "._status_signal",
@@ -95,7 +103,96 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--max-jobs", "--max_jobs", type=int, default=None)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument(
+        "--parameter-selection",
+        type=Path,
+        default=None,
+        help=(
+            "Versioned formal parameter-selection JSON; required for formal "
+            "recovery and omitted only for legacy pilot diagnostics"
+        ),
+    )
     return parser.parse_args(argv)
+
+
+def parameter_selection_mode(args: argparse.Namespace) -> str:
+    """Return the explicit selection mode without changing legacy jobs."""
+    return "explicit_v1" if getattr(args, "parameter_selection", None) else "legacy"
+
+
+def parameter_selection_provenance(
+    args: argparse.Namespace, jobs: list[dict]
+) -> dict:
+    """Summarize optional selection evidence without altering legacy jobs."""
+    mode = parameter_selection_mode(args)
+    record = {"parameter_selection_mode": mode}
+    if mode == "explicit_v1":
+        evidences = {job.get("parameter_selection_sha256") for job in jobs}
+        if len(evidences) != 1 or None in evidences:
+            raise ValueError("explicit jobs do not share one selection evidence hash")
+        record["parameter_selection"] = jobs[0]["parameter_selection"]
+        record["parameter_selection_sha256"] = next(iter(evidences))
+    return record
+
+
+def load_parameter_selection(
+    path: Path, *, formal: bool = True
+) -> tuple[ParameterSelection, dict[str, Any], str]:
+    """Load and validate a versioned explicit parameter-selection contract."""
+    try:
+        raw = path.read_bytes()
+        payload = json.loads(raw.decode("utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("parameter-selection file is not valid JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("parameter-selection file must contain an object")
+    if payload.get("schema_version") != PARAMETER_SELECTION_SCHEMA_VERSION:
+        raise ValueError("unsupported parameter-selection schema version")
+    free_names = payload.get("free_names")
+    fixed_values = payload.get("fixed_values")
+    diagnostic_names = payload.get("diagnostic_names", ())
+    if isinstance(free_names, (str, bytes)) or not isinstance(free_names, (list, tuple)):
+        raise ValueError("parameter-selection free_names must be a list")
+    if not isinstance(fixed_values, dict):
+        raise ValueError("parameter-selection fixed_values must be an object")
+    if isinstance(diagnostic_names, (str, bytes)) or not isinstance(
+        diagnostic_names, (list, tuple)
+    ):
+        raise ValueError("parameter-selection diagnostic_names must be a list")
+    try:
+        selection = build_parameter_selection(
+            free_names=free_names,
+            fixed_values=fixed_values,
+            diagnostic_names=diagnostic_names,
+            specs=DEFAULT_PARAM_SPECS,
+            allow_role_override=bool(payload.get("allow_role_override", False)),
+        )
+    except (TypeError, ValueError, KeyError) as exc:
+        raise ValueError(f"invalid parameter-selection assignment: {exc}") from exc
+    evidence = selection.to_evidence()
+    validate_parameter_selection_evidence(evidence, formal=formal)
+    declared_evidence = payload.get("evidence")
+    if declared_evidence is not None and declared_evidence != evidence:
+        raise ValueError("parameter-selection evidence does not match assignment")
+    return selection, evidence, selection_evidence_hash(evidence)
+
+
+def selection_from_evidence(evidence: dict[str, Any]) -> ParameterSelection:
+    """Reconstruct and revalidate explicit evidence at the worker boundary."""
+    validate_parameter_selection_evidence(evidence, formal=True)
+    try:
+        selection = build_parameter_selection(
+            free_names=evidence["free_parameters"],
+            fixed_values=evidence["fixed_params"],
+            diagnostic_names=evidence["diagnostic_parameters"],
+            specs=DEFAULT_PARAM_SPECS,
+            allow_role_override=False,
+        )
+    except (TypeError, ValueError, KeyError) as exc:
+        raise ValueError(f"invalid parameter-selection evidence: {exc}") from exc
+    if selection.to_evidence() != evidence:
+        raise ValueError("parameter-selection evidence is not canonical")
+    return selection
 
 
 def select_free_specs(value: str):
@@ -153,16 +250,22 @@ def build_config(
 
 
 def validate_backend(backend: str) -> None:
-    if backend == "cn":
-        from oer_aem import cpp_bridge
-
-        if not cpp_bridge.is_available():
-            raise RuntimeError(
-                "CN backend requested but unavailable; fallback is forbidden"
-            )
+    if backend != "lsoda":
+        raise ValueError(
+            "CN is screen-only and cannot run through the synthetic recovery "
+            "runner; use the dedicated screening/equivalence tools instead"
+        )
 
 
 def build_jobs(args: argparse.Namespace) -> list[dict]:
+    validate_backend(args.backend)
+    if args.parameter_selection is not None:
+        if args.pre_experiment_spec is not None:
+            raise ValueError("parameter-selection is only supported by formal recovery")
+        if args.phase != "formal":
+            raise ValueError("parameter-selection requires --phase formal")
+        if args.free_parameters != ",".join(name for name, *_ in DEFAULT_PARAM_SPECS):
+            raise ValueError("free-parameter override is forbidden with parameter-selection")
     if args.pre_experiment_spec is not None:
         if args.portfolio_stage is None:
             raise ValueError("--portfolio-stage is required with --pre-experiment-spec")
@@ -216,8 +319,22 @@ def build_jobs(args: argparse.Namespace) -> list[dict]:
     if args.phase is None or args.noise_fraction is None:
         raise ValueError("legacy recovery requires --phase and --noise-fraction")
     free_specs = select_free_specs(args.free_parameters)
+    explicit_selection = None
+    explicit_evidence = None
+    explicit_selection_hash = None
+    if args.parameter_selection is not None:
+        explicit_selection, explicit_evidence, explicit_selection_hash = load_parameter_selection(
+            args.parameter_selection,
+            formal=True,
+        )
+        free_specs = explicit_selection.free_specs
     free_parameters = [name for name, *_ in free_specs]
     feature_modes = select_feature_modes(args.feature_modes)
+    if args.phase == "formal" and args.parameter_selection is None:
+        raise ValueError(
+            "formal recovery requires --parameter-selection; legacy role "
+            "inference is diagnostic-only"
+        )
     truths = truth_library(DEFAULT_PARAM_SPECS)
     if args.phase == "pilot":
         jobs = build_budget_pilot_jobs(
@@ -241,6 +358,15 @@ def build_jobs(args: argparse.Namespace) -> list[dict]:
         job["free_parameters"] = free_parameters
         job["backend"] = args.backend
         job["sampler"] = args.sampler
+        if explicit_selection is not None:
+            original_truth = dict(job["truth_params"])
+            effective_truth = dict(original_truth)
+            effective_truth.update(dict(explicit_selection.fixed_params))
+            job["original_truth_params"] = original_truth
+            job["truth_params"] = effective_truth
+            job["parameter_selection_mode"] = "explicit_v1"
+            job["parameter_selection"] = explicit_evidence
+            job["parameter_selection_sha256"] = explicit_selection_hash
     return jobs
 
 
@@ -302,13 +428,26 @@ def prepare_output_directory(output: Path, *, resume: bool = False) -> None:
 
 
 def build_recovery_problem(job: dict, *, smoke: bool):
-    free_specs = select_free_specs(",".join(job["free_parameters"]))
-    free_names = {name for name, *_ in free_specs}
-    fixed_params = tuple(
-        (name, float(value))
-        for name, value in job["truth_params"].items()
-        if name not in free_names
-    )
+    if "parameter_selection" in job:
+        evidence = job["parameter_selection"]
+        selection = selection_from_evidence(evidence)
+        expected_selection_hash = selection_evidence_hash(evidence)
+        if job.get("parameter_selection_sha256") != expected_selection_hash:
+            raise ValueError("parameter-selection evidence hash mismatch")
+        free_specs = selection.free_specs
+        if tuple(job["free_parameters"]) != tuple(
+            name for name, *_ in free_specs
+        ):
+            raise ValueError("job free parameters disagree with selection evidence")
+        fixed_params = selection.fixed_params
+    else:
+        free_specs = select_free_specs(",".join(job["free_parameters"]))
+        free_names = {name for name, *_ in free_specs}
+        fixed_params = tuple(
+            (name, float(value))
+            for name, value in job["truth_params"].items()
+            if name not in free_names
+        )
     args = argparse.Namespace(
         smoke=smoke,
         noise_fraction=job["noise_fraction"],
@@ -395,6 +534,7 @@ def build_resume_metadata(
 ) -> dict:
     portfolio_stage = effective_portfolio_stage(args)
     smoke_run = args.smoke or portfolio_stage == "S0"
+    selection_provenance = parameter_selection_provenance(args, jobs)
     job_hashes = {
         job["job_id"]: job_input_hash(job, smoke=smoke_run) for job in jobs
     }
@@ -418,13 +558,30 @@ def build_resume_metadata(
             for job in jobs
         ],
     }
-    return {
+    if selection_provenance["parameter_selection_mode"] == "explicit_v1":
+        fingerprint_payload.update(
+            {
+                key: value
+                for key, value in selection_provenance.items()
+                if key != "parameter_selection"
+            }
+        )
+    result = {
         "resume_schema_version": 2,
         "resume_fingerprint": hashlib.sha256(
             _canonical_json(fingerprint_payload).encode("utf-8")
         ).hexdigest(),
         "job_input_hashes": job_hashes,
+        "parameter_selection_mode": selection_provenance[
+            "parameter_selection_mode"
+        ],
     }
+    if "parameter_selection" in selection_provenance:
+        result["parameter_selection"] = selection_provenance["parameter_selection"]
+        result["parameter_selection_sha256"] = selection_provenance[
+            "parameter_selection_sha256"
+        ]
+    return result
 
 
 def _atomic_write_text(path: Path, text: str, *, prefix: str) -> None:
@@ -824,6 +981,8 @@ def build_summary(
         if portfolio_mode
         else None
     )
+    selection_provenance = parameter_selection_provenance(args, jobs)
+    summary_provenance = {**provenance, **selection_provenance}
     summary = {
         "backend": args.backend,
         "feature_modes": (
@@ -849,7 +1008,10 @@ def build_summary(
         "n_tafel_fail": sum(row["n_tafel_fail"] for row in rows),
         "source_commit": provenance["source_commit"],
         "dirty": provenance["dirty"],
-        "provenance": provenance,
+        "parameter_selection_mode": selection_provenance[
+            "parameter_selection_mode"
+        ],
+        "provenance": summary_provenance,
         "resumed": resumed,
         "reused_jobs": reused_jobs,
         "executed_jobs": executed_jobs,
@@ -1048,6 +1210,7 @@ def main(argv: list[str] | None = None) -> None:
         "command": [sys.executable, *sys.argv]
         if argv is None else [sys.executable, *argv],
     }
+    provenance_record.update(parameter_selection_provenance(args, jobs))
     resume_metadata = build_resume_metadata(
         args, jobs, provenance, noise_evidence
     )
@@ -1064,6 +1227,7 @@ def main(argv: list[str] | None = None) -> None:
         "portfolio_stage": portfolio_stage,
         "noise_fraction": args.noise_fraction,
         "sampler": args.sampler,
+        "parameter_selection_mode": parameter_selection_mode(args),
         "workers": args.workers,
         "free_parameters": jobs[0]["free_parameters"] if jobs else [],
         "smoke": smoke_run,

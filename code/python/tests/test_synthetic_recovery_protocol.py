@@ -13,6 +13,7 @@ from oer_aem.recovery import (
     select_trial_budget,
     summarize_recovery,
     truth_library,
+    validate_free_parameters,
 )
 
 
@@ -32,6 +33,20 @@ def test_truth_library_has_three_distinct_interior_cases():
     assert np.all(encoded > lows)
     assert np.all(encoded < highs)
     assert len({tuple(row) for row in encoded}) == 3
+
+
+def test_truth_library_keeps_gamma_fixed_across_cases():
+    truths = truth_library(DEFAULT_PARAM_SPECS)
+    assert len({case["parameters"]["gamma"] for case in truths}) == 1
+
+
+def test_validate_free_parameters_rejects_role_violations():
+    with pytest.raises(ValueError, match="gamma"):
+        validate_free_parameters(("k0_2", "gamma"))
+    with pytest.raises(ValueError, match="fixed"):
+        validate_free_parameters(("k0_2", "Ru"))
+    assert validate_free_parameters(("k0_2", "k0_3")) == ("k0_2", "k0_3")
+    assert validate_free_parameters(("gamma",), allow_diagnostic=True) == ("gamma",)
 
 
 def test_recovery_metrics_use_encoded_error_and_boundary_hits():

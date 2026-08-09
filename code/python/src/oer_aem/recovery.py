@@ -5,11 +5,147 @@ from __future__ import annotations
 import hashlib
 from collections import defaultdict
 from itertools import product
+from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
 import numpy as np
 
-from .inversion import ParamSpec, decode_vector, encode_params
+from .inversion import DEFAULT_PARAM_SPECS, ParamSpec, decode_vector, encode_params
+
+
+# Gate-A6 role policy.  These values are inputs or diagnostic directions in the
+# current model; allowing them into a formal free vector silently changes the
+# scientific question and is therefore an explicit opt-in only.
+FIXED_PARAMETER_NAMES = frozenset(
+    {"A", "Cdl", "Ru", "E0_pre", "k0_pre", "gamma", "k0_4", "scaling_OOH_OH"}
+)
+DIAGNOSTIC_ONLY_PARAMETER_NAMES = frozenset({"gamma"})
+EXTERNAL_PARAMETER_NAMES = frozenset(
+    {"A", "Cdl", "Ru", "E0_pre", "k0_pre", "a", "T", "beta_recon", "E_recon", "w_recon"}
+)
+# Keep the value on the existing DEFAULT_PARAM_SPECS log grid (coordinate
+# 0.5).  This avoids a one-ulp mismatch between encoded truth and fixed input
+# when an inverse-crime profile is expected to reproduce zero loss.
+SYNTHETIC_GAMMA = float(10.0 ** -8.5)
+
+
+@dataclass(frozen=True)
+class ParameterSelection:
+    """Complete, auditable fixed/free assignment for one inversion task."""
+
+    free_specs: tuple[ParamSpec, ...]
+    fixed_params: tuple[tuple[str, float], ...]
+    roles: dict[str, str]
+    role_override: bool = False
+
+    def to_evidence(self) -> dict[str, Any]:
+        roles = dict(sorted(self.roles.items()))
+        role_groups = {
+            role: [name for name, value in roles.items() if value == role]
+            for role in ("free", "fixed", "diagnostic")
+        }
+        return {
+            "selection_schema_version": 1,
+            "free_parameters": [name for name, *_ in self.free_specs],
+            "fixed_params": {name: value for name, value in self.fixed_params},
+            "diagnostic_parameters": role_groups["diagnostic"],
+            "roles": roles,
+            "role_groups": role_groups,
+            "role_override": self.role_override,
+        }
+
+
+def build_parameter_selection(
+    *,
+    free_names: Sequence[str],
+    fixed_values: Mapping[str, float],
+    diagnostic_names: Sequence[str] = (),
+    specs: Sequence[ParamSpec] = DEFAULT_PARAM_SPECS,
+    allow_role_override: bool = False,
+) -> ParameterSelection:
+    """Build a complete fixed/free assignment without hidden defaults.
+
+    Every optimizer parameter in ``specs`` must be explicitly assigned to
+    ``free_names`` or ``fixed_values`` (diagnostic names are held fixed but
+    labelled separately).  A fixed-role parameter can only be reopened with
+    ``allow_role_override=True``; callers should then treat the result as
+    diagnostic evidence rather than formal recovery.
+    """
+    spec_names = tuple(name for name, *_ in specs)
+    spec_set = set(spec_names)
+    free = tuple(str(name).strip() for name in free_names if str(name).strip())
+    diagnostic = tuple(str(name).strip() for name in diagnostic_names if str(name).strip())
+    fixed = {str(name).strip(): float(value) for name, value in fixed_values.items()}
+    if len(free) != len(set(free)) or len(diagnostic) != len(set(diagnostic)):
+        raise ValueError("duplicate parameter assignment")
+    unknown = (set(free) | set(diagnostic) | (set(fixed) - set(EXTERNAL_PARAMETER_NAMES))) - spec_set
+    if unknown:
+        raise ValueError("unknown parameter assignment: " + ", ".join(sorted(unknown)))
+    # A diagnostic parameter is intentionally also given a fixed numerical
+    # value: it is not searched, but its role must remain visible in the
+    # evidence.  Only free/fixed and free/diagnostic assignments conflict.
+    overlap = (set(free) & set(fixed)) | (set(diagnostic) & set(free))
+    if overlap:
+        raise ValueError("parameter assigned to multiple roles: " + ", ".join(sorted(overlap)))
+    if set(FIXED_PARAMETER_NAMES) & set(free) and not allow_role_override:
+        blocked = sorted(set(FIXED_PARAMETER_NAMES) & set(free))
+        raise ValueError("fixed role cannot be reopened in formal task: " + ", ".join(blocked))
+    unvalued_diagnostic = set(diagnostic) - set(fixed)
+    if unvalued_diagnostic:
+        raise ValueError(
+            "diagnostic parameter requires an explicit fixed value: "
+            + ", ".join(sorted(unvalued_diagnostic))
+        )
+    missing = spec_set - set(free) - set(diagnostic) - set(fixed)
+    if missing:
+        raise ValueError("parameter assignment is incomplete: " + ", ".join(sorted(missing)))
+    for spec in specs:
+        name = spec[0]
+        if name in fixed:
+            try:
+                encode_params({name: fixed[name]}, (spec,))
+            except (KeyError, ValueError) as exc:
+                raise ValueError(f"fixed value for {name} is outside its declared bounds") from exc
+    for name, value in fixed.items():
+        if not np.isfinite(value):
+            raise ValueError(f"fixed value for {name} must be finite")
+    roles = {name: "free" for name in free}
+    roles.update({name: "diagnostic" for name in diagnostic})
+    roles.update({name: "fixed" for name in spec_names if name not in roles})
+    roles.update({name: "fixed" for name in fixed if name not in roles})
+    selected_specs = tuple(spec for spec in specs if spec[0] in set(free))
+    ordered_fixed = tuple(
+        [(name, fixed[name]) for name in spec_names if name in fixed]
+        + [(name, fixed[name]) for name in sorted(set(fixed) - spec_set)]
+    )
+    return ParameterSelection(
+        free_specs=selected_specs,
+        fixed_params=ordered_fixed,
+        roles=roles,
+        role_override=bool(allow_role_override and set(FIXED_PARAMETER_NAMES) & set(free)),
+    )
+
+
+def validate_free_parameters(
+    free_names: Sequence[str], *, allow_diagnostic: bool = False
+) -> tuple[str, ...]:
+    """Validate a formal free-parameter vector against the current role policy.
+
+    The function is intentionally independent of a particular ``ParamSpec``
+    list so it can be used by runners before constructing an objective.  A
+    diagnostic run must opt in explicitly; production recovery cannot quietly
+    turn a fixed/coupled quantity into a searched parameter.
+    """
+    names = tuple(str(name).strip() for name in free_names if str(name).strip())
+    if len(names) != len(set(names)):
+        raise ValueError("duplicate free parameter")
+    violations = set(names) & FIXED_PARAMETER_NAMES
+    if violations and not allow_diagnostic:
+        raise ValueError(
+            "fixed parameter(s) cannot be free in formal search: "
+            + ", ".join(sorted(violations))
+        )
+    return names
 
 
 def noise_fraction_evidence(current: Sequence[float]) -> dict[str, float | str]:
@@ -67,10 +203,16 @@ def truth_library(specs: Sequence[ParamSpec]) -> list[dict[str, Any]]:
             ],
             dtype=float,
         )
+        parameters = decode_vector(encoded, specs)
+        # gamma is a fixed model input in the current synthetic protocol.  It
+        # must not vary with the truth pattern, otherwise recovery metrics can
+        # reward an accidental change of the target rather than an optimizer.
+        if "gamma" in parameters:
+            parameters["gamma"] = SYNTHETIC_GAMMA
         cases.append(
             {
                 "truth_id": truth_id,
-                "parameters": decode_vector(encoded, specs),
+                "parameters": parameters,
                 "normalized_coordinates": unit.tolist(),
             }
         )
