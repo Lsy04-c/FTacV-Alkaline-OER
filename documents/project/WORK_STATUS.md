@@ -2352,3 +2352,28 @@ H1-H7压力测试：
 - 已将唯一配置记录同时写入 summary 和 manifest，并以回归测试锁定。正式 profile 仍须在
   clean worktree 运行，CMA 同时核对 profile `source_commit` 与当前执行 commit；当前
   dirty 主工作树不会启动 formal 计算。
+
+## 86. 正式 LSODA objective profile 完成但未通过 CMA 前置门（2026-08-09）
+
+- 计算以保持 SSH 前台连接的方式在 Legion 完成，避免了已知的 `systemd --user`
+  断连退出问题；这只是一轮短期执行措施，不证明后台持久化已修复。
+- 冻结来源为 clean commit `10abd5f6b247bc18a97e3b074f85db925e13b6b2`，
+  `dirty=false`；`profile_summary.json` 与 `run_manifest.json` 一致记录
+  LSODA、8192 点、32 points/cycle、feature grid 128、H1–H3、41 grid、零噪声、
+  `mixed_b`、8 workers、非 smoke。
+- 输出为 20 个 profile、820 行（每 profile 41 行）；manifest 中 CSV 和 summary
+  SHA-256 均经本地复算匹配。所有 ODE solve 成功、所有损失有限、20 个 truth 点均为
+  profile 全局最小。
+- **正式 CMA 前置门 FAIL：** 180 行为 `tafel_failed=True`。四种 feature mode 中均为
+  `G_O=12`、`G_OH=8`、`k0_3=25`；默认 hybrid 四参数集
+  `{k0_2,k0_3,G_OH,G_O}` 的后三者还各有 `delta_1_width=0`。失败行的
+  `physical=100` 已进入总目标，不能视为旁路诊断或事后删点。
+- 现有 `load_profile_sigma_contract` 对 requested profile 明确要求零 ODE/Tafel failure
+  和正宽度，故 CMA 没有启动。Sol 只读质检独立确认上述结论。
+- 边界：`hybrid__k0_2` 单独具有零 Tafel failure 和正宽度，但这不能授权默认四参数
+  CMA，也不能升级 A6。若要提出新的科学路径，必须先版本化其参数集和物理可行域规则，
+  在不事后改变本轮门的前提下重新计算。
+- 证据目录：Legion
+  `/home/lsy/OER-FTAcV/results/formal/objective_profiles/10abd5f-profile-20260809-foreground/`；
+  Mac clean worktree
+  `results/formal/objective_profiles/10abd5f-profile-20260809-foreground/`。

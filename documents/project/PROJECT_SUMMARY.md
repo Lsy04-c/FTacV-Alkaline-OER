@@ -1,6 +1,6 @@
 # OER-FTAcV 项目总览、架构与交接
 
-更新日期：2026-08-02
+更新日期：2026-08-09
 负责人：刘拾玉
 当前分支：`codex/reclassify-project`
 
@@ -21,6 +21,13 @@ A1 `FAIL_METADATA`、A3 `FAIL` 或 A6 `FAIL_RECOVERY`。单协议六参数恢复
 三协议联合恢复均未通过；`mixed_a`附近的`G_OH-log10(k0_1)`组合仅登记为
 `LOCAL_ONLY`，不得外推为全局降维坐标。恢复实验接入契约已实施，空模板
 固定为`WAITING_FOR_DATA`，当前不会生成A1种子或启动反演。
+
+2026-08-09 的正式 LSODA objective profile 在冻结提交
+`10abd5f6b247bc18a97e3b074f85db925e13b6b2`完成（20 profiles、820 行），
+但默认 hybrid 四参数集的 `k0_3`、`G_OH`、`G_O` 出现 Tafel failure，且
+三个 profile 的 `delta_1_width=0`。这份证据只能说明计算完整，**不满足**
+formal CMA 的 profile contract；CMA 未启动。不得删除失败点、放宽门或以
+单独通过的 `k0_2` 外推该四参数集。
 
 当前主线：
 
@@ -182,6 +189,12 @@ Gate 的 `FAIL`。
 | A5 特征契约 | `PASS` | 通道、权重、掩码和分母候选不变 | 不证明参数可恢复 | `results/formal/feature_channel_contract/gate-a5-13adcb1/acceptance.md` |
 | A6 参数恢复 | `FAIL_RECOVERY` | 13 参数角色和失败路线已冻结 | 无参数具备正式反演资格 | `results/formal/identifiability/gate-a6-closure-75e25ed/acceptance.md` |
 | A7 证据工作流 | `PASS`（工程） | prepare/smoke/run/status/sync/verify 闭环 | 不证明任何科学 Gate | `WORK_STATUS.md` 第 0.7 节 |
+
+正式 profile（2026-08-09）是 A6 相关的新增失败证据，而不是 A6 PASS：
+其基础设施完整性通过，但对默认 hybrid 四参数 CMA 的科学/数值前置门为
+`FAIL_PROFILE_CONTRACT`。完整结果在 Legion 与本地 clean worktree 的
+`results/formal/objective_profiles/10abd5f-profile-20260809-foreground/`；
+逐项验收见 `WORK_STATUS.md` 第 86 节。
 
 ### 5.1 当前三个阻断项
 
