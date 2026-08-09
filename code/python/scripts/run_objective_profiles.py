@@ -26,6 +26,7 @@ from oer_aem.inversion import (
     DEFAULT_PARAM_SPECS,
     InversionConfig,
     InversionObjective,
+    OBJECTIVE_CONTRACT_TAFEL_MODES,
     denormalize_vector,
     encode_params,
     make_synthetic_target,
@@ -55,6 +56,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--grid-points", type=int, default=41)
+    parser.add_argument(
+        "--objective-contract",
+        choices=tuple(OBJECTIVE_CONTRACT_TAFEL_MODES),
+        default="legacy-v1",
+    )
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--max-profiles", type=int)
     return parser.parse_args(argv)
@@ -73,6 +79,8 @@ def build_config(
         feature_grid_size=128,
         fit_harmonics=(1, 2, 3),
         feature_mode=feature_mode,
+        objective_contract=args.objective_contract,
+        tafel_channel_mode=OBJECTIVE_CONTRACT_TAFEL_MODES[args.objective_contract],
         solver_backend="lsoda",
         seed=42,
     )
@@ -102,6 +110,10 @@ def build_profile_tasks(args: argparse.Namespace) -> list[dict]:
             "truth_coordinate": truth_coordinates[parameter],
             "grid_points": int(args.grid_points),
             "noise_fraction": 0.0,
+            "objective_contract": args.objective_contract,
+            "tafel_channel_mode": OBJECTIVE_CONTRACT_TAFEL_MODES[
+                args.objective_contract
+            ],
         }
         for mode in FEATURE_MODES
         for parameter in PROFILE_PARAMETERS
@@ -116,6 +128,15 @@ def build_profile_tasks(args: argparse.Namespace) -> list[dict]:
 
 
 def build_profile_problem(task: dict, *, smoke: bool):
+    objective_contract = task.get("objective_contract")
+    expected_tafel_mode = OBJECTIVE_CONTRACT_TAFEL_MODES.get(objective_contract)
+    if expected_tafel_mode is None:
+        raise ValueError(f"unknown task objective_contract: {objective_contract!r}")
+    if task.get("tafel_channel_mode") != expected_tafel_mode:
+        raise ValueError(
+            "task tafel_channel_mode does not match objective_contract "
+            f"{objective_contract!r}"
+        )
     spec = next(
         spec for spec in DEFAULT_PARAM_SPECS if spec[0] == task["parameter"]
     )
@@ -124,7 +145,11 @@ def build_profile_problem(task: dict, *, smoke: bool):
         for name, value in task["truth_params"].items()
         if name != task["parameter"]
     )
-    args = argparse.Namespace(smoke=smoke, workers=1)
+    args = argparse.Namespace(
+        smoke=smoke,
+        workers=1,
+        objective_contract=objective_contract,
+    )
     config = replace(
         build_config(args, feature_mode=task["feature_mode"]),
         fixed_params=fixed_params,
@@ -196,6 +221,10 @@ def run_profile(task: dict, *, smoke: bool = False) -> dict:
             "parameter": task["parameter"],
             "truth_id": task["truth_id"],
             "sampled_points": len(rows),
+            "objective_contract": task["objective_contract"],
+            "tafel_channel_mode": task["tafel_channel_mode"],
+            "feature_contract": objective.channel_contract.to_evidence(),
+            "feature_contract_sha256": objective.channel_contract.sha256,
         }
     )
     return {"task": task, "rows": rows, "summary": summary}
@@ -299,6 +328,8 @@ def main(argv: list[str] | None = None) -> None:
         "grid_points": args.grid_points,
         "solver_backend": "lsoda",
         "noise_fraction": 0.0,
+        "objective_contract": args.objective_contract,
+        "tafel_channel_mode": OBJECTIVE_CONTRACT_TAFEL_MODES[args.objective_contract],
         "workers": min(args.workers, len(tasks)),
         "smoke": args.smoke,
     }

@@ -2396,3 +2396,24 @@ H1-H7压力测试：
 - 判定：没有任何现有 CV 可升级为 `validated_apparent_tafel`；它们不能接入
   formal profile、CMA 或真实反演，也不改变第 86 节的 FAIL。经科学审查重跑的
   诊断文件位于 `results/diagnostics/cv_tafel_audit_20260809_v3/`，仅保留本机/归档。
+
+## 88. Formal-v2 无 legacy-DC Tafel 目标契约（2026-08-09）
+
+- 根因确认：历史 `measure_tafel` 对模拟 DC 包络按绝对电流阈值求跨越；当候选不跨越
+  固定窗口时，目标函数把“不可提取”加为 `physical=100`。这不是独立的 OER Tafel
+  物理失败，且是第 86 节 profile contract 无法满足的直接技术原因。
+- 新增 `InversionConfig.tafel_channel_mode`。`legacy_dc_diagnostic` 是默认模式，保留
+  历史 profile 的可重放性；`disabled` 不调用 `measure_tafel`，feature contract 将
+  Tafel 标记为 `requested=false`、`active=false`、
+  `disabled_by_objective_contract`，不产生 `n_tafel_fail` 或固定罚分。该模式及其
+  exclusion reason 被纳入 contract SHA-256。
+- `run_objective_profiles.py` 新增版本化 `--objective-contract`：默认 `legacy-v1`；
+  `formal-v2-no-tafel` 映射到 `disabled`，并把 contract/mode 写入 task、summary 和
+  manifest，保证并行 worker 不会丢失语义。每个 profile summary 还保存实际 worker
+  的完整 feature contract 与 SHA-256；其 schema 升为 v2，避免把新旧 contract hash
+  混为同一证据版本。
+- 本机 smoke 验收：profile runner 7 项测试通过；formal-v2 smoke 的 manifest/summary
+  一致记录 `tafel_channel_mode=disabled` 且 `tafel_failures=0`。旧结果未修改。
+- 边界：formal-v2 的目标通道不同，不能与 legacy-v1 loss/width 直接比较；它只允许
+  重新评价“移除非科学罚分后的合成可恢复性”。正式 LSODA profile、recovery 与 CMA
+  尚未启动，必须先完成全量测试、Sol 质检和独立 profile gate。

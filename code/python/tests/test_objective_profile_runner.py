@@ -36,6 +36,45 @@ def test_default_formal_plan_uses_frozen_profile_contract(tmp_path):
     assert {task["noise_fraction"] for task in tasks} == {0.0}
 
 
+def test_formal_v2_profile_contract_disables_legacy_dc_tafel(tmp_path):
+    runner = _runner()
+    args = runner.parse_args(
+        [
+            "--output",
+            str(tmp_path / "profiles"),
+            "--objective-contract",
+            "formal-v2-no-tafel",
+        ]
+    )
+
+    config = runner.build_config(args, feature_mode="hybrid")
+    tasks = runner.build_profile_tasks(args)
+
+    assert config.tafel_channel_mode == "disabled"
+    assert {task["objective_contract"] for task in tasks} == {
+        "formal-v2-no-tafel"
+    }
+    assert {task["tafel_channel_mode"] for task in tasks} == {"disabled"}
+
+
+def test_profile_problem_rejects_task_with_inconsistent_contract_mode(tmp_path):
+    runner = _runner()
+    args = runner.parse_args(
+        [
+            "--output",
+            str(tmp_path / "profiles"),
+            "--smoke",
+            "--objective-contract",
+            "formal-v2-no-tafel",
+        ]
+    )
+    task = runner.build_profile_tasks(args)[0]
+    task["tafel_channel_mode"] = "legacy_dc_diagnostic"
+
+    with pytest.raises(ValueError, match="task tafel_channel_mode"):
+        runner.build_profile_problem(task, smoke=True)
+
+
 def test_profile_problem_varies_one_parameter_and_fixes_truth_complement(tmp_path):
     runner = _runner()
     args = runner.parse_args(
@@ -124,6 +163,43 @@ def test_smoke_main_writes_hashed_profile_outputs(tmp_path):
         "grid_points": 3,
         "solver_backend": "lsoda",
         "noise_fraction": 0.0,
+        "objective_contract": "legacy-v1",
+        "tafel_channel_mode": "legacy_dc_diagnostic",
         "workers": 1,
         "smoke": True,
     }
+
+
+def test_formal_v2_smoke_records_disabled_tafel_without_failures(tmp_path):
+    runner = _runner()
+    output = tmp_path / "profiles"
+
+    runner.main(
+        [
+            "--output",
+            str(output),
+            "--grid-points",
+            "3",
+            "--workers",
+            "1",
+            "--smoke",
+            "--max-profiles",
+            "1",
+            "--objective-contract",
+            "formal-v2-no-tafel",
+        ]
+    )
+
+    summary = json.loads((output / "profile_summary.json").read_text())
+    manifest = json.loads((output / "run_manifest.json").read_text())
+
+    assert summary["configuration"]["objective_contract"] == "formal-v2-no-tafel"
+    assert summary["configuration"]["tafel_channel_mode"] == "disabled"
+    assert manifest["configuration"] == summary["configuration"]
+    assert summary["profiles"][0]["tafel_failures"] == 0
+    assert summary["profiles"][0]["objective_contract"] == "formal-v2-no-tafel"
+    assert summary["profiles"][0]["tafel_channel_mode"] == "disabled"
+    feature_contract = summary["profiles"][0]["feature_contract"]
+    assert feature_contract["objective_contract"] == "formal-v2-no-tafel"
+    assert feature_contract["tafel_channel_mode"] == "disabled"
+    assert feature_contract["sha256"] == summary["profiles"][0]["feature_contract_sha256"]

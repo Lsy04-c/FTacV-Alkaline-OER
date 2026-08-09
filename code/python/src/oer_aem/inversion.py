@@ -33,6 +33,10 @@ from .thermodynamics import apply_alkaline_aem
 
 
 ParamSpec = Tuple[str, str, float, float]
+OBJECTIVE_CONTRACT_TAFEL_MODES = {
+    "legacy-v1": "legacy_dc_diagnostic",
+    "formal-v2-no-tafel": "disabled",
+}
 
 
 DEFAULT_PARAM_SPECS: Tuple[ParamSpec, ...] = (
@@ -70,6 +74,8 @@ class InversionConfig:
     fixed_params: Tuple[Tuple[str, float], ...] = ()
     fit_harmonics: Tuple[int, ...] = (1, 2, 3, 4, 5, 6, 7)
     feature_mode: str = "legacy"
+    objective_contract: str = "legacy-v1"
+    tafel_channel_mode: str = "legacy_dc_diagnostic"
     solver_backend: str = "auto"
     phase_weight: float = 1.0
     snr_floor: float = 3.0
@@ -170,6 +176,8 @@ class FeatureChannelContract:
     """Immutable target-side channel selection and normalization evidence."""
 
     feature_mode: str
+    objective_contract: str
+    tafel_channel_mode: str
     fit_harmonics: Tuple[int, ...]
     phase_weight: float
     snr_floor: float
@@ -179,8 +187,10 @@ class FeatureChannelContract:
 
     def to_evidence(self) -> Dict[str, Any]:
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             "feature_mode": self.feature_mode,
+            "objective_contract": self.objective_contract,
+            "tafel_channel_mode": self.tafel_channel_mode,
             "fit_harmonics": list(self.fit_harmonics),
             "phase_weight": self.phase_weight,
             "snr_floor": self.snr_floor,
@@ -442,9 +452,23 @@ def build_feature_channel_contract(
                 reason=None if pair_active else pair_reason,
             )
 
+    objective_contract = config.objective_contract
+    expected_tafel_mode = OBJECTIVE_CONTRACT_TAFEL_MODES.get(objective_contract)
+    tafel_mode = config.tafel_channel_mode
+    if expected_tafel_mode is None:
+        raise ValueError(
+            "objective_contract must be one of "
+            f"{sorted(OBJECTIVE_CONTRACT_TAFEL_MODES)}"
+        )
+    if tafel_mode != expected_tafel_mode:
+        raise ValueError(
+            "tafel_channel_mode does not match objective_contract "
+            f"{objective_contract!r}"
+        )
     tafel = target.get("tafel")
     tafel_active = (
-        tafel is not None
+        tafel_mode == "legacy_dc_diagnostic"
+        and tafel is not None
         and np.asarray(tafel).ndim == 0
         and np.isfinite(float(tafel))
     )
@@ -452,13 +476,21 @@ def build_feature_channel_contract(
         channel_id="tafel",
         block="tafel",
         harmonic=None,
-        is_requested=True,
+        is_requested=tafel_mode == "legacy_dc_diagnostic",
         available=tafel_active,
         active=tafel_active,
         target_weight=1.0 if tafel_active else 0.0,
         loss_weight=1.0 if tafel_active else 0.0,
         mask=None,
-        reason=None if tafel_active else "not_applicable",
+        reason=(
+            None
+            if tafel_active
+            else (
+                "disabled_by_objective_contract"
+                if tafel_mode == "disabled"
+                else "not_applicable"
+            )
+        ),
         role="physical",
     )
 
@@ -466,8 +498,10 @@ def build_feature_channel_contract(
         sum(item.loss_weight for item in channels if item.active)
     )
     evidence = {
-        "schema_version": 1,
+        "schema_version": 2,
         "feature_mode": mode,
+        "objective_contract": objective_contract,
+        "tafel_channel_mode": tafel_mode,
         "fit_harmonics": sorted(requested),
         "phase_weight": float(config.phase_weight),
         "snr_floor": float(config.snr_floor),
@@ -482,6 +516,8 @@ def build_feature_channel_contract(
     ).encode()
     return FeatureChannelContract(
         feature_mode=mode,
+        objective_contract=objective_contract,
+        tafel_channel_mode=tafel_mode,
         fit_harmonics=tuple(sorted(requested)),
         phase_weight=float(config.phase_weight),
         snr_floor=float(config.snr_floor),
@@ -906,8 +942,22 @@ def extract_features(current: Sequence[float], config: InversionConfig) -> Dict[
         h = harms[:, idx]
         features["harm"].append(np.interp(e_grid, tdc_trim, _normalize_envelope(h)))
 
-    tafel = measure_tafel(tdc_trim, dc)
-    features["tafel"] = float(tafel["tafel_slope"]) if tafel.get("success") else None
+    expected_tafel_mode = OBJECTIVE_CONTRACT_TAFEL_MODES.get(
+        config.objective_contract
+    )
+    if expected_tafel_mode is None or expected_tafel_mode != config.tafel_channel_mode:
+        raise ValueError("invalid objective_contract / tafel_channel_mode pairing")
+    if config.tafel_channel_mode == "legacy_dc_diagnostic":
+        tafel = measure_tafel(tdc_trim, dc)
+        features["tafel"] = (
+            float(tafel["tafel_slope"]) if tafel.get("success") else None
+        )
+    elif config.tafel_channel_mode == "disabled":
+        features["tafel"] = None
+    else:
+        raise ValueError(
+            "tafel_channel_mode must be 'legacy_dc_diagnostic' or 'disabled'"
+        )
     features["e_grid"] = e_grid
     if config.feature_mode in ("complex_snr", "hybrid", "combined"):
         features["complex_harmonics"] = complex_harmonic_metrics(

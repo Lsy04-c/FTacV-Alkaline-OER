@@ -383,6 +383,44 @@ def test_synthetic_target_skips_unavailable_tafel_channel():
     assert objective.n_tafel_fail == 0
 
 
+def test_disabled_tafel_channel_never_creates_a_penalty():
+    config = InversionConfig(
+        n_points=256,
+        points_per_cycle=32,
+        feature_grid_size=32,
+        solver_backend="lsoda",
+        objective_contract="formal-v2-no-tafel",
+        tafel_channel_mode="disabled",
+    )
+    target = make_synthetic_target(TRUTH, config=config, noise_fraction=0.0)
+    objective = InversionObjective(target, config=config)
+    by_id = {item.channel_id: item for item in objective.channel_contract.channels}
+
+    assert target["tafel"] is None
+    assert by_id["tafel"].requested is False
+    assert by_id["tafel"].active is False
+    assert by_id["tafel"].exclusion_reason == "disabled_by_objective_contract"
+    assert objective.channel_contract.to_evidence()["objective_contract"] == (
+        "formal-v2-no-tafel"
+    )
+    assert objective(encode_params(TRUTH, DEFAULT_PARAM_SPECS)) < 1e-12
+    assert objective.n_tafel_fail == 0
+
+
+def test_feature_contract_rejects_mismatched_objective_contract_pairing():
+    config = InversionConfig(
+        n_points=8,
+        points_per_cycle=8,
+        discard_fraction=0.5,
+        feature_grid_size=4,
+        objective_contract="formal-v2-no-tafel",
+        tafel_channel_mode="legacy_dc_diagnostic",
+    )
+
+    with pytest.raises(ValueError, match="does not match objective_contract"):
+        build_feature_channel_contract(_channel_contract_target(config), config)
+
+
 def test_tpe_inverter_runs_small_budget():
     pytest.importorskip("optuna")
 

@@ -33,6 +33,11 @@ formal CMA 的 profile contract；CMA 未启动。不得删除失败点、放宽
 明显电流滞后，且 RHE 换算、iR、面积与稳态信息均不可追溯。它们只能用于后续
 LSV/稳态实验设计，不能作为 Tafel 约束或改变上述 CMA 结论。
 
+代码已建立 `formal-v2-no-tafel` objective contract：它会显式关闭历史 DC 阈值
+Tafel 通道并在 feature contract/manifest 中留痕，避免把不可提取的 legacy 特征写成
+`physical=100`。此契约尚未运行正式 LSODA profile；它不等同于已有科学 Tafel，也不
+授权 CMA。未来只有独立验收的 `validated_apparent_tafel` 才能进入新版本 formal 目标。
+
 当前主线：
 
 ```text
