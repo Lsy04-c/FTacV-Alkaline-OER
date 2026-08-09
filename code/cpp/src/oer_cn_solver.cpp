@@ -26,6 +26,13 @@ enum {
 
 #define NSTATE 6
 
+/* Minimum internal CN subdivisions per requested output interval.  The
+ * default keeps easy screen cases fast; formal experiments may compile a
+ * stricter build with -DCN_MIN_SUBDIVISIONS=4 or 8 and record that flag. */
+#ifndef CN_MIN_SUBDIVISIONS
+#define CN_MIN_SUBDIVISIONS 1
+#endif
+
 /* ------ helpers ------ */
 static inline double safe_exp(double x) {
     if (x > 100.0)  return 2.6881171418161356e43;
@@ -147,12 +154,6 @@ static void rhs_and_jac(
     }
 
     if (!J) return;
-    // Zero out Jacobian rows for clamped states (RHS = 0, independent of state)
-    for (int i = 0; i < 5; ++i) {
-        if (clamped[i]) {
-            for (int j = 0; j < NSTATE; ++j) J[j * NSTATE + i] = 0.0;
-        }
-    }
     std::memset(J, 0, NSTATE * NSTATE * sizeof(double));
 
     // Row 0: dθ*/dt
@@ -195,10 +196,18 @@ static void rhs_and_jac(
     J[2*6+5] =  gF_Cdl * (kr1 - kf2);
     J[3*6+5] =  gF_Cdl * (kr2 - kf3);
     J[4*6+5] =  gF_Cdl * (kr3 - kf4);
+
+    // Clamping is applied after assembly; applying it before memset erased
+    // the rows and made Newton's derivative inconsistent with its RHS.
+    for (int i = 0; i < 5; ++i) {
+        if (clamped[i]) {
+            for (int j = 0; j < NSTATE; ++j) J[j * NSTATE + i] = 0.0;
+        }
+    }
 }
 
 /* ------ steady-state relaxation (matches solve_steady_state_relaxation) ------ */
-static void steady_state(double* y, const double* p) {
+static bool steady_state(double* y, const double* p) {
     y[0] = 1.0; for (int i = 1; i < 5; ++i) y[i] = 0.0;
     y[5] = p[P_E_START];
 
@@ -208,15 +217,16 @@ static void steady_state(double* y, const double* p) {
         rhs_and_jac(0.0, y, p, f, J);
         double norm = 0.0;
         for (int i = 0; i < NSTATE; ++i) norm += f[i] * f[i];
-        if (std::sqrt(norm) < 1e-12) break;
+        if (std::sqrt(norm) < 1e-12) return true;
 
         // J * dy = -f
         for (int i = 0; i < NSTATE; ++i) f[i] = -f[i];  // reuse f as -f
-        if (solve6(J, f) != 0) break;
+        if (solve6(J, f) != 0) return false;
         for (int i = 0; i < NSTATE; ++i) y[i] += f[i];
         for (int i = 0; i < 5; ++i) y[i] = clamp01(y[i]);
         y[5] = std::max(0.0, y[5]);
     }
+    return false;
 }
 
 /* ==================================================================
@@ -226,11 +236,11 @@ int oer_cn_solve(
     const double* p, int n, const double* y0_in,
     double* t_out, double* y_out, double* i_out, double* E_out)
 {
-    if (n < 2) return -1;
+    if (n < 2 || !p || !i_out || !(p[P_RU] > 0.0) || !(p[P_TOTAL_TIME] > 0.0)) return -1;
 
     double y[NSTATE];
     if (y0_in) std::memcpy(y, y0_in, NSTATE * sizeof(double));
-    else       steady_state(y, p);
+    else if (!steady_state(y, p)) return -2;
 
     double dt   = p[P_TOTAL_TIME] / (n - 1);
     double Ru   = p[P_RU], E0 = p[P_E_START], v = p[P_SCAN_RATE];
@@ -242,70 +252,148 @@ int oer_cn_solve(
     double Ea = E0 + v * t + dE * std::sin(om * t);
     if (E_out) E_out[0] = Ea;
     if (i_out) i_out[0] = (Ea - y[5]) / Ru;
+    if (!std::isfinite(i_out[0])) return -3;
 
     // f_val = f(y_old) — stored for the Newton residual
     double f_val[NSTATE];
     rhs_and_jac(t, y, p, f_val, nullptr);
 
-    // Per-step workspace
+        // Per-step workspace
     double y_new[NSTATE], f_new[NSTATE], J[NSTATE * NSTATE];
     double R[NSTATE];
 
     for (int step = 1; step < n; ++step) {
-        double tn = t + dt;
-
-        // Initial guess: copy old state (exactly as MEX does)
-        for (int s = 0; s < NSTATE; ++s) y_new[s] = y[s];
-
-        for (int iter = 0; iter < 15; ++iter) {
-            rhs_and_jac(tn, y_new, p, f_new, nullptr);  // f_new only, no analytical J
-
-            double rnorm = 0.0;
+        /*
+         * A single output interval can be much larger than the fastest
+         * kinetic time scale.  Retry only failed intervals with 2, 4, ...
+         * internal CN substeps.  This preserves the requested output grid,
+         * leaves easy cases at one step, and never accepts a failed Newton
+         * solve as a finite-looking trajectory.
+         */
+        double y_start[NSTATE], f_start[NSTATE];
+        for (int s = 0; s < NSTATE; ++s) {
+            y_start[s] = y[s];
+            f_start[s] = f_val[s];
+        }
+        bool interval_converged = false;
+        for (int subdivisions = CN_MIN_SUBDIVISIONS;
+             subdivisions <= 64 && !interval_converged;
+             subdivisions *= 2) {
+            double y_trial[NSTATE], f_trial[NSTATE];
             for (int s = 0; s < NSTATE; ++s) {
-                R[s] = y_new[s] - y[s] - 0.5 * dt * (f_val[s] + f_new[s]);
-                rnorm += R[s] * R[s];
+                y_trial[s] = y_start[s];
+                f_trial[s] = f_start[s];
             }
-            if (std::sqrt(rnorm) < 1e-8) break;
+            double t_trial = t;
+            bool subdivision_failed = false;
+            const double sub_dt = dt / static_cast<double>(subdivisions);
 
-            // Numerical Jacobian via central differences
-            double J_num[NSTATE * NSTATE];
-            double y_pert[NSTATE], f_plus[NSTATE], f_minus[NSTATE];
-            const double h = 1e-6;
-            for (int j = 0; j < NSTATE; ++j) {
-                for (int s = 0; s < NSTATE; ++s) y_pert[s] = y_new[s];
-                y_pert[j] += h;
-                rhs_and_jac(tn, y_pert, p, f_plus, nullptr);
-                y_pert[j] = y_new[j] - h;
-                rhs_and_jac(tn, y_pert, p, f_minus, nullptr);
-                for (int i = 0; i < NSTATE; ++i)
-                    J_num[j * NSTATE + i] = (f_plus[i] - f_minus[i]) / (2.0 * h);
+            for (int substep = 0; substep < subdivisions; ++substep) {
+                double tn = t_trial + sub_dt;
+                for (int s = 0; s < NSTATE; ++s) y_new[s] = y_trial[s];
+
+                bool converged = false;
+                for (int iter = 0; iter < 50; ++iter) {
+                    rhs_and_jac(tn, y_new, p, f_new, J);
+
+                    double rnorm = 0.0;
+                    for (int s = 0; s < NSTATE; ++s) {
+                        R[s] = y_new[s] - y_trial[s]
+                            - 0.5 * sub_dt * (f_trial[s] + f_new[s]);
+                        rnorm += R[s] * R[s];
+                    }
+                    if (std::sqrt(rnorm) < 1e-8) {
+                        converged = true;
+                        break;
+                    }
+
+                    // J_sys = I - (h/2) * analytical df/dy.
+                    double J_sys[NSTATE * NSTATE];
+                    for (int i = 0; i < NSTATE * NSTATE; ++i)
+                        J_sys[i] = -0.5 * sub_dt * J[i];
+                    for (int i = 0; i < NSTATE; ++i)
+                        J_sys[i * NSTATE + i] += 1.0;
+
+                    // J_sys * dy = -R
+                    for (int s = 0; s < NSTATE; ++s) R[s] = -R[s];
+                    if (solve6(J_sys, R) != 0) break;
+
+                    // Accept only a genuine residual decrease.  If no trial
+                    // decreases the residual, this substep is a hard failure
+                    // and the outer interval retry must reduce its step size.
+                    double candidate[NSTATE], f_candidate[NSTATE];
+                    bool line_search_accepted = false;
+                    double lambda = 1.0;
+                    for (int trial = 0; trial < 8; ++trial, lambda *= 0.5) {
+                        for (int s = 0; s < NSTATE; ++s)
+                            candidate[s] = y_new[s] + lambda * R[s];
+                        for (int s = 0; s < 5; ++s)
+                            candidate[s] = clamp01(candidate[s]);
+                        candidate[5] = std::max(0.0, candidate[5]);
+                        rhs_and_jac(tn, candidate, p, f_candidate, nullptr);
+                        double candidate_norm = 0.0;
+                        for (int s = 0; s < NSTATE; ++s) {
+                            double residual = candidate[s] - y_trial[s]
+                                - 0.5 * sub_dt * (f_trial[s] + f_candidate[s]);
+                            candidate_norm += residual * residual;
+                        }
+                        if (candidate_norm < rnorm) {
+                            for (int s = 0; s < NSTATE; ++s) {
+                                y_new[s] = candidate[s];
+                                f_new[s] = f_candidate[s];
+                            }
+                            line_search_accepted = true;
+                            break;
+                        }
+                    }
+                    if (!line_search_accepted) break;
+                }
+
+                if (!converged) {
+                    subdivision_failed = true;
+                    break;
+                }
+                for (int s = 0; s < NSTATE; ++s) y_trial[s] = y_new[s];
+                t_trial = tn;
+                rhs_and_jac(t_trial, y_trial, p, f_trial, nullptr);
             }
 
-            // J_sys = I - (dt/2) * J_num
-            double J_sys[NSTATE * NSTATE];
-            for (int i = 0; i < NSTATE * NSTATE; ++i) J_sys[i] = -0.5 * dt * J_num[i];
-            for (int i = 0; i < NSTATE; ++i) J_sys[i * NSTATE + i] += 1.0;
-
-            // J_sys * dy = -R
-            for (int s = 0; s < NSTATE; ++s) R[s] = -R[s];
-            if (solve6(J_sys, R) != 0) break;
-
-            // Undamped Newton (numerical Jacobian is correct)
-            for (int s = 0; s < NSTATE; ++s) y_new[s] += R[s];
-            for (int s = 0; s < 5; ++s) y_new[s] = clamp01(y_new[s]);
-            y_new[5] = std::max(0.0, y_new[5]);
+            if (!subdivision_failed) {
+                for (int s = 0; s < NSTATE; ++s) {
+                    y[s] = y_trial[s];
+                    f_val[s] = f_trial[s];
+                }
+                t += dt;
+                interval_converged = true;
+            }
         }
 
-        // Accept step
-        for (int s = 0; s < NSTATE; ++s) y[s] = y_new[s];
-        t = tn;
-        rhs_and_jac(t, y, p, f_val, nullptr);  // update f_val for next step
+        // Never accept an unconverged implicit interval.  Keep this distinct
+        // from -2 (steady-state initialization failure) for provenance.
+        if (!interval_converged) return -4;
 
         if (t_out) t_out[step] = t;
         if (y_out) for (int s = 0; s < NSTATE; ++s) y_out[step * NSTATE + s] = y[s];
         Ea = E0 + v * t + dE * std::sin(om * t);
         if (E_out) E_out[step] = Ea;
         if (i_out) i_out[step] = (Ea - y[5]) / Ru;
+        if (!std::isfinite(i_out[step])) return -3;
+    }
+    return 0;
+}
+
+/* Batch screen-only entry point. Parameters are n_cases contiguous blocks of
+ * P_N_FIELDS doubles; currents are n_cases contiguous blocks of n_points
+ * doubles. Each case gets an independent status code. */
+int oer_cn_solve_batch(
+    const double* params, int n_cases, int n_points,
+    double* currents, int* statuses)
+{
+    if (!params || !currents || !statuses || n_cases < 1 || n_points < 2) return -1;
+    for (int index = 0; index < n_cases; ++index) {
+        const double* p = params + index * P_N_FIELDS;
+        double* output = currents + index * n_points;
+        statuses[index] = oer_cn_solve(p, n_points, nullptr, nullptr, nullptr, output, nullptr);
     }
     return 0;
 }

@@ -21,8 +21,13 @@ from oer_aem.inversion import (  # noqa: E402
     InversionConfig,
     extract_features,
     forward_current,
+    params_from_vector,
 )
-from oer_aem.cpp_bridge import is_available as cn_is_available  # noqa: E402
+from oer_aem.physics import OERPhysics  # noqa: E402
+from oer_aem.cpp_bridge import (  # noqa: E402
+    is_available as cn_is_available,
+    solve_cn_with_status,
+)
 
 RESOLVABILITY_FRACTION = 0.02
 CSV_FIELDS = (
@@ -30,6 +35,8 @@ CSV_FIELDS = (
     "harmonic",
     "lsoda_success",
     "cn_success",
+    "lsoda_status",
+    "cn_status",
     "lsoda_time_s",
     "cn_time_s",
     "current_nrmse",
@@ -101,18 +108,42 @@ def _config(
         points_per_cycle=points_per_cycle,
         feature_grid_size=128,
         fit_harmonics=(1, 2, 3, 4, 5, 6, 7),
-        feature_mode="lockin_only",
+        # The comparison reports both global complex harmonics and potential-
+        # resolved lock-in metrics; lockin_only omits the former and causes a
+        # KeyError during a real comparison.
+        feature_mode="hybrid",
         solver_backend=backend,
     )
+
+
+def _solve_with_status(
+    vector: np.ndarray,
+    config: InversionConfig,
+) -> tuple[np.ndarray | None, float, int]:
+    started = time.perf_counter()
+    if config.solver_backend == "cn":
+        try:
+            params = params_from_vector(vector, config, DEFAULT_PARAM_SPECS)
+            y0 = np.zeros(6, dtype=float)
+            y0[0] = 1.0
+            y0[5] = params["E_start"]
+            if params.get("use_steady_state", True):
+                y0 = OERPhysics.calculate_steady_state(params)
+            current, status = solve_cn_with_status(params, y0=y0)
+            return current, time.perf_counter() - started, int(status)
+        except Exception:
+            return None, time.perf_counter() - started, -5
+    current = forward_current(vector, config, DEFAULT_PARAM_SPECS)
+    return current, time.perf_counter() - started, (0 if current is not None else -5)
 
 
 def _solve(
     vector: np.ndarray,
     config: InversionConfig,
 ) -> tuple[np.ndarray | None, float]:
-    started = time.perf_counter()
-    current = forward_current(vector, config, DEFAULT_PARAM_SPECS)
-    return current, time.perf_counter() - started
+    """Historical two-value wrapper retained for callers and tests."""
+    current, elapsed, _status = _solve_with_status(vector, config)
+    return current, elapsed
 
 
 def compare_sample(
@@ -124,8 +155,10 @@ def compare_sample(
     """Compare both solvers for one parameter vector."""
     lsoda_config = _config("lsoda", points_per_cycle, cycles)
     cn_config = _config("cn", points_per_cycle, cycles)
-    lsoda_current, lsoda_time = _solve(vector, lsoda_config)
-    cn_current, cn_time = _solve(vector, cn_config)
+    lsoda_current, lsoda_time, lsoda_status = _solve_with_status(
+        vector, lsoda_config
+    )
+    cn_current, cn_time, cn_status = _solve_with_status(vector, cn_config)
     if lsoda_current is None or cn_current is None:
         return [
             {
@@ -133,6 +166,8 @@ def compare_sample(
                 "harmonic": 0,
                 "lsoda_success": lsoda_current is not None,
                 "cn_success": cn_current is not None,
+                "lsoda_status": lsoda_status,
+                "cn_status": cn_status,
                 "lsoda_time_s": lsoda_time,
                 "cn_time_s": cn_time,
                 "current_nrmse": float("nan"),
@@ -227,6 +262,8 @@ def compare_sample(
                 "harmonic": harmonic,
                 "lsoda_success": True,
                 "cn_success": True,
+                "lsoda_status": lsoda_status,
+                "cn_status": cn_status,
                 "lsoda_time_s": lsoda_time,
                 "cn_time_s": cn_time,
                 "current_nrmse": current_error,

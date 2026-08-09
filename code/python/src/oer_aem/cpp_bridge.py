@@ -35,6 +35,11 @@ if _available:
         ctypes.POINTER(ctypes.c_double),   # E_out
     ]
     _lib.oer_cn_solve.restype = ctypes.c_int
+    _lib.oer_cn_solve_batch.argtypes = [
+        ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int),
+    ]
+    _lib.oer_cn_solve_batch.restype = ctypes.c_int
 
 # Parameter layout matching the C++ P_* enum
 _PARAM_KEYS = [
@@ -65,11 +70,11 @@ def pack_params(params: dict) -> np.ndarray:
     return p
 
 
-def solve_cn(
+def solve_cn_with_status(
     params: dict,
     y0: Optional[np.ndarray] = None,
-) -> np.ndarray:
-    """Run the C++ Crank-Nicolson solver and return total current.
+) -> tuple[Optional[np.ndarray], int]:
+    """Run CN and return ``(current, status)`` without hiding C status codes.
 
     Parameters
     ----------
@@ -81,9 +86,12 @@ def solve_cn(
     Returns
     -------
     current : (n_points,) array or None on failure
+    status : int
+        C ABI status: 0 success, -1 invalid input, -2 steady-state failure,
+        -3 non-finite output, -4 time-step Newton/subdivision failure.
     """
     if not _available:
-        return None
+        return None, -1
 
     p_arr = pack_params(params)
     n_points = int(params.get("n_points", 8000))
@@ -104,9 +112,50 @@ def solve_cn(
         None,  # E_out
     )
     if ret != 0:
-        return None
+        return None, int(ret)
 
     current = np.asarray(i_out, dtype=float)
     if not np.all(np.isfinite(current)):
-        return None
+        return None, -3
+    return current, 0
+
+
+def solve_cn(
+    params: dict,
+    y0: Optional[np.ndarray] = None,
+) -> Optional[np.ndarray]:
+    """Run CN and preserve the historical current-only return API."""
+    current, _status = solve_cn_with_status(params, y0=y0)
     return current
+
+
+def solve_cn_batch(params_list: list[dict]) -> tuple[np.ndarray, np.ndarray]:
+    """Run independent screen cases through the batch C ABI.
+
+    Per-case status codes are returned unchanged; failures must be handled by
+    the caller and are never silently converted to NaN or dropped.
+    """
+    if not _available:
+        raise RuntimeError("CN screen library is unavailable")
+    if not params_list:
+        raise ValueError("params_list must not be empty")
+    n_cases = len(params_list)
+    n_points = int(params_list[0].get("n_points", 8000))
+    if n_points < 2:
+        raise ValueError("n_points must be at least two")
+    if any(int(item.get("n_points", n_points)) != n_points for item in params_list):
+        raise ValueError("all batch cases must use the same n_points")
+    packed = np.ascontiguousarray(
+        np.vstack([pack_params(item) for item in params_list]), dtype=np.float64
+    )
+    currents = np.empty((n_cases, n_points), dtype=np.float64)
+    statuses = np.empty(n_cases, dtype=np.int32)
+    ret = _lib.oer_cn_solve_batch(
+        packed.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        ctypes.c_int(n_cases), ctypes.c_int(n_points),
+        currents.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        statuses.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+    )
+    if ret != 0:
+        raise RuntimeError(f"CN batch ABI failed with status {ret}")
+    return currents, statuses
