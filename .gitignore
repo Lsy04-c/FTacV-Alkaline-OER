@@ -35,3 +35,8 @@ __pycache__/
 results/benchmarks/bench_artifacts/
 results/unused/
 docs/papers/**/failed_downloads/
+
+# 编译产物：由 scripts/build_mc_cn.sh 在各机器本地生成
+cpp/libmccn.dylib
+cpp/libmccn.so
+cpp/libmccn.dll

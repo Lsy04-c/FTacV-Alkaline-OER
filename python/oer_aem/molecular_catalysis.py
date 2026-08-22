@@ -49,6 +49,8 @@ def initialize_mc_system(params: Dict[str, Any]) -> Dict[str, Any]:
     params.setdefault("F", F_CONST)
     params.setdefault("R", R_CONST)
     params.setdefault("use_steady_state", True)
+    params.setdefault("solver_backend", "lsoda")
+    params.setdefault("cn_substeps", 1)
 
     for required in ("E_start", "v", "dE", "f", "Ru", "Cdl", "A",
                      "gamma", "k0", "kf", "E0_eff", "total_time"):
@@ -133,12 +135,28 @@ def simulate(params: Dict[str, Any], t_eval: np.ndarray) -> Tuple[np.ndarray, np
 
     ``i_total`` 由 ``(E_app - phi_s) / Ru`` 得到，与 `physics.py` 一致，
     因此天然包含双电层电流。
+
+    ``params["solver_backend"]`` 可取 ``"lsoda"``（默认）或 ``"cn"``。
+    ``"cn"`` 走 `mc_cn_bridge` 的编译求解器；**动态库缺失或求解失败时直接
+    抛错，不静默回退**（`docs/项目纠错.md` 第 7 条）。CN 路径不返回覆盖度，
+    第三个返回值为 NaN 数组——它只用于搜索加速，覆盖度诊断请用 LSODA。
     """
     p = initialize_mc_system(params)
     t_eval = np.asarray(t_eval, dtype=float)
 
     y0 = (calculate_mc_steady_state(p) if p["use_steady_state"]
           else np.array([0.0, float(p["E_start"])]))
+
+    backend = str(p.get("solver_backend", "lsoda")).lower()
+    if backend == "cn":
+        from .mc_cn_bridge import solve as cn_solve
+        # 与 LSODA 共用同一个稳态初值 y0，见 mc_cn_bridge.solve 的说明
+        t_out, i_total = cn_solve(p, y0, t_eval, int(p.get("cn_substeps", 1)))
+        E_app = (p["E_start"] + p["v"] * t_out
+                 + p["dE"] * np.sin(p["omega"] * t_out))
+        return E_app, i_total, np.full(t_out.size, np.nan)
+    if backend != "lsoda":
+        raise ValueError(f"未知 solver_backend: {backend!r}（可选 lsoda / cn）")
 
     try:
         sol = solve_ivp(
