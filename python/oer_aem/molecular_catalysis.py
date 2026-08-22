@@ -51,6 +51,9 @@ def initialize_mc_system(params: Dict[str, Any]) -> Dict[str, Any]:
     params.setdefault("use_steady_state", True)
     params.setdefault("solver_backend", "lsoda")
     params.setdefault("cn_substeps", 1)
+    # 绝对步长上限（秒）。None 表示只用 cn_substeps。按绝对时间而非
+    # 每周期点数设定，理由见 mc_cn_bridge.required_substeps。
+    params.setdefault("cn_max_dt", None)
 
     for required in ("E_start", "v", "dE", "f", "Ru", "Cdl", "A",
                      "gamma", "k0", "kf", "E0_eff", "total_time"):
@@ -151,7 +154,9 @@ def simulate(params: Dict[str, Any], t_eval: np.ndarray) -> Tuple[np.ndarray, np
     if backend == "cn":
         from .mc_cn_bridge import solve as cn_solve
         # 与 LSODA 共用同一个稳态初值 y0，见 mc_cn_bridge.solve 的说明
-        t_out, i_total = cn_solve(p, y0, t_eval, int(p.get("cn_substeps", 1)))
+        t_out, i_total = cn_solve(p, y0, t_eval,
+                                  int(p.get("cn_substeps", 1)),
+                                  p.get("cn_max_dt"))
         E_app = (p["E_start"] + p["v"] * t_out
                  + p["dE"] * np.sin(p["omega"] * t_out))
         return E_app, i_total, np.full(t_out.size, np.nan)

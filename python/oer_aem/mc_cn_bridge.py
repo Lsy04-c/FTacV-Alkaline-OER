@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import ctypes
+import math
 import os
 import platform
 from typing import Tuple
@@ -50,8 +51,25 @@ def library_path() -> str:
     return _LIB_PATH
 
 
+def required_substeps(dt_out: float, max_dt: float) -> int:
+    """把绝对步长上限换算成每个输出点的内部步数。
+
+    步长必须按**绝对时间**设定，不能按"每周期多少点"。体系的快时间尺度由
+    ``1/k0``、``1/kf`` 和 ``Ru*Cdl*A`` 决定，与交流频率无关；同样的
+    "256 点/周期"在 1 Hz 数据上的绝对步长是 5 Hz 数据的 5 倍。
+    等价性门首轮（substeps=1）正是因此在 FT4(1 Hz) 上失败——
+    k0=955 时 1/k0=1.05e-3 s 已小于该数据集的输出步长 3.91e-3 s。
+    """
+    if max_dt <= 0:
+        raise ValueError("max_dt 必须为正")
+    # 容忍 0.01% 的相对超出：实测步长由 1/(f*ppc) 得到，浮点上会比整定的
+    # 上限高出百万分之几，不加容差会平白把步数翻倍。
+    ratio = (dt_out / max_dt) * (1.0 - 1e-4)
+    return max(1, int(math.ceil(ratio)))
+
+
 def solve(params: dict, y0: np.ndarray, t_eval: np.ndarray,
-          substeps: int = 1) -> Tuple[np.ndarray, np.ndarray]:
+          substeps: int = 1, max_dt: float | None = None) -> Tuple[np.ndarray, np.ndarray]:
     """在均匀网格上求解，返回 ``(t_out, i_total)``。
 
     ``y0`` 必须由 `molecular_catalysis.calculate_mc_steady_state` 生成——
@@ -59,6 +77,7 @@ def solve(params: dict, y0: np.ndarray, t_eval: np.ndarray,
     C++ 内部自行算初值造成 18.5% NRMSE 的事故，远大于积分格式本身的差异。
 
     ``substeps`` 为每个输出点内部推进的 CN 步数；输出网格即 ``t_eval``。
+    给出 ``max_dt`` 时按绝对步长上限自动推导 substeps，并取二者较大值。
     """
     if _lib is None:
         raise RuntimeError(
@@ -79,6 +98,8 @@ def solve(params: dict, y0: np.ndarray, t_eval: np.ndarray,
 
     n_out = int(t_eval.size)
     dt_out = float(steps[0])
+    if max_dt is not None:
+        substeps = max(int(substeps), required_substeps(dt_out, float(max_dt)))
     t_end = float(t_eval[-1]) + dt_out          # 输出为步首，故总时长多一格
     n_steps = n_out * int(substeps)
 

@@ -89,3 +89,33 @@ def test_cn_uses_same_steady_state_initial_condition():
     _, i_cn, _ = simulate(dict(params, solver_backend="cn"), t)
     scale = np.max(np.abs(i_lsoda))
     assert abs(i_cn[0] - i_lsoda[0]) / scale < 1e-6
+
+
+def test_required_substeps_uses_absolute_time():
+    """步长上限按绝对时间换算——同样的每周期点数在低频下绝对步长更大。"""
+    from oer_aem.mc_cn_bridge import required_substeps
+    dt_5hz = 1.0 / (5.008 * 256)
+    dt_1hz = 1.0 / (0.999 * 256)
+    assert required_substeps(dt_5hz, 7.8e-4) == 1
+    assert required_substeps(dt_1hz, 7.8e-4) == 6
+    assert required_substeps(dt_1hz, dt_1hz) == 1
+    with pytest.raises(ValueError):
+        required_substeps(dt_1hz, 0.0)
+
+
+def test_cn_max_dt_improves_low_frequency_accuracy():
+    """1 Hz + 快动力学下，绝对步长上限应显著改善与 LSODA 的一致性。
+
+    这正是等价性门首轮失败的参数区域（FT4, k0 接近上界）。
+    """
+    params = _params(f=1.0, v=0.0039, k0=955.0, gamma=6.7e-12,
+                     kf=4.6, E0_eff=1.79, total_time=40.0)
+    t = _grid(params)
+    _, ref, _ = simulate(dict(params, solver_backend="lsoda"), t)
+    scale = np.max(np.abs(ref))
+    _, coarse, _ = simulate(dict(params, solver_backend="cn"), t)
+    _, fine, _ = simulate(dict(params, solver_backend="cn", cn_max_dt=7.8e-4), t)
+    err_coarse = np.sqrt(np.mean((coarse - ref) ** 2)) / scale
+    err_fine = np.sqrt(np.mean((fine - ref) ** 2)) / scale
+    assert err_fine < err_coarse
+    assert err_fine < 0.01

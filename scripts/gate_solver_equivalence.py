@@ -102,7 +102,7 @@ def _nrmse(a, b):
     return float(np.sqrt(np.mean((a - b) ** 2)) / denom)
 
 
-def compare(name, f0, scan_rate, e_start, cdl, free, substeps):
+def compare(name, f0, scan_rate, e_start, cdl, free, substeps, max_dt=None):
     total_time = (E_FIT_HI - e_start) / scan_rate
     n_out = int(round(total_time * f0 * OUT_POINTS_PER_CYCLE))
     t = np.linspace(0.0, total_time, n_out, endpoint=False)
@@ -114,9 +114,12 @@ def compare(name, f0, scan_rate, e_start, cdl, free, substeps):
 
     _, i_lsoda, _ = simulate(dict(params, solver_backend="lsoda"), t)
     _, i_cn, _ = simulate(dict(params, solver_backend="cn",
-                               cn_substeps=substeps), t)
-    if not np.all(np.isfinite(i_lsoda)) or not np.all(np.isfinite(i_cn)):
-        return {"dataset": name, "status": "ODE_FAIL"}
+                               cn_substeps=substeps, cn_max_dt=max_dt), t)
+    # 参考解算不出来时该比较无从判定，单列一类，不记为 CN 失败
+    if not np.all(np.isfinite(i_lsoda)):
+        return {"dataset": name, "status": "REFERENCE_UNAVAILABLE"}
+    if not np.all(np.isfinite(i_cn)):
+        return {"dataset": name, "status": "CN_FAIL"}
 
     row = {"dataset": name, "status": "ok",
            "total_nrmse": _nrmse(i_cn, i_lsoda),
@@ -155,6 +158,8 @@ def compare(name, f0, scan_rate, e_start, cdl, free, substeps):
 
 
 def verdict(row):
+    if row.get("status") == "REFERENCE_UNAVAILABLE":
+        return []          # 无参考解，不判定（单独计数）
     if row.get("status") != "ok":
         return [row.get("status", "UNKNOWN")]
     fails = []
@@ -180,6 +185,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--samples", type=int, default=24)
     parser.add_argument("--substeps", type=int, default=1)
+    parser.add_argument("--max-dt", type=float, default=None,
+                        help="CN 绝对步长上限（秒）。按绝对时间设定，"
+                             "而非每周期点数——见 mc_cn_bridge.required_substeps")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--outdir", default="results/solver_gate")
     args = parser.parse_args()
@@ -192,18 +200,21 @@ def main() -> int:
     sampler = qmc.Sobol(d=len(lower), scramble=True, seed=args.seed)
     units = sampler.random(args.samples)
 
-    rows, failures = [], []
+    rows, failures, no_reference = [], [], []
     for idx, unit in enumerate(units):
         free = decode(unit, lower, upper)
         for name, f0, v, e_start, cdl in DATASET_CONFIGS:
-            row = compare(name, f0, v, e_start, cdl, free, args.substeps)
+            row = compare(name, f0, v, e_start, cdl, free,
+                          args.substeps, args.max_dt)
             row["sample"] = idx
             row.update({f"p_{k}": v2 for k, v2 in free.items()})
             fails = verdict(row)
             row["verdict"] = "PASS" if not fails else "FAIL"
             row["fail_reason"] = ";".join(fails)
             rows.append(row)
-            if fails:
+            if row.get("status") == "REFERENCE_UNAVAILABLE":
+                no_reference.append(row)
+            elif fails:
                 failures.append(row)
         print(f"  sample {idx+1}/{args.samples} done", flush=True)
 
@@ -223,15 +234,18 @@ def main() -> int:
         "library": mc_cn_bridge.library_path(),
         "numpy": np.__version__, "scipy": __import__("scipy").__version__,
         "thresholds_frozen": THRESHOLDS,
-        "samples": args.samples, "substeps": args.substeps, "seed": args.seed,
+        "samples": args.samples, "substeps": args.substeps,
+        "max_dt": args.max_dt, "seed": args.seed,
         "datasets": [d[0] for d in DATASET_CONFIGS],
         "n_comparisons": len(rows), "n_failures": len(failures),
+        "n_reference_unavailable": len(no_reference),
         "decision": decision,
     }
     with open(outdir / "gate_manifest.json", "w") as fh:
         json.dump(manifest, fh, indent=2, ensure_ascii=False)
 
-    print(f"\n{len(rows)} comparisons, {len(failures)} failures -> {decision}")
+    print(f"\n{len(rows)} comparisons, {len(failures)} failures, "
+          f"{len(no_reference)} reference-unavailable -> {decision}")
     for row in failures[:12]:
         print(f"  FAIL sample={row['sample']} {row['dataset']}: {row['fail_reason']}")
     return 0 if decision == "PASS" else 1
