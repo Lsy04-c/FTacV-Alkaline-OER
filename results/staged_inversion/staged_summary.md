@@ -1,5 +1,16 @@
 # Staged Inversion Report
 
+> **状态：Layer 4 结论已撤回（2026-08-22）。** 下方的
+> "Cross-Dataset Parameter Stability" 表格及其 stable/unreliable 判定
+> **不能作为可辨识性证据**，理由见 `docs/项目纠错.md` 第 10 条：CV 在
+> linear/log 混合参数化下不可比，`k0` 的 CV 与纯先验抽样不可区分，三个
+> "stable" 参数相对先验的收缩倍数几乎相同。此外本轮的 Tafel 目标是写死的
+> 60 mV/dec（第 11 条），Layer 2 边界从未生效（第 12 条），四组数据共用
+> seed 与初值，`n_forward=50`。
+>
+> 可辨识性现由单数据集后验给出：`results/low_dim_bonke/`。
+> 本文件保留仅供追溯。
+
 ## Layer 1 — Fixed Experimental Parameters
 
 | Param | Value |

@@ -8,6 +8,11 @@
 - io: 实验数据加载与导出
 - core: 统一入口封装
 - defaults: 默认参数与初始化
+
+低维主线（2026-08 起）：
+- molecular_catalysis: Bonke 2016 分子催化模型（表面氧化还原 + 赝一级催化步）
+- low_dim_fit: 数据截断、HarmPer 与 MLE-ExpHarmPer 目标函数
+- mcmc: 自适应协方差 MCMC，输出后验与相关矩阵
 """
 
 from .thermodynamics import apply_alkaline_aem
@@ -29,6 +34,21 @@ from .inversion import (
     encode_params,
     make_synthetic_target,
 )
+from .molecular_catalysis import (
+    initialize_mc_system,
+    calculate_mc_steady_state,
+    simulate as simulate_molecular_catalysis,
+)
+from .low_dim_fit import (
+    FIT_HARMONICS,
+    LowDimObjective,
+    PARAM_NAMES,
+    harm_per,
+    harmonic_envelopes,
+    load_truncated,
+    mle_exp_harm_per,
+)
+from .mcmc import MCMCResult, run_adaptive_mcmc
 from .importance import (
     analyze_parameter_importance,
     PERTURBATION_RULES,
@@ -56,6 +76,18 @@ __all__ = [
     "decode_vector",
     "encode_params",
     "make_synthetic_target",
+    "initialize_mc_system",
+    "calculate_mc_steady_state",
+    "simulate_molecular_catalysis",
+    "FIT_HARMONICS",
+    "LowDimObjective",
+    "PARAM_NAMES",
+    "harm_per",
+    "harmonic_envelopes",
+    "load_truncated",
+    "mle_exp_harm_per",
+    "MCMCResult",
+    "run_adaptive_mcmc",
     "analyze_parameter_importance",
     "PERTURBATION_RULES",
     "DEFAULT_PHYSICAL_BOUNDS",
