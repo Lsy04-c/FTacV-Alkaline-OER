@@ -39,24 +39,79 @@
 
 ---
 
-## 2. 正演模型 vs MECSim（待做）
+## 2. 正演模型 vs 解析极限（2026-08-22，通过）
 
-**参照物**：MECSim（Monash Electrochemistry Simulator）。Fortran 77，
-免费下载，预编译二进制，许可 CC BY-NC-SA 4.0（非商业）。官方说明支持
-表面限域物种（`A* + e = B*`）、催化 EC' 步与大幅值 FTacV——正是本项目
-低维模型的机理类别。
+**参照物**：闭式解，不依赖任何外部软件。
+脚本：`python/tests/test_analytic_limits.py`
 
-**计划**：同一组参数，MECSim 与 `python/oer_aem/molecular_catalysis.py`
-各算一遍，比较 DC 与 H2–H4。**一次性使用，不引入为依赖**——MECSim 闭源
-且许可限制商用，不适合作长期依赖（该顾虑由课题组老师提出，成立）。
+### 2.1 可逆极限 vs Nernst 闭式解
 
-**状态**：未开始。需要先决定是否下载并运行该二进制。
+`k0 = 1e7 s^-1`（可逆）、`kf = 0`（无催化）、`Ru = 0.01 Ω`（趋近零）时，
+表面覆盖度严格服从 Nernst，法拉第电流有闭式解：
 
-**已排除的替代品**：`Snitkoff-Sol/FTacV_SC_Simulation` 是 MATLAB 编译版
-（需 MATLAB Runtime），只做仿真不做拟合，且源码未公开——作为参照物不如
-MECSim，但作为"表面限域 FTacV"的直觉工具可用。
+```
+theta_ox(t) = 1 / (1 + exp(-f (E_app - E0)))
+i_F(t)      = A * gamma * F * f * theta (1-theta) * dE_app/dt
+```
 
----
+且 `Ru -> 0` 时电容电流 `Cdl*A*dE/dt` 只贡献 DC 与一次谐波，
+**H2 以上纯属法拉第**——正是拟合所用的通道。
+
+| 通道 | 解析峰值 (A) | ODE 峰值 (A) | 相对误差 |
+|---|---|---|---|
+| H1 | 3.3988e-04 | 3.4001e-04 | 0.04% |
+| H2 | 2.7924e-05 | 2.7961e-05 | 0.13% |
+| H3 | 1.5609e-05 | 1.5461e-05 | 0.95% |
+| H4 | 1.5576e-05 | 1.5674e-05 | 0.63% |
+
+残余约 1% 来自 `Ru` 未严格为零（仍有微小 RC 滞后）与包络提取的边缘效应。
+
+### 2.2 催化步 vs 稳态闭式解
+
+`dtheta/dt -> 0` 时 `theta_ox = k_fwd / (k_fwd + k_rev + kf)`，
+`i = A * gamma * F * kf * theta_ox`。强催化 + 慢扫下直流电流匹配到 2% 以内。
+这一支覆盖 2.1 未覆盖的催化步。
+
+### 2.3 零法拉第极限
+
+远负于 `E0` 时总电流退化为纯电容，偏差 < 0.1%。
+
+**结论**：正演模型的**法拉第核心与催化步**均通过闭式解校验。
+
+**这条校验的边界**：它在 `Ru -> 0`、可逆或强催化的**极限**下验证。
+中间区域（准可逆 + 中等 `Ru` 的 RC 耦合）没有闭式解，仍无外部参照。
+
+### 2.4 为什么最终没有用 MECSim
+
+原计划用 MECSim 做数值对照，实际执行时判定不合适：
+
+| 事实 | 来源 |
+|---|---|
+| 二进制编译于 2019，仓库 `garethkennedy/MECSim_Analytics` 最后更新 2019-05-15 | GitHub API |
+| 仓库**未声明许可**；自述写明"MECSim source code itself is not available" | 同上 |
+| 依赖 `libgfortran.so.3`（GCC 4.8/5 时代），Debian Bookworm 已不提供 | 拯救者 `ldd` |
+| 官网下载页现只提供 2019 年的 Docker 镜像；两台机器均无任何容器运行时 | 实测 |
+
+要跑通它需要额外装配一个 Debian 已下架的运行时。**参照物的可信度会低于
+被验证对象**，这与"外部校验"的目的相悖。libgfortran 的 ABI 在大版本间
+不兼容，用软链接替代会让数值程序静默给出错误结果，绝不可行。
+
+已完成的只读检查（结论仍有效，可供日后参考）：
+
+```
+sha256   6333761c7b127c7d18425002a7e6630fb2991875376c0017c5a434cca9fc630c
+type     ELF 64-bit x86-64, dynamically linked, GNU/Linux 2.6.24
+符号     只有 gfortran 运行时（字符串、文件 I/O、幂运算）
+文件     只读 Master.inp，只写 MECSimOutput.txt
+网络/进程 fork / system / execve / socket / getaddrinfo —— 全部不存在
+```
+
+顺带第一手证实 **MECSim 是 Fortran 编译产物，不是 MATLAB**（二进制内全是
+`_gfortran_*` 符号），与 `docs/项目纠错.md` §24 的澄清一致。
+
+MECSim 的模板包（`Templates.zip` / `TemplateReactions.pdf`，纯文本与 PDF）
+仍有参考价值：其 **Mechanism 6（Surface confined catalytic，`Master_SCCat.inp`）**
+与本项目低维模型结构一致，可用于核对参数含义与单位约定。
 
 ## 3. 目标函数 vs BIOMEC（未计划）
 

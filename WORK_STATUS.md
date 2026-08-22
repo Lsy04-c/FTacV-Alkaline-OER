@@ -9,8 +9,8 @@
 |---|---|
 | 最后核实 | 2026-08-22 |
 | 分支 | `claude/project-review-direction-aa3981` |
-| 生成时 HEAD | `3af3de0` feat(provenance): label every parameter bound with its source (WORK_STATUS 4.2) |
-| 收集到的测试数 | 122 |
+| 生成时 HEAD | `25afd00` feat(validation): cross-check sampler against PINTS; record tool-survey gap |
+| 收集到的测试数 | 125 |
 
 > 本表由 `scripts/refresh_status_header.py` 生成。增删测试后请重跑，
 > `python/tests/test_status_header.py` 校验「测试数」与「分支」；
