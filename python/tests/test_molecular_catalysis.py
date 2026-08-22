@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 
+from oer_aem.low_dim_fit import harmonic_envelopes
 from oer_aem.molecular_catalysis import (
     initialize_mc_system,
     calculate_mc_steady_state,
@@ -11,9 +12,12 @@ from oer_aem.molecular_catalysis import (
 
 
 def _base_params(**overrides):
+    # 默认扫描窗口必须跨过 E0_eff，否则表面氧化还原根本不被激发，
+    # 谐波里只剩双电层响应——早期版本的默认窗口是 1.10-1.14 V 而
+    # E0_eff=1.55 V，导致"法拉第电流随 gamma 线性"的测试实际在测噪声。
     params = {
-        "E_start": 1.10,
-        "v": 0.01,
+        "E_start": 1.45,
+        "v": 0.05,
         "dE": 0.16,
         "f": 5.0,
         "Ru": 10.0,
@@ -42,11 +46,12 @@ def test_missing_parameter_is_rejected():
 
 
 def test_coverage_stays_within_physical_bounds():
+    """覆盖度必须严格落在 [0, 1]，且不依赖 SciPy 版本的步长控制。"""
     params = _base_params()
     _, _, theta_ox = simulate(params, _grid(params))
     assert np.all(np.isfinite(theta_ox))
-    assert theta_ox.min() >= -1e-6
-    assert theta_ox.max() <= 1.0 + 1e-6
+    assert theta_ox.min() >= 0.0
+    assert theta_ox.max() <= 1.0
 
 
 def test_steady_state_is_reduced_far_below_e0():
@@ -75,19 +80,37 @@ def test_zero_gamma_reduces_to_pure_capacitance():
 
 
 def test_faradaic_current_scales_linearly_with_gamma():
-    """低覆盖度极限下，法拉第谐波幅值应正比于 gamma。"""
-    amps = []
-    for gamma in (1e-10, 2e-10):
-        params = _base_params(gamma=gamma)
-        t = _grid(params)
-        _, i_total, _ = simulate(params, t)
-        _, i_cap, _ = simulate(_base_params(gamma=0.0), t)
-        faradaic = i_total - i_cap
-        spectrum = np.abs(np.fft.rfft(faradaic))
-        freqs = np.fft.rfftfreq(t.size, d=t[1] - t[0])
-        idx = int(np.argmin(np.abs(freqs - 3 * params["f"])))
-        amps.append(spectrum[idx])
-    assert amps[1] / amps[0] == pytest.approx(2.0, rel=0.05)
+    """线性极限下，H3 包络幅值应正比于 gamma。
+
+    两处必须讲究，否则这个测试测的是噪声而不是物理：
+
+    1. **用 `harmonic_envelopes` 而不是裸 FFT。** 电流里的直流斜坡在矩形窗
+       下会泄漏到所有频点——纯 RC（gamma=0）情形的裸 FFT 在 3f0 处能读到
+       1.5e-4 A，比真实法拉第信号还大。项目的提取路径带 Tukey 边缘窗和
+       带通，纯 RC 本底降到约 1e-7 A。
+    2. **不做 i_total - i_cap 相减。** 两条 mA 量级的电流相减去恢复
+       nA 量级的法拉第分量是灾难性抵消。H3 本身几乎全部来自法拉第
+       非线性（线性 RC 不产生三次谐波），直接取即可。
+
+    gamma 取 1e-11/2e-11：信号为纯 RC 本底的 100-220 倍，而 phi_s 方程中的
+    反馈项 (gamma*F/Cdl)*r_et 仍然弱。gamma 到 1e-10 时该反馈已把比值压到
+    1.85，不再是线性区。
+    """
+    params_zero = _base_params(gamma=0.0)
+    t = _grid(params_zero)
+    fs = 1.0 / (t[1] - t[0])
+    guard = int(0.15 * t.size)
+
+    def h3_peak(gamma):
+        _, current, _ = simulate(_base_params(gamma=gamma), t)
+        envelope = harmonic_envelopes(current, fs, params_zero["f"], (3,))[0]
+        return envelope[guard:t.size - guard].max()
+
+    floor = h3_peak(0.0)
+    small, double = h3_peak(1e-11), h3_peak(2e-11)
+
+    assert small > 50 * floor, "信号必须远高于纯 RC 本底，否则测的是泄漏"
+    assert double / small == pytest.approx(2.0, rel=0.03)
 
 
 def test_catalytic_step_increases_dc_current():

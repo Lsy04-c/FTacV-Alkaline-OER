@@ -162,4 +162,10 @@ def simulate(params: Dict[str, Any], t_eval: np.ndarray) -> Tuple[np.ndarray, np
     E_dc = p["E_start"] + p["v"] * t_eval
     E_app = E_dc + p["dE"] * np.sin(p["omega"] * t_eval)
     i_total = (E_app - y[:, 1]) / p["Ru"]
-    return E_app, i_total, y[:, 0]
+
+    # 覆盖度按定义属于 [0, 1]。求解器的稠密输出可以在边界附近下冲/上冲
+    # 约 atol 量级（不同 SciPy 版本的步长控制不同，实测本机 1.18 与拯救者
+    # 1.16 的下冲量不同）。RHS 内部本来就对 theta 做同样的截断，所以这里
+    # 截断输出不改变解，只是消除版本相关的边界噪声。
+    coverage = np.clip(y[:, 0], 0.0, 1.0)
+    return E_app, i_total, coverage
