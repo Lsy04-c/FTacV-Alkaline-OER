@@ -64,13 +64,21 @@ B（催化）：      *ox   -->  *red + O2...    kf（赝一级，化学步无�
 
 依据 Gundry 2021 的比较结论（谐波类方法优于总电流法）：
 
-* 优化：**HarmPer**（逐谐波归一化包络相对 RMS）+ CMA-ES；
+* 优化：**HarmPer**（逐谐波归一化包络相对 RMS）+ 全局搜索；
 * 推断：**MLE-ExpHarmPer** 对数似然，逐谐波噪声 `sigma_h` 以 Jeffreys
   先验解析积分掉，得 `logL = -sum_h (N_h/2) log(SSR_h)`；
 * 采样：自适应协方差 MCMC（Haario），4 条链，报告 R-hat。
 
 实现：`python/oer_aem/low_dim_fit.py`、`python/oer_aem/mcmc.py`
-（不引入 emcee/pints 依赖——Legion 正式环境依赖版本是钉住的）
+
+**依赖约束**：正式计算在拯救者已验收环境执行，roadmap §2.2 要求不改动该
+环境的依赖。因此：
+
+* MCMC 自行实现（不引入 emcee / pints）；
+* 全局搜索用 `scipy.optimize.differential_evolution` 而非 Gundry 用的
+  CMA-ES——`cma` 不在该环境中。二者都是带边界的全局优化器，且本步唯一
+  作用是给 MCMC 提供起点，起点之后由采样器精化，替换不影响后验结论。
+  实际使用的优化器记录在 `run_manifest.json` 的 `global_search` 字段。
 
 **这一步替代了旧的"跨数据 CV"可辨识性判据。** 旧判据的问题见
 `docs/项目纠错.md` 第 10 条：CV 在 linear/log 混合参数化下检测的是
@@ -115,9 +123,29 @@ B（催化）：      *ox   -->  *red + O2...    kf（赝一级，化学步无�
 
 产出：
 ```
+results/low_dim_bonke/<DATASET>/    四个数据集并发运行的分片
 results/low_dim_bonke/posterior_samples.csv
 results/low_dim_bonke/posterior_summary.csv    含 provenance 列
 results/low_dim_bonke/correlation.csv
 results/low_dim_bonke/ru_sensitivity.csv
 results/low_dim_bonke/run_manifest.json
 ```
+
+## 8. 执行环境与证据链
+
+正式计算在拯救者（Lenovo Legion，WSL2 Debian-Bookworm，16 核）执行；
+本机只负责代码、快速测试、文档与 Git。
+
+针对 `docs/项目纠错.md` 第 9 条（正式命令曾混用不同工作树，源码/依赖/输出
+无法形成唯一证据链），本阶段的做法是：
+
+* 每次运行新建一个与 commit 同名的工作树 `/home/lsy/OER-FTAcV-run-<short>`；
+* 解释器固定为已验收环境 `/home/lsy/OER-FTAcV-run-8cf26be/.venv/bin/python`，
+  不再为新工作树另装一套依赖；
+* `run_manifest.json` 显式记录 `hostname`、`worktree`、`interpreter`、
+  `commit` 以及 python/numpy/scipy 版本；
+* `scripts/merge_low_dim_results.py` 在合并分片前**校验各分片的 commit、
+  解释器、工作树与依赖版本一致**，不一致则拒绝合并。
+
+四个数据集并发（每个 4 条链，共 16 进程），墙钟时间由最慢的数据集决定，
+而不是四者之和。

@@ -103,29 +103,39 @@ def _chain_task(args):
     return chain.samples, chain.log_posterior, chain.acceptance_rate, seed
 
 
-def run_cma(objective: LowDimObjective, evaluations: int, seed: int):
-    """CMA-ES 在 [0,1] 空间最小化 HarmPer。"""
-    import cma
+def run_global_search(objective: LowDimObjective, evaluations: int, seed: int):
+    """全局搜索 [0,1]^4，最小化 HarmPer，返回最优点与最优值。
 
-    options = {
-        "bounds": [0.0, 1.0],
-        "maxfevals": evaluations,
-        "seed": seed,
-        "verbose": -9,
-        "popsize": 10,
-    }
-    es = cma.CMAEvolutionStrategy(np.full(len(PARAM_NAMES), 0.5), 0.25, options)
-    while not es.stop():
-        candidates = es.ask()
-        es.tell(candidates, [objective.loss(np.asarray(c)) for c in candidates])
-    return np.asarray(es.result.xbest), float(es.result.fbest)
+    Gundry 2021 用的是 CMA-ES。这里改用 SciPy 的 differential evolution：
+    ``cma`` 不在拯救者已验收的正式计算环境中，而 roadmap §2.2 要求不改动
+    该环境的依赖。二者都是带边界的全局优化器，且本步的唯一作用是给 MCMC
+    提供起点——起点之后由采样器自行精化，因此该替换不影响后验结论。
+    实际使用的优化器记录在 run_manifest.json 中。
+    """
+    from scipy.optimize import differential_evolution
+
+    popsize = 10
+    maxiter = max(1, evaluations // (popsize * len(PARAM_NAMES)) - 1)
+    result = differential_evolution(
+        lambda x: objective.loss(np.asarray(x)),
+        bounds=[(1e-6, 1 - 1e-6)] * len(PARAM_NAMES),
+        seed=seed,
+        popsize=popsize,
+        maxiter=maxiter,
+        tol=0.0,
+        polish=False,
+        init="sobol",
+        updating="deferred",
+        workers=1,
+    )
+    return np.asarray(result.x), float(result.fun)
 
 
 def fit_dataset(name, filename, cdl, ru, args):
     objective = _build_objective(name, filename, cdl, ru)
     record = objective.record
 
-    best_unit, best_loss = run_cma(objective, args.cma_evals, args.seed)
+    best_unit, best_loss = run_global_search(objective, args.cma_evals, args.seed)
     best_params = decode(best_unit, *default_bounds())
 
     envelopes = objective._simulate_envelopes(best_unit)
@@ -181,7 +191,8 @@ def fit_dataset(name, filename, cdl, ru, args):
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--outdir", default="results/low_dim_bonke")
-    parser.add_argument("--cma-evals", type=int, default=400)
+    parser.add_argument("--cma-evals", type=int, default=400,
+                        help="全局搜索的目标评估次数（MCMC 起点）")
     parser.add_argument("--mcmc-iterations", type=int, default=3000)
     parser.add_argument("--chains", type=int, default=4)
     parser.add_argument("--thin", type=int, default=3)
@@ -197,6 +208,7 @@ def main() -> int:
 
     selected = [d for d in DATASETS if d[0] in args.datasets]
     results = []
+    ru_rows = []
     for name, filename, cdl in selected:
         print(f"[{datetime.now():%H:%M:%S}] {name}: CMA-ES + MCMC ...", flush=True)
         results.append(fit_dataset(name, filename, cdl, 10.0, args))
@@ -206,11 +218,10 @@ def main() -> int:
         # 导致整轮正式运行只留下表头的事故，这里不重复该模式。
         _write_outputs(outdir, results, ru_rows, args)
 
-    ru_rows = []
     for ru in args.ru_sensitivity:
         for name, filename, cdl in selected:
             objective = _build_objective(name, filename, cdl, ru)
-            unit, loss = run_cma(objective, args.cma_evals, args.seed)
+            unit, loss = run_global_search(objective, args.cma_evals, args.seed)
             params = decode(unit, *default_bounds())
             ru_rows.append({"dataset": name, "Ru": ru, "harmper": loss, **params})
             print(f"[{datetime.now():%H:%M:%S}] {name} Ru={ru}: HarmPer={loss:.4f}", flush=True)
@@ -279,6 +290,12 @@ def _write_outputs(outdir: Path, results, ru_rows, args):
         "python": platform.python_version(),
         "numpy": np.__version__,
         "platform": platform.platform(),
+        # docs/项目纠错.md 第 9 条：正式命令曾混用不同工作树，源码/依赖/输出
+        # 无法形成唯一证据链。这里把三者显式钉进 manifest。
+        "hostname": platform.node(),
+        "worktree": str(PROJECT),
+        "interpreter": sys.executable,
+        "scipy": __import__("scipy").__version__,
         "model": "Bonke molecular catalysis (surface redox + pseudo-first-order catalysis)",
         "free_parameters": list(PARAM_NAMES),
         "pinned_provenance": PINNED_PROVENANCE,
@@ -286,6 +303,7 @@ def _write_outputs(outdir: Path, results, ru_rows, args):
         "excluded_from_objective": ["DC (未扣除基底背景)", "H1 (双电层与催化电流主导)"],
         "fit_window_V": [E_FIT_LO, E_FIT_HI],
         "objective_optimiser": "HarmPer (Gundry 2021)",
+        "global_search": "scipy.optimize.differential_evolution (sobol init, no polish)",
         "objective_bayesian": "MLE-ExpHarmPer, sigma_h profiled out (Jeffreys)",
         "sampler": "adaptive covariance MCMC (Haario), 4 chains",
         "args": vars(args),
