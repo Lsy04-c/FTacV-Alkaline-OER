@@ -81,7 +81,7 @@ def test_unknown_backend_is_rejected():
 def test_cn_uses_same_steady_state_initial_condition():
     """CN 与 LSODA 的首个输出点应一致——二者共用稳态初值。
 
-    §19 记录过 C++ 自行计算初值造成 18.5% NRMSE 的事故。
+    WORK_STATUS §19 记录过 C++ 自行计算初值造成 18.5% NRMSE 的事故。
     """
     params = _params()
     t = _grid(params)
