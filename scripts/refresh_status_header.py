@@ -89,8 +89,8 @@ def main() -> int:
         测试数与分支：它们只在做了实质改动时才变，而那正是文档声称的
         「验证状态」失效的时刻。
         """
-        s = re.sub(r"\| 最后核实 \| [^|]* \|", "", s)
-        s = re.sub(r"\| HEAD \| [^\n]*", "", s)
+        s = re.sub(r"^\| 最后核实 \|.*$", "", s, flags=re.M)
+        s = re.sub(r"^\| 生成时 HEAD \|.*$", "", s, flags=re.M)
         return s
 
     if comparable(current) == comparable(block):
