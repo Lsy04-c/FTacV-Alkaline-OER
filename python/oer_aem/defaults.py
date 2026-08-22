@@ -31,7 +31,9 @@ def initialize_oer_parameters() -> dict:
     params['scaling_OOH_OH'] = 3.2    # *OOH/*OH 标度偏移 (Man 2011: 3.20±0.2 eV)
 
     # ==================== 预氧化参数 ====================
-    # 依据：1 M KOH 中 Co3+/4+ 氧化峰 1.43–1.5 V vs RHE（碱性 CoOx 文献一致区间）
+    # 依据：Moysiadou 2020 在 0.1 M KOH 中实测的 Co3+/4+ **直流**氧化峰
+    # 1.43-1.5 V vs RHE。注意这与 Bonke 2016 由 FTacV 拟合出的
+    # E0_eff = 1.9-2.1 V 不是同一个量，不可互相替代（docs/项目纠错.md 第 13 条）。
     # 注意：Bonke 2016 的 E0cat=1.9–2.1 V 是 pH 9.2 硼酸体系，不可移植
     params['E0_pre'] = 1.45           # Co³⁺/⁴⁺ 氧化电位 (V vs RHE)
     params['k0_pre'] = 500.0          # 预氧化速率 (s⁻¹, Bonke k0cat=90–325 同量级，待标定)

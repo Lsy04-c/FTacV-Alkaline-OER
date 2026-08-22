@@ -57,6 +57,25 @@ def _free_specs_excluding(fixed: Dict[str, float]):
     return tuple(spec for spec in DEFAULT_PARAM_SPECS if spec[0] not in fixed_names)
 
 
+def _preox_specs(preox_bounds: Dict[str, List[float]], fixed: Dict[str, float]):
+    """把 Layer 2 的预氧化边界转成 optimizer specs。
+
+    ``E0_pre`` 走线性尺度，``k0_pre`` 走 log10 —— 与 DEFAULT_PARAM_SPECS 中
+    速率常数的处理保持一致。跨参数比较 CV 时必须记住这两种尺度不可比，
+    这正是 docs/项目纠错.md 第 10 条撤回旧稳定性结论的原因。
+    """
+    specs = []
+    for name, bounds in preox_bounds.items():
+        if name in fixed:
+            continue
+        if name.startswith("k0"):
+            specs.append((name, "log10", float(np.log10(bounds[0])),
+                          float(np.log10(bounds[1]))))
+        else:
+            specs.append((name, "linear", float(bounds[0]), float(bounds[1])))
+    return tuple(specs)
+
+
 # ============================================================
 # Layer 1：实验条件参数（固定，来自标定或多数据集平均）
 # ============================================================
@@ -136,13 +155,19 @@ def layer3_invert_aem(
     harm_raw = [np.asarray(h) for h in analysis["harmonics"]]
     order = np.argsort(tdc_raw)
     x = tdc_raw[order]; _, keep = np.unique(x, return_index=True); x = x[keep]
-    tafel_val = analysis.get("calib", {}).get("tafel", {}).get("b", 60.0)
-    if not isinstance(tafel_val, (int, float)) or tafel_val <= 0:
-        tafel_val = 60.0
+    # Tafel 提取失败时必须留空，不能回退到写死的 60 mV/dec。
+    # 四组数据的 Tafel 提取全部是 FAIL 或 0 mV/dec（见
+    # results/data_quality/data_quality_summary.md），旧的兜底值让四次独立
+    # 反演都在拟合同一个伪造目标，既污染目标函数，又人为拉近了各数据集的
+    # 最优参数。InversionObjective 已支持 target["tafel"] is None（跳过该项）。
+    tafel_raw = analysis.get("calib", {}).get("tafel", {}).get("b")
+    tafel_val = (float(tafel_raw)
+                 if isinstance(tafel_raw, (int, float)) and tafel_raw > 0
+                 else None)
     target = {
         "dc": np.interp(cfg.e_grid, x, dc_raw[order][keep]),
         "harm": [np.interp(cfg.e_grid, x, h[order][keep]) for h in harm_raw],
-        "tafel": float(tafel_val),
+        "tafel": tafel_val,
         "e_grid": cfg.e_grid,
     }
 
@@ -152,8 +177,10 @@ def layer3_invert_aem(
     base["E0_pre"] = 1.50
     base["k0_pre"] = 300.0
 
-    # TPE 反演
-    specs = _free_specs_excluding(fixed)
+    # TPE 反演。Layer 2 的预氧化边界此前只被计算、从未被读取，
+    # E0_pre/k0_pre 实际是四组数据共用的硬编码常数，报告中的
+    # "Layer 2" 表格因此是装饰性的。现在把它们真正接进 optimizer specs。
+    specs = _free_specs_excluding(fixed) + _preox_specs(preox_bounds, fixed)
     result = TPEInverter(config=cfg, specs=specs, seed=42, initial_params=base).run(target, n_trials=n_trials)
 
     return {
