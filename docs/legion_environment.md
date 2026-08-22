@@ -80,34 +80,54 @@ ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=2000 legion \
 连接在，发行版就在。代价：Mac 必须保持联网、不休眠；断线即中断计算。
 因此**脚本必须逐步落盘**（见第 5 节）。
 
-### 根治（需用户在 Windows 上执行一次）
+> 该做法在 keepalive 端到端验证通过后即可停用。在此之前它仍是唯一
+> 经过实证的可靠方式。
 
-在 Windows 侧常驻一个 WSL 会话即可。把下面内容存成
-`C:\Users\lsy.LAPTOP-JBG0SNHL\oer-wsl-keepalive.vbs`：
+### 根治：Windows 侧常驻会话（**已安装，2026-08-22**）
+
+在 Windows 上常驻一个 WSL 会话即可。脚本位于
+`%UserProfile%\oer-wsl-keepalive.vbs`，并已复制进当前用户的启动目录：
 
 ```vbs
 Set sh = CreateObject("WScript.Shell")
 sh.Run "wsl.exe -d Debian-Bookworm -u lsy --exec /bin/sh -c ""while true; do sleep 3600; done""", 0, False
 ```
 
-然后把它放进启动目录：
+安装用的 PowerShell（普通权限，不需要管理员）：
+
+```powershell
+$vbs = Join-Path $env:UserProfile 'oer-wsl-keepalive.vbs'
+# ... 写入上述内容 ...
+Copy-Item $vbs (Join-Path ([Environment]::GetFolderPath('Startup')) 'oer-wsl-keepalive.vbs') -Force
+Start-Process wscript.exe -ArgumentList "`"$vbs`"" -WindowStyle Hidden
+```
+
+用 `$env:UserProfile` 与 `GetFolderPath('Startup')` 而非硬编码路径，可自动
+避开第 4 节的双配置文件陷阱。
+
+当前状态：
 
 ```
-C:\Users\lsy.LAPTOP-JBG0SNHL\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\
+pid=307  ppid=306  sid=307     <- 独立会话，与 SSH 会话（sid=324）无关
+pid=308  sleep 3600
 ```
 
-双击一次即可立即生效，之后每次登录自动运行，窗口隐藏。
-
-验证方法（Mac 上）：
+**验证进度**：进程已常驻且会话独立，但"关掉所有其他会话后发行版仍存活"
+这一端到端验证尚未做——当前拟合作业挂在 Mac 持有的长连接上，断开会一并
+杀掉它。作业结束后按下列步骤补验：
 
 ```bash
-ssh legion 'pgrep -af "sleep 3600" | head'
+# 1. 记录当前发行版启动时间
+ssh legion 'who -b'
+# 2. 起一个标记进程（不用 nohup，故意考验 keepalive）
+ssh legion 'setsid sh -c "sleep 1800" >/dev/null 2>&1 &'
+# 3. 断开所有 SSH，等待 2 分钟以上
+# 4. 重新连接，确认两件事都成立：
+ssh legion 'who -b; pgrep -af "sleep 1800"'
+#    who -b 不变  且  标记进程还在  => keepalive 生效
 ```
 
-有输出即生效。此后 `nohup` / `tmux` 才真正可靠。
-
-> 该操作会写入 Windows 启动项，属于主机自身配置，由用户执行；
-> agent 不代为安装。
+补验通过后，正式计算即可改回 `nohup`，不再需要 Mac 持有长连接。
 
 ## 4. Windows 侧配置：两个用户配置文件，别改错
 
