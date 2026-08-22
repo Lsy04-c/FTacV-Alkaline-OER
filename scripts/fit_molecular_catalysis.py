@@ -28,6 +28,7 @@ PROJECT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT / "python"))
 
 from oer_aem.low_dim_fit import (  # noqa: E402
+    BOUND_PROVENANCE,
     FIT_HARMONICS,
     LowDimObjective,
     PARAM_NAMES,
@@ -251,20 +252,26 @@ def _write_outputs(outdir: Path, results, ru_rows, args):
     with open(outdir / "posterior_summary.csv", "w", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["dataset", "parameter", "mean", "median", "std",
-                         "q2.5", "q97.5", "rhat", "provenance"])
+                         "q2.5", "q97.5", "rhat", "provenance",
+                         "lower_source", "upper_source", "bound_note"])
         for row in results:
             if row["summary"] is None:
                 continue
             for name, stats in row["summary"].items():
+                real = name.replace("log10_", "")
+                bp = BOUND_PROVENANCE.get(real, {})
                 writer.writerow([row["dataset"], name,
                                  f"{stats['mean']:.6g}", f"{stats['median']:.6g}",
                                  f"{stats['std']:.6g}", f"{stats['q2.5']:.6g}",
-                                 f"{stats['q97.5']:.6g}", f"{stats['rhat']:.4f}", "fitted"])
+                                 f"{stats['q97.5']:.6g}", f"{stats['rhat']:.4f}", "fitted",
+                                 bp.get("lower_source", ""), bp.get("upper_source", ""),
+                                 bp.get("note", "")])
             for pin, provenance in PINNED_PROVENANCE.items():
                 value = row["Ru"] if pin == "Ru" else (row["Cdl"] if pin == "Cdl"
                                                        else (1.0 if pin == "A" else 0.5))
                 writer.writerow([row["dataset"], pin, f"{value:.6g}", f"{value:.6g}",
-                                 "0", f"{value:.6g}", f"{value:.6g}", "", provenance])
+                                 "0", f"{value:.6g}", f"{value:.6g}", "", provenance,
+                                 "", "", "钉住参数，非拟合量"])
 
     with open(outdir / "correlation.csv", "w", newline="") as handle:
         writer = csv.writer(handle)
@@ -299,6 +306,7 @@ def _write_outputs(outdir: Path, results, ru_rows, args):
         "model": "Bonke molecular catalysis (surface redox + pseudo-first-order catalysis)",
         "free_parameters": list(PARAM_NAMES),
         "pinned_provenance": PINNED_PROVENANCE,
+        "bound_provenance": BOUND_PROVENANCE,
         "fit_harmonics": list(FIT_HARMONICS),
         "excluded_from_objective": ["DC (未扣除基底背景)", "H1 (双电层与催化电流主导)"],
         "fit_window_V": [E_FIT_LO, E_FIT_HI],

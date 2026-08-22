@@ -197,6 +197,35 @@ def implied_sigma(simulated: np.ndarray, experimental: np.ndarray) -> np.ndarray
 PARAM_NAMES: Tuple[str, ...] = ("E0_eff", "log10_k0", "log10_kf", "log10_gamma")
 
 
+# WORK_STATUS §4.2：边界不能只为了拟合而放宽，必须分来源标注。
+# 标签集沿用该节定义：fixed / measured / literature / weak_prior / engineering
+# 上下界分别标注——`gamma` 正是一个下界来自文献、上界属工程放宽的例子。
+BOUND_PROVENANCE: Dict[str, Dict[str, str]] = {
+    "E0_eff": {
+        "lower_source": "measured",
+        "upper_source": "measured",
+        "note": "本项目四组数据 H3/H4 包络实测特征 1.52-1.63 V，"
+                "两侧各留出 EC' 催化步引起的正移余量",
+    },
+    "k0": {
+        "lower_source": "literature",
+        "upper_source": "literature",
+        "note": "覆盖 Snitkoff-Sol 2022 的 6 s^-1 与 Bonke 2016 的 110-325 s^-1",
+    },
+    "kf": {
+        "lower_source": "literature",
+        "upper_source": "literature",
+        "note": "覆盖 Bonke 2016 的 kf1 = 2e3-4e4 s^-1",
+    },
+    "gamma": {
+        "lower_source": "literature",
+        "upper_source": "engineering",
+        "note": "下界取 Bonke 2016 的 pmol/cm^2 量级；上界放宽到本项目此前"
+                "假设的 1e-8，属工程边界，无独立标定支持",
+    },
+}
+
+
 def default_bounds() -> Tuple[np.ndarray, np.ndarray]:
     """自由参数边界。
 

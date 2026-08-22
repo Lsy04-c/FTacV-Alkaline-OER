@@ -184,3 +184,17 @@ def test_even_harmonic_has_central_minimum_at_e0_eff():
         envelope[np.abs(e_dc - 1.56) < 0.005].mean(),
     )
     assert at_e0 < 0.8 * lobes
+
+
+def test_every_free_parameter_bound_has_a_source_label():
+    """WORK_STATUS §4.2：每个边界都必须带来源标签，且标签在允许集合内。"""
+    from oer_aem.low_dim_fit import BOUND_PROVENANCE, PARAM_NAMES
+
+    allowed = {"fixed", "measured", "literature", "weak_prior", "engineering"}
+    for name in PARAM_NAMES:
+        real = name.replace("log10_", "")
+        assert real in BOUND_PROVENANCE, f"{real} 缺少边界来源标注"
+        entry = BOUND_PROVENANCE[real]
+        assert entry["lower_source"] in allowed
+        assert entry["upper_source"] in allowed
+        assert entry["note"].strip(), f"{real} 的来源说明为空"
