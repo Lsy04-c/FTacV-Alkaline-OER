@@ -169,13 +169,42 @@ ssh legion 'nproc; free -m | awk "NR==2{print \$2}"'
    ```
 
 3. 用第 2 节的钉住解释器先跑全量测试，通过后才启动计算；
-4. 用 `nohup ... &` 启动即可（keepalive 已验证生效）。启动后必须复核
-   进程确实在跑，并在断开 SSH 数分钟后再回连确认一次——这是唯一能
-   区分"正在跑"和"已随发行版销毁"的方法；
+4. 用 `setsid nohup ... &` 启动，**并且在断开 SSH 之前必须确认进程已经
+   立起来**（见下方"启动竞态"）。断开数分钟后再回连确认一次——这是唯一能
+   区分"正在跑"和"已被收走"的方法；
 5. 脚本必须**逐个数据集落盘**——连接可能中断，且 WORK_STATUS §16 记录过
    末尾统一写 CSV 导致整轮结果只剩表头的事故；
 6. 结果 manifest 必须含 `commit` / `worktree` / `interpreter` / `hostname`
    与依赖版本；多分片合并前校验同源（`scripts/merge_low_dim_results.py`）。
+
+### 启动竞态：断开太快会杀掉刚起的进程
+
+即使 keepalive 已生效、发行版不会重启，**在进程完全启动之前断开 SSH，
+它仍会被一并收走**。实测三次：
+
+| 启动方式 | 启动后是否等待 | 结果 |
+|---|---|---|
+| `nohup python ... &` 后立即退出 | 否 | 日志 0 字节，进程消失 |
+| `setsid nohup python ... &` 后立即退出 | 否 | 日志 0 字节，进程消失 |
+| `nohup sh -c ... &` + `sleep 4` | 是 | 存活 |
+| `setsid nohup python ... &` + `sleep 25` | 是 | 存活，跑到结束 |
+
+失败时 `who -b` 与 pid 1 存活时间均不变——**发行版没有重启，是进程本身
+被收走**，与第 3 节那个发行版销毁问题是两回事。原因是 Python 完成 import
+需要一两秒，这段时间里进程还没真正立稳。
+
+因此启动脚本必须**轮询日志确认有进度输出后再退出**，例如：
+
+```bash
+PYTHONPATH=... setsid nohup "$PY" -u script.py > logs/run.log 2>&1 &
+for i in $(seq 1 12); do
+  sleep 5
+  grep -q "进度标志" logs/run.log && { echo running; exit 0; }
+done
+echo "WARNING: 未确认启动"
+```
+
+对应地，长时脚本应尽早输出第一行进度，不要等第一个数据集算完才打印。
 
 并发建议：16 核，四个数据集并发 × 每个 4 条链 = 16 进程，实测内存占用
 约 2 GB / 7.5 GB。设置 `OMP_NUM_THREADS=1` 等，避免 BLAS 线程与进程级
