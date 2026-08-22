@@ -1,6 +1,6 @@
 # 拯救者（Legion）计算环境配置解释书
 
-最后核实：2026-08-22
+最后核实：2026-08-22（keepalive 已验证；解释器已迁移）
 适用主机：Lenovo Legion，`LAPTOP-JBG0SNHL`，Windows + WSL2
 维护约定：**本文件所述任何一项被改动，都必须同步更新本文件。**
 
@@ -33,13 +33,25 @@ systemd       已启用（/etc/wsl.conf 中 boot.systemd=true），状态 degrad
 sudo          需要密码 —— agent 无法安装系统包或改 /etc 下的文件
 ```
 
-正式计算解释器（**当前**）：
+正式计算解释器（**当前，2026-08-22 起**）：
 
 ```
-/home/lsy/OER-FTAcV-run-8cf26be/.venv/bin/python
+/home/lsy/oer-venv/bin/python
 python 3.11.2   numpy 2.2.6   scipy 1.16.3   optuna 4.9.0   matplotlib 3.11.1
 不含 cma
 ```
+
+它由旧路径 `/home/lsy/OER-FTAcV-run-8cf26be/.venv` 原样 `cp -a` 而来。
+迁移理由见第 6 节。等价性验证：
+
+| 检查 | 结果 |
+|---|---|
+| 版本 | 四项依赖版本完全一致 |
+| 数值 | 同一正演的电流数组 sha256 **逐位相同**（`66edbf19…1eb640`） |
+| 测试 | 新解释器上 `python/tests` 107 passed |
+
+旧路径**保留未删**，但不再作为正式解释器。任何脚本、文档或 manifest 中
+出现 `run-8cf26be/.venv` 都应视为过期引用。
 
 ## 3. 关键限制：WSL 会终止发行版，后台作业活不过 SSH 断开
 
@@ -80,8 +92,8 @@ ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=2000 legion \
 连接在，发行版就在。代价：Mac 必须保持联网、不休眠；断线即中断计算。
 因此**脚本必须逐步落盘**（见第 5 节）。
 
-> 该做法在 keepalive 端到端验证通过后即可停用。在此之前它仍是唯一
-> 经过实证的可靠方式。
+> **该做法已于 2026-08-22 停用**——keepalive 验证通过后，改用 `nohup`
+> 即可（见下）。此段保留作为 keepalive 失效时的应急手段。
 
 ### 根治：Windows 侧常驻会话（**已安装，2026-08-22**）
 
@@ -105,29 +117,23 @@ Start-Process wscript.exe -ArgumentList "`"$vbs`"" -WindowStyle Hidden
 用 `$env:UserProfile` 与 `GetFolderPath('Startup')` 而非硬编码路径，可自动
 避开第 4 节的双配置文件陷阱。
 
-当前状态：
+**验证结果：通过（2026-08-22）。** 方法是种一个故意不带 `nohup` 的标记
+进程，然后断开全部 SSH 会话 3 分钟以上再回连：
 
 ```
-pid=307  ppid=306  sid=307     <- 独立会话，与 SSH 会话（sid=324）无关
-pid=308  sleep 3600
+                    断开前                    断开 3 分钟后
+who -b              2026-08-22 15:50          2026-08-22 15:50      <- 未变
+keepalive           pid 307                   pid 307  存活
+marker (setsid)     pid 386                   pid 386  存活
+pid 1 age           -                         01:00:03              <- 发行版未重启
 ```
 
-**验证进度**：进程已常驻且会话独立，但"关掉所有其他会话后发行版仍存活"
-这一端到端验证尚未做——当前拟合作业挂在 Mac 持有的长连接上，断开会一并
-杀掉它。作业结束后按下列步骤补验：
+附带印证了第 3 节的诊断口诀：同一时刻 `/proc/stat` 的 `btime` 为
+2026-08-21 14:33（**VM** 启动），而 `who -b` 为 2026-08-22 15:50
+（**发行版**启动），两者相差一天——这正是当初误判的根源。
 
-```bash
-# 1. 记录当前发行版启动时间
-ssh legion 'who -b'
-# 2. 起一个标记进程（不用 nohup，故意考验 keepalive）
-ssh legion 'setsid sh -c "sleep 1800" >/dev/null 2>&1 &'
-# 3. 断开所有 SSH，等待 2 分钟以上
-# 4. 重新连接，确认两件事都成立：
-ssh legion 'who -b; pgrep -af "sleep 1800"'
-#    who -b 不变  且  标记进程还在  => keepalive 生效
-```
-
-补验通过后，正式计算即可改回 `nohup`，不再需要 Mac 持有长连接。
+结论：keepalive 生效，`nohup` 与 `tmux` 现在可靠。正式计算**不再需要**
+Mac 持有长连接。
 
 ## 4. Windows 侧配置：两个用户配置文件，别改错
 
@@ -163,7 +169,9 @@ ssh legion 'nproc; free -m | awk "NR==2{print \$2}"'
    ```
 
 3. 用第 2 节的钉住解释器先跑全量测试，通过后才启动计算；
-4. 由 Mac 持有长连接前台执行（第 3 节）；
+4. 用 `nohup ... &` 启动即可（keepalive 已验证生效）。启动后必须复核
+   进程确实在跑，并在断开 SSH 数分钟后再回连确认一次——这是唯一能
+   区分"正在跑"和"已随发行版销毁"的方法；
 5. 脚本必须**逐个数据集落盘**——连接可能中断，且 WORK_STATUS §16 记录过
    末尾统一写 CSV 导致整轮结果只剩表头的事故；
 6. 结果 manifest 必须含 `commit` / `worktree` / `interpreter` / `hostname`
@@ -175,13 +183,47 @@ ssh legion 'nproc; free -m | awk "NR==2{print \$2}"'
 
 ## 6. 已知待整改项
 
-| 项 | 现状 | 计划 |
+| 项 | 状态 | 说明 |
 |---|---|---|
-| 解释器嵌在 commit 命名的工作树内 | `run-8cf26be/.venv` | 迁到与 commit 无关的稳定路径，版本逐一钉住并验证数值一致后切换（纠错 §21） |
-| 14 个残留 `OER-FTAcV-run-*` 工作树 | 占位、语义误导 | 待当前作业结束后按 `git worktree list` 逐个确认再清理 |
-| `sudo` 需密码 | agent 无法装系统包 / 改 `/etc` | 需要系统级改动时由用户执行 |
-| systemd `degraded` | 仅 `kmod-static-nodes.service` 失败 | 对计算无影响，暂不处理 |
-| 缺 `cma` | 低维主线改用 `scipy.optimize.differential_evolution` | 不再需要，不安装 |
+| 解释器嵌在 commit 命名的工作树内 | **已解决** | 迁到 `/home/lsy/oer-venv`，逐位等价已验证（第 2 节） |
+| WSL 后台作业活不过 SSH 断开 | **已解决** | keepalive 已装并验证（第 3 节） |
+| 工作树沉积 | **未解决，不建议自动清理** | 见下 |
+| `sudo` 需密码 | 不变 | 需要系统级改动时由用户执行 |
+| systemd `degraded` | 不处理 | 仅 `kmod-static-nodes.service` 失败，对计算无影响 |
+| 缺 `cma` | 不安装 | 低维主线已改用 `scipy.optimize.differential_evolution` |
+
+### 工作树沉积：为什么没有自动清理
+
+`git worktree list` 共 **43 项**（16 个顶层 `OER-FTAcV-run-*`，26 个嵌套在
+`OER-FTAcV/worktrees/<commit>/<name>` 下）。按"无未提交改动 + 无未跟踪文件 +
+`results/` 为空"逐个判定：
+
+```
+KEEP(pinned)   3    main / run-ce4f7d6 / run-8cf26be
+HAS-CONTENT   40    全部含未跟踪文件、未提交改动或结果文件
+SAFE-REMOVE    0
+```
+
+合计 **6441 个结果文件**存放在这些工作树里，且不在仓库中。删除工作树会
+一并销毁它们，因此**不做自动清理**。示例（结果文件数最多的几个）：
+
+```
+worktrees/6400989/a6_recovery_k0_123          508
+worktrees/c7a9ee1/formal-v2-no-tafel          498
+worktrees/c45fb18/a6_sampler_screen           498
+worktrees/10abd5f/objective-profiles-formal   498
+```
+
+另注：`/home/lsy/OER-FTAcV-run-3e08bdd` 的 HEAD 实际是 `d174110`，
+**目录名与 commit 已经对不上**，不能按名字推断内容。
+
+处理建议（需用户判断，逐个确认后再动）：
+
+1. 结合纠错 §19 的追溯提醒，先确认哪些是完整跑完的结果、哪些是被发行版
+   销毁而截断的；
+2. 有价值的同步回仓库 `results/` 或归档；
+3. 确认无价值后再 `git worktree remove`；
+4. 此后正式计算的结果一律同步回仓库，工作树只作临时执行目录。
 
 ## 7. SSH 输出噪声
 
