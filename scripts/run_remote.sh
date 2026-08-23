@@ -23,15 +23,21 @@ HOST="${LEGION_HOST:-legion}"
 PY="${LEGION_PY:-/home/lsy/oer-venv/bin/python}"
 LOCAL_ROOT="$(git rev-parse --show-toplevel)"
 
+# 先在远端把 commit 解析出来并固定下来。原先在同步阶段做嵌套命令替换，
+# 而那一步在数小时后才执行——真出错时整轮结果都取不回来。
+ssh -o BatchMode=yes "$HOST" "cd /home/lsy/OER-FTAcV && git fetch --quiet origin '$BRANCH' && git rev-parse --short 'origin/$BRANCH'" \
+  > /tmp/oer_remote_commit 2>/dev/null
+COMMIT="$(tr -d '\000' < /tmp/oer_remote_commit | grep -av localhost | tail -1 | tr -d '[:space:]')"
+[ -n "$COMMIT" ] || { echo "无法解析远端 commit"; exit 1; }
+REMOTE_WT="/home/lsy/OER-FTAcV-run-$COMMIT"
+echo "远端 commit=$COMMIT  worktree=$REMOTE_WT"
+
 ssh -o BatchMode=yes "$HOST" bash -s <<REMOTE
 set -eu
 cd /home/lsy/OER-FTAcV
-git fetch --quiet origin "$BRANCH"
-C=\$(git rev-parse --short "origin/$BRANCH")
-WT="/home/lsy/OER-FTAcV-run-\$C"
+WT="$REMOTE_WT"
 [ -d "\$WT" ] || git worktree add --quiet --detach "\$WT" "origin/$BRANCH"
 cd "\$WT"; mkdir -p logs
-echo "commit=\$C worktree=\$WT"
 
 PYTHONPATH="\$WT/python" "$PY" -m pytest python/tests -q 2>&1 | tail -1
 
@@ -67,11 +73,9 @@ echo "远程作业已结束"
 
 if [ -n "$RESULT_DIR" ]; then
   mkdir -p "$LOCAL_ROOT/$RESULT_DIR"
-  for f in $(ssh -o BatchMode=yes "$HOST" \
-      "cd /home/lsy/OER-FTAcV-run-\$(cd /home/lsy/OER-FTAcV && git rev-parse --short origin/$BRANCH) && ls $RESULT_DIR 2>/dev/null" \
+  for f in $(ssh -o BatchMode=yes "$HOST" "ls '$REMOTE_WT/$RESULT_DIR' 2>/dev/null" \
       2>/dev/null | tr -d '\000' | grep -av localhost); do
-    ssh -o BatchMode=yes "$HOST" \
-      "cat /home/lsy/OER-FTAcV-run-\$(cd /home/lsy/OER-FTAcV && git rev-parse --short origin/$BRANCH)/$RESULT_DIR/$f" \
+    ssh -o BatchMode=yes "$HOST" "cat '$REMOTE_WT/$RESULT_DIR/$f'" \
       2>/dev/null | tr -d '\000' | grep -av "localhost 代理" > "$LOCAL_ROOT/$RESULT_DIR/$f"
     echo "  同步 $RESULT_DIR/$f"
   done

@@ -33,13 +33,69 @@ from oer_aem.mcmc import run_adaptive_mcmc  # noqa: E402
 from oer_aem.molecular_catalysis import simulate  # noqa: E402
 
 TRUTH = {"E0_eff": 1.58, "k0": 50.0, "kf": 200.0, "gamma": 3.0e-10}
+_CTX: dict = {}
+
+
+def _worker_log_posterior(unit):
+    """子进程用的对数后验（链并行时由 ProcessPoolExecutor 调用）。"""
+    import numpy as _np
+    unit = _np.asarray(unit)
+    if _np.any(unit <= 0) or _np.any(unit >= 1):
+        return -_np.inf
+    lower, upper = _CTX["lower"], _CTX["upper"]
+    values = lower + unit * (upper - lower)
+    params = {**_CTX["pinned"], "E0_eff": values[0], "k0": 10.0 ** values[1],
+              "kf": 10.0 ** values[2], "gamma": 10.0 ** values[3]}
+    _, current, _ = simulate(params, _CTX["t"])
+    if not _np.all(_np.isfinite(current)):
+        return -_np.inf
+    envelopes = harmonic_envelopes(current, _CTX["fs"], _CTX["f0"], FIT_HARMONICS)
+    return mle_exp_harm_per(envelopes, _CTX["target"], _CTX["stride"])
+
+
+def _init_worker(cycles, noise, seed):
+    """在子进程中重建上下文。
+
+    macOS 默认 spawn，子进程不继承运行时设置的全局变量；Linux 的 fork 会，
+    因此这个缺陷只在本机暴露、在拯救者上会被掩盖。用 initializer 显式重建，
+    两个平台行为一致。
+    """
+    from oer_aem.low_dim_fit import default_bounds as _bounds
+    pinned, t, fs, f0, target = build_case(cycles, noise, seed)
+    lower, upper = _bounds()
+    _CTX.update(pinned=pinned, t=t, fs=fs, f0=f0, target=target,
+                stride=likelihood_stride(fs, f0), lower=lower, upper=upper)
+
+
+def _chain_task(job):
+    start, iterations, seed = job
+    from oer_aem.low_dim_fit import PARAM_NAMES as _names
+    result = run_adaptive_mcmc(_worker_log_posterior, x0_unit=start,
+                               lower=_CTX["lower"], upper=_CTX["upper"],
+                               names=_names, n_iterations=iterations,
+                               thin=4, n_chains=1, seed=seed)
+    chain = result.chains[0]
+    return chain.samples, chain.log_posterior, chain.acceptance_rate, seed
 RHAT_LIMIT = 1.10
 ACCEPT_RANGE = (0.05, 0.60)
 
 
 def build_case(n_cycles: int, noise_frac: float, seed: int):
-    f0, scan_rate, e_start = 5.0, 0.01756, 1.30
+    f0, scan_rate, e_start = 5.0, 0.01756, 1.45
     total_time = n_cycles / f0
+    e_end = e_start + scan_rate * total_time
+
+    # 扫描窗口必须跨过 E0_eff 且两侧留余量，否则表面氧化还原根本不被激发，
+    # 参数在构造上就不可辨识。这个错误 2026-08-23 犯过两次（先是
+    # test_molecular_catalysis 的 fixture，随后是本脚本），因此改为硬断言，
+    # 不再依赖人去核对。
+    margin = 0.04
+    if not (e_start + margin < TRUTH["E0_eff"] < e_end - margin):
+        raise SystemExit(
+            f"合成算例无效：扫描窗口 [{e_start:.3f}, {e_end:.3f}] V 未跨过 "
+            f"E0_eff={TRUTH['E0_eff']:.3f} V（两侧需留 {margin*1000:.0f} mV 余量）。"
+            f"请增大 --cycles 或调整 E_start。")
+
     fs = f0 * 256
     n = int(round(total_time * fs))
     t = np.linspace(0.0, total_time, n, endpoint=False)
@@ -56,9 +112,11 @@ def build_case(n_cycles: int, noise_frac: float, seed: int):
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--cycles", type=int, default=48)
+    parser.add_argument("--cycles", type=int, default=64)
     parser.add_argument("--iterations", type=int, default=4000)
     parser.add_argument("--chains", type=int, default=4)
+    parser.add_argument("--workers", type=int, default=4,
+                        help="并行运行的链数进程数")
     parser.add_argument("--noise", type=float, default=0.02)
     parser.add_argument("--seed", type=int, default=11)
     args = parser.parse_args()
@@ -66,6 +124,8 @@ def main() -> int:
     pinned, t, fs, f0, target = build_case(args.cycles, args.noise, args.seed)
     stride = likelihood_stride(fs, f0)
     lower, upper = default_bounds()
+    _CTX.update(pinned=pinned, t=t, fs=fs, f0=f0, target=target,
+                stride=stride, lower=lower, upper=upper)
 
     def log_posterior(unit):
         unit = np.asarray(unit)
@@ -101,10 +161,19 @@ def main() -> int:
                   f"{time.time() - state['t0']:.0f}s", flush=True)
         return log_posterior(unit)
 
-    result = run_adaptive_mcmc(traced, x0_unit=start, lower=lower,
-                               upper=upper, names=PARAM_NAMES,
-                               n_iterations=args.iterations, thin=4,
-                               n_chains=args.chains, seed=args.seed)
+    from concurrent.futures import ProcessPoolExecutor
+    from oer_aem.mcmc import ChainResult, MCMCResult
+
+    jobs = [(start, args.iterations, args.seed + 1000 * i)
+            for i in range(args.chains)]
+    with ProcessPoolExecutor(max_workers=min(args.chains, args.workers),
+                             initializer=_init_worker,
+                             initargs=(args.cycles, args.noise, args.seed)) as pool:
+        raw = list(pool.map(_chain_task, jobs))
+    chains = [ChainResult(s_, lp, ar, sd) for s_, lp, ar, sd in raw]
+    result = MCMCResult(chains=chains, names=PARAM_NAMES,
+                        lower=lower, upper=upper)
+    print(f"  {args.chains} 条链并行完成", flush=True)
 
     summary = result.summary()
     truth_real = {"E0_eff": TRUTH["E0_eff"], "log10_k0": np.log10(TRUTH["k0"]),
