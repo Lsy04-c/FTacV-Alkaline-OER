@@ -74,25 +74,51 @@ def _loss(unit):
     return harm_per(envelopes, _CTX["target"])
 
 
-def _profile_point(job):
-    """固定第 index 个参数于 fixed_unit，优化其余三个。"""
-    index, fixed_unit, seed = job
-    rng = np.random.default_rng(seed)
-    best = np.inf
+def _profile_sweep(job):
+    """对第 index 个参数做 continuation 扫描：从全局最优点向两侧推进。
+
+    每个网格点以**相邻点的解**作为起点。剖面本应光滑，相邻点的最优解也
+    相近；独立多起点优化在 3 个自由参数（其中两个跨 5-6 个数量级）上预算
+    不足，会产生锯齿——相邻点跳 5-10 倍，测到的是优化器噪声而非似然面。
+    """
+    index, grid, anchor_unit, seed = job
     free = [i for i in range(4) if i != index]
-    for _ in range(3):                       # 多起点，降低落进局部极小的概率
-        start = rng.uniform(0.15, 0.85, size=3)
+    rng = np.random.default_rng(seed)
 
-        def wrapped(free_vals):
-            unit = np.empty(4)
-            unit[index] = fixed_unit
-            unit[free] = free_vals
-            return _loss(unit)
+    def solve(fixed_unit, start, budget):
+        best_val, best_x = np.inf, start
+        for attempt in range(2):
+            x0 = start if attempt == 0 else np.clip(
+                start + rng.normal(0, 0.05, size=3), 0.02, 0.98)
 
-        result = minimize(wrapped, start, method="Nelder-Mead",
-                          options={"maxfev": 120, "xatol": 1e-3, "fatol": 1e-4})
-        best = min(best, float(result.fun))
-    return index, fixed_unit, best
+            def wrapped(free_vals):
+                unit = np.empty(4)
+                unit[index] = fixed_unit
+                unit[free] = free_vals
+                return _loss(unit)
+
+            res = minimize(wrapped, x0, method="Nelder-Mead",
+                           options={"maxfev": budget, "xatol": 1e-4,
+                                    "fatol": 1e-6, "adaptive": True})
+            if res.fun < best_val:
+                best_val, best_x = float(res.fun), np.asarray(res.x)
+        return best_val, np.clip(best_x, 0.02, 0.98)
+
+    # 锚点用较大预算求一次可靠的解，再向两侧 continuation
+    anchor_start = np.asarray([anchor_unit[i] for i in free])
+    centre = int(np.argmin(np.abs(grid - anchor_unit[index])))
+    out = {}
+    val, x = solve(float(grid[centre]), anchor_start, 900)
+    out[centre] = val
+    warm = x
+    for j in range(centre + 1, len(grid)):
+        val, warm = solve(float(grid[j]), warm, 450)
+        out[j] = val
+    warm = x
+    for j in range(centre - 1, -1, -1):
+        val, warm = solve(float(grid[j]), warm, 450)
+        out[j] = val
+    return index, [(float(grid[j]), out[j]) for j in sorted(out)]
 
 
 def main() -> int:
@@ -106,12 +132,15 @@ def main() -> int:
 
     lower, upper = default_bounds()
     grid = np.linspace(0.03, 0.97, args.points)
-    jobs = [(i, float(u), args.seed + 97 * i + k)
-            for i in range(4) for k, u in enumerate(grid)]
+    truth_unit = (np.array([TRUTH["E0_eff"], np.log10(TRUTH["k0"]),
+                            np.log10(TRUTH["kf"]), np.log10(TRUTH["gamma"])])
+                  - lower) / (upper - lower)
+    jobs = [(i, grid, truth_unit, args.seed + 97 * i) for i in range(4)]
 
-    with ProcessPoolExecutor(max_workers=args.workers, initializer=_init,
+    with ProcessPoolExecutor(max_workers=min(args.workers, 4), initializer=_init,
                              initargs=(args.noise, args.seed)) as pool:
-        results = list(pool.map(_profile_point, jobs))
+        sweeps = list(pool.map(_profile_sweep, jobs))
+    results = [(idx, u, v) for idx, pts in sweeps for u, v in pts]
 
     truth_real = np.array([TRUTH["E0_eff"], np.log10(TRUTH["k0"]),
                            np.log10(TRUTH["kf"]), np.log10(TRUTH["gamma"])])
@@ -123,6 +152,9 @@ def main() -> int:
         pts = sorted([r for r in results if r[0] == index], key=lambda r: r[1])
         units = np.array([p[1] for p in pts])
         losses = np.array([p[2] for p in pts])
+        # 剖面必须光滑；相邻点大幅跳变说明内层优化失败，此时数字无意义
+        jag = np.max(np.abs(np.diff(losses)) / np.maximum(losses[:-1], 1e-12))
+        smooth = "" if jag < 1.0 else f"   [剖面锯齿 {jag:.1f}x，内层优化可能未收敛]"
         values = lower[index] + units * (upper[index] - lower[index])
         best = losses.min()
         # 剖面在最优值上抬升 10% 之内的区间宽度 = 该参数被约束的程度
@@ -132,7 +164,7 @@ def main() -> int:
         print(f"  {name:14s} 最优 {values[int(np.argmin(losses))]:8.3f}  "
               f"真值 {truth_real[index]:8.3f}  "
               f"10% 抬升区间宽 {width:7.3f} / 先验 {span:6.3f} = {width/span:5.1%}"
-              f"{'   <== 几乎不受约束' if width/span > 0.5 else ''}")
+              f"{'   <== 几乎不受约束' if width/span > 0.5 else ''}{smooth}")
         for u, v, l in zip(units, values, losses):
             rows.append({"parameter": name, "unit": f"{u:.4f}",
                          "value": f"{v:.6g}", "harmper": f"{l:.6g}"})
