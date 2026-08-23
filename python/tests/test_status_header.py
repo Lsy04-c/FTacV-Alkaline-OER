@@ -77,21 +77,37 @@ def test_history_sections_carry_dates():
 def test_no_bare_section_references_across_documents():
     """禁止裸 §N 引用——WORK_STATUS 与 项目纠错 的编号会撞车。
 
-    实例：两份文档都有 §19，内容分别是求解器等价性门和 WSL 后台作业被销毁。
+    实例：两份文档都有第 19 节，内容分别是求解器等价性门和 WSL 后台作业
+    被销毁。引用必须写成 `WORK_STATUS §19` / `纠错 §19` 等带来源的形式。
+
+    路径排除用**相对路径**判断。早期版本用 `'worktrees' in str(path)` 过滤
+    绝对路径，而开发机的检出本身位于 `.claude/worktrees/...` 下，导致 67 个
+    文件被全部滤掉——该测试在开发机上一直空转，直到在正式计算机器上才第一次
+    真正运行并报错。静默通过的测试比没有测试更糟。
     """
+    allowed = ("WORK_STATUS", "纠错", "项目纠错", "PROJECT_WORKFLOW",
+               "roadmap", "本文")
+    pattern = re.compile(r"§\s*(\d+)")
+    scanned = 0
     offenders = []
     for path in PROJECT.glob("**/*.py"):
-        if ".venv" in str(path) or "worktrees" in str(path):
+        relative = path.relative_to(PROJECT)
+        parts = relative.parts
+        if ".venv" in parts or ".claude" in parts or "worktrees" in parts:
             continue
+        scanned += 1
         for lineno, line in enumerate(path.read_text(errors="ignore").splitlines(), 1):
-            for m in re.finditer(r"§\s*(\d+)", line):
-                prefix = line[: m.start()]
-                if not re.search(r"(WORK_STATUS|纠错|项目纠错)\S*\s*$", prefix):
-                    offenders.append(f"{path.relative_to(PROJECT)}:{lineno}: {line.strip()[:70]}")
+            for match in pattern.finditer(line):
+                prefix = line[: match.start()]
+                if not any(tag in prefix for tag in allowed):
+                    offenders.append(f"{relative}:{lineno}: {line.strip()[:70]}")
+
+    assert scanned > 10, (
+        f"只扫描到 {scanned} 个 .py 文件——排除规则可能把目标文件也滤掉了，"
+        "这会让本测试静默通过")
     assert not offenders, (
-        "发现裸 §N 引用，必须写成 `WORK_STATUS §N` 或 `纠错 §N`：\n"
-        + "\n".join(offenders)
-    )
+        "发现裸 §N 引用，必须写成 `WORK_STATUS §N` / `纠错 §N` 等带来源的形式：\n"
+        + "\n".join(offenders))
 
 
 def test_error_log_entries_have_status_field():
