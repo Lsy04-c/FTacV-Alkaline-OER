@@ -39,7 +39,14 @@ WT="$REMOTE_WT"
 [ -d "\$WT" ] || git worktree add --quiet --detach "\$WT" "origin/$BRANCH"
 cd "\$WT"; mkdir -p logs
 
-PYTHONPATH="\$WT/python" "$PY" -m pytest python/tests -q 2>&1 | tail -1
+# 测试不过就不启动。首次使用时这里只打印结果不拦截，结果是在 4 项测试
+# 失败的情况下照样起了正式计算——正式计算的前提是代码可信。
+if ! PYTHONPATH="\$WT/python" "$PY" -m pytest python/tests -q > /tmp/oer_remote_tests.log 2>&1; then
+  echo "远端测试未通过，拒绝启动正式计算："
+  grep -E "^FAILED|passed|failed" /tmp/oer_remote_tests.log | tail -8
+  exit 2
+fi
+tail -1 /tmp/oer_remote_tests.log
 
 LOG="logs/remote_\$(date +%H%M%S).log"
 : > "\$LOG"

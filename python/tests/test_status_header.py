@@ -25,7 +25,16 @@ ERRORS = PROJECT / "docs" / "项目纠错.md"
 
 
 def test_status_block_matches_reality():
-    """STATUS 块必须与当前 git 状态一致。"""
+    """STATUS 块必须与当前 git 状态一致。
+
+    在游离 HEAD 的工作树中跳过：正式计算机器上的工作树是 `--detach` 检出的，
+    分支名为 `HEAD`，与开发机生成的 STATUS 块必然不符。该块由开发机维护，
+    不是正式计算机器的职责。
+    """
+    head = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                          cwd=PROJECT, capture_output=True, text=True)
+    if head.stdout.strip() == "HEAD":
+        pytest.skip("游离 HEAD 工作树（正式计算机器），STATUS 块由开发机维护")
     result = subprocess.run(
         [sys.executable, str(PROJECT / "scripts" / "refresh_status_header.py"), "--check"],
         cwd=PROJECT, capture_output=True, text=True,

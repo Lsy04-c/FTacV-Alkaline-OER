@@ -54,6 +54,10 @@ def initialize_mc_system(params: Dict[str, Any]) -> Dict[str, Any]:
     # 绝对步长上限（秒）。None 表示只用 cn_substeps。按绝对时间而非
     # 每周期点数设定，理由见 mc_cn_bridge.required_substeps。
     params.setdefault("cn_max_dt", None)
+    # 求解器容差可覆盖。解析极限校验需要数值先收敛，否则测到的是积分误差
+    # 而不是模型正确性（见 python/tests/test_analytic_limits.py）。
+    params.setdefault("rtol", 1e-6)
+    params.setdefault("atol", 1e-9)
 
     for required in ("E_start", "v", "dE", "f", "Ru", "Cdl", "A",
                      "gamma", "k0", "kf", "E0_eff", "total_time"):
@@ -170,8 +174,8 @@ def simulate(params: Dict[str, Any], t_eval: np.ndarray) -> Tuple[np.ndarray, np
             y0=y0,
             t_eval=t_eval,
             method="LSODA",
-            rtol=1e-6,
-            atol=1e-9,
+            rtol=float(p["rtol"]),
+            atol=float(p["atol"]),
             max_step=1.0 / (p["f"] * 20.0),
         )
         if not sol.success:
