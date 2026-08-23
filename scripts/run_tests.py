@@ -13,9 +13,18 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def project_python(root: Path, fallback: str = sys.executable) -> str:
-    """Return the repository virtualenv interpreter when it exists."""
-    candidate = root / ".venv" / "bin" / "python"
-    return str(candidate) if candidate.is_file() else fallback
+    """Return the repository virtualenv interpreter when it exists.
+
+    向上逐级查找 `.venv/bin/python`：git worktree 里没有自己的 `.venv`，
+    它在主检出中，可能高出好几级目录。只在仓库根查会静默退回系统解释器，
+    从而用错依赖（本项目 worktree 下曾因此让 pre-commit 跑到没装 pytest
+    的 miniconda 上）。同类问题见 docs/项目纠错.md §21。
+    """
+    for directory in [root, *root.parents]:
+        candidate = directory / ".venv" / "bin" / "python"
+        if candidate.is_file():
+            return str(candidate)
+    return fallback
 
 
 def pytest_command(interpreter: str, args: Sequence[str]) -> list[str]:

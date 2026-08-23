@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# OER-FTAcV pre-commit：把确定性检查自动化，不依赖人记得跑。
+#
+# 安装： git config core.hooksPath scripts/git-hooks
+# 跳过： git commit --no-verify   （仅用于纯文档的紧急提交）
+set -u
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT" || exit 1
+# 与 scripts/run_tests.py 使用同一套发现逻辑：向上逐级找 .venv，
+# 因为 git worktree 里没有自己的 .venv（它在主检出中，可能高好几级）。
+PY="$(python3 - <<'PYFIND'
+import pathlib, shutil, sys
+root = pathlib.Path.cwd().resolve()
+for d in [root, *root.parents]:
+    c = d / ".venv" / "bin" / "python"
+    if c.is_file():
+        print(c); sys.exit()
+print(shutil.which("python3") or sys.executable)
+PYFIND
+)"
+fail=0
+
+# 1. STATUS 块与实际一致（WORK_STATUS 的机器生成字段）
+if ! PYTHONPATH=python "$PY" scripts/refresh_status_header.py --check >/dev/null 2>&1; then
+  echo "pre-commit: WORK_STATUS STATUS 块已过期"
+  echo "  修法: $PY scripts/refresh_status_header.py && git add WORK_STATUS.md"
+  fail=1
+fi
+
+# 2. 全量测试
+if ! "$PY" scripts/run_tests.py python/tests -q >/tmp/oer_precommit_tests.log 2>&1; then
+  echo "pre-commit: 测试未通过"
+  tail -12 /tmp/oer_precommit_tests.log | sed 's/^/  /'
+  fail=1
+fi
+
+[ "$fail" -eq 0 ] && echo "pre-commit: OK"
+exit "$fail"

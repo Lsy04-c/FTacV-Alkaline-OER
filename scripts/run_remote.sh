@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# 在拯救者上启动正式计算：建工作树 → 跑测试 → 启动 → 确认立稳 → 轮询 → 同步回来。
+#
+# 把今天踩过的坑固化成流程（docs/legion_environment.md、docs/项目纠错.md §19/§22）：
+#   - 发行版会在最后一个会话退出后被销毁 => 依赖 Windows 侧 keepalive
+#   - 进程未立稳就断开 SSH 会被一并收走 => 必须轮询确认有进度输出再退出
+#   - Python 输出会被缓冲 => 一律加 -u
+#   - 结果只在末尾统一写会丢失整轮 => 脚本自身须逐步落盘
+#
+# 用法：
+#   scripts/run_remote.sh <分支> "<相对仓库根的命令>" <进度关键词> <结果子目录>
+# 例：
+#   scripts/run_remote.sh claude/xxx \
+#     "scripts/fit_molecular_catalysis.py --datasets FT8 --outdir results/low_dim_bonke/FT8" \
+#     "CMA-ES" results/low_dim_bonke/FT8
+set -euo pipefail
+
+BRANCH="${1:?需要分支名}"
+CMD="${2:?需要要执行的命令}"
+MARKER="${3:?需要进度关键词}"
+RESULT_DIR="${4:-}"
+HOST="${LEGION_HOST:-legion}"
+PY="${LEGION_PY:-/home/lsy/oer-venv/bin/python}"
+LOCAL_ROOT="$(git rev-parse --show-toplevel)"
+
+ssh -o BatchMode=yes "$HOST" bash -s <<REMOTE
+set -eu
+cd /home/lsy/OER-FTAcV
+git fetch --quiet origin "$BRANCH"
+C=\$(git rev-parse --short "origin/$BRANCH")
+WT="/home/lsy/OER-FTAcV-run-\$C"
+[ -d "\$WT" ] || git worktree add --quiet --detach "\$WT" "origin/$BRANCH"
+cd "\$WT"; mkdir -p logs
+echo "commit=\$C worktree=\$WT"
+
+PYTHONPATH="\$WT/python" "$PY" -m pytest python/tests -q 2>&1 | tail -1
+
+LOG="logs/remote_\$(date +%H%M%S).log"
+: > "\$LOG"
+echo "\$LOG" > logs/.last
+PYTHONPATH="\$WT/python" OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  setsid nohup "$PY" -u $CMD >> "\$LOG" 2>&1 &
+
+# 纠错 §22：必须确认进程立稳再断开 SSH
+for i in \$(seq 1 24); do
+  sleep 5
+  if grep -aq "$MARKER" "\$LOG" 2>/dev/null; then
+    echo "confirmed running after \$((i*5))s: \$(grep -a "$MARKER" "\$LOG" | tail -1)"
+    exit 0
+  fi
+done
+echo "WARNING: 120s 内未见进度关键词 '$MARKER'"
+tail -5 "\$LOG"
+exit 1
+REMOTE
+
+echo "--- 轮询直至结束 ---"
+while true; do
+  n=$(ssh -o BatchMode=yes -o ConnectTimeout=30 "$HOST" \
+        "pgrep -fc '$(echo "$CMD" | awk '{print $1}')' 2>/dev/null || echo 0" \
+        2>/dev/null | tr -d '\000' | grep -av localhost | tail -1 || echo "")
+  [ -z "$n" ] && { sleep 60; continue; }          # 暂时性 ssh 失败不当作结束
+  [ "$n" = "0" ] && break
+  sleep 120
+done
+echo "远程作业已结束"
+
+if [ -n "$RESULT_DIR" ]; then
+  mkdir -p "$LOCAL_ROOT/$RESULT_DIR"
+  for f in $(ssh -o BatchMode=yes "$HOST" \
+      "cd /home/lsy/OER-FTAcV-run-\$(cd /home/lsy/OER-FTAcV && git rev-parse --short origin/$BRANCH) && ls $RESULT_DIR 2>/dev/null" \
+      2>/dev/null | tr -d '\000' | grep -av localhost); do
+    ssh -o BatchMode=yes "$HOST" \
+      "cat /home/lsy/OER-FTAcV-run-\$(cd /home/lsy/OER-FTAcV && git rev-parse --short origin/$BRANCH)/$RESULT_DIR/$f" \
+      2>/dev/null | tr -d '\000' | grep -av "localhost 代理" > "$LOCAL_ROOT/$RESULT_DIR/$f"
+    echo "  同步 $RESULT_DIR/$f"
+  done
+fi

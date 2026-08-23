@@ -30,6 +30,17 @@ from .signal import extract_harmonics
 FIT_HARMONICS: Tuple[int, ...] = (2, 3, 4)
 EDGE_GUARD_FRACTION = 0.08
 
+# 似然中每个交流周期保留的包络点数。
+#
+# 谐波包络是慢变量：实测 FT8 的 H2/H3/H4 有 99% 能量落在 f < 0.09*f0 以内，
+# 而实验采样为 256 点/周期，冗余约 128 倍。把这些高度相关的点当独立样本会
+# 让 logL = -sum (N/2) log(SSR) 的指数虚增约两个数量级，后果是链几乎不动
+# （R-hat 曾达 1e13）且后验被压窄约 14 倍。详见 docs/项目纠错.md §25。
+#
+# 按 Nyquist，包络带宽 ~0.09*f0 时每周期 2 点即足够；取 4 点留一倍余量。
+# 这是**去冗余，不是丢信息**。优化用的 HarmPer 不受影响。
+LIKELIHOOD_POINTS_PER_CYCLE = 4
+
 
 @dataclass(frozen=True)
 class ExperimentRecord:
@@ -171,11 +182,26 @@ def harm_per(simulated: np.ndarray, experimental: np.ndarray) -> float:
     return total / experimental.shape[0]
 
 
-def mle_exp_harm_per(simulated: np.ndarray, experimental: np.ndarray) -> float:
-    """MLE-ExpHarmPer 对数似然（逐谐波噪声以 Jeffreys 先验解析积分掉）。"""
+def likelihood_stride(fs: float, f0: float,
+                      points_per_cycle: int = LIKELIHOOD_POINTS_PER_CYCLE) -> int:
+    """返回似然抽稀步长，使每个交流周期保留约 ``points_per_cycle`` 个点。"""
+    if fs <= 0 or f0 <= 0:
+        raise ValueError("fs 与 f0 必须为正")
+    return max(1, int(round(fs / f0 / max(points_per_cycle, 1))))
+
+
+def mle_exp_harm_per(simulated: np.ndarray, experimental: np.ndarray,
+                     stride: int = 1) -> float:
+    """MLE-ExpHarmPer 对数似然（逐谐波噪声以 Jeffreys 先验解析积分掉）。
+
+    ``stride`` 对包络抽稀后再计算，理由见 ``LIKELIHOOD_POINTS_PER_CYCLE``：
+    相邻包络点高度相关，直接当独立样本会让似然过尖到无法采样，且后验过窄。
+    """
     sl = _guard_slice(experimental.shape[1])
+    step = max(int(stride), 1)
     log_likelihood = 0.0
-    for sim_row, exp_row in zip(simulated[:, sl], experimental[:, sl]):
+    for sim_row, exp_row in zip(simulated[:, sl][:, ::step],
+                                experimental[:, sl][:, ::step]):
         residual = sim_row - exp_row
         sum_squares = float(np.sum(residual ** 2))
         if not np.isfinite(sum_squares) or sum_squares <= 0.0:
@@ -260,6 +286,7 @@ class LowDimObjective:
         self.harmonics = tuple(harmonics)
         self.lower, self.upper = default_bounds()
         self.target = harmonic_envelopes(record.I, record.fs, record.f0, self.harmonics)
+        self.stride = likelihood_stride(record.fs, record.f0)
 
     def _simulate_envelopes(self, unit: np.ndarray) -> np.ndarray | None:
         params = decode(unit, self.lower, self.upper)
@@ -288,4 +315,4 @@ class LowDimObjective:
         envelopes = self._simulate_envelopes(unit)
         if envelopes is None:
             return -np.inf
-        return mle_exp_harm_per(envelopes, self.target)
+        return mle_exp_harm_per(envelopes, self.target, self.stride)

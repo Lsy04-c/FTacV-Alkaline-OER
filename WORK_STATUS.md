@@ -7,10 +7,10 @@
 
 | 机器生成字段 | 值 |
 |---|---|
-| 最后核实 | 2026-08-22 |
+| 最后核实 | 2026-08-23 |
 | 分支 | `claude/project-review-direction-aa3981` |
-| 生成时 HEAD | `25afd00` feat(validation): cross-check sampler against PINTS; record tool-survey gap |
-| 收集到的测试数 | 125 |
+| 生成时 HEAD | `ba42a6f` docs(results): retract posterior, record Ru as blocking; keep Ru sensitivity |
+| 收集到的测试数 | 127 |
 
 > 本表由 `scripts/refresh_status_header.py` 生成。增删测试后请重跑，
 > `python/tests/test_status_header.py` 校验「测试数」与「分支」；

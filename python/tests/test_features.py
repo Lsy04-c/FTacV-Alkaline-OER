@@ -299,3 +299,51 @@ def test_lockin_peak_is_stable_across_sampling_and_record_length(
     valid = result["valid_mask"]
     recovered_peak = float(e_dc[valid][np.argmax(result["amplitude"][0][valid])])
     assert abs(recovered_peak - expected_peak) < 0.005
+
+
+# --- 似然锐度守卫（docs/项目纠错.md §25）---
+
+def test_likelihood_stride_targets_a_few_points_per_cycle():
+    """抽稀步长应让每个交流周期保留约 4 个包络点。"""
+    from oer_aem.low_dim_fit import LIKELIHOOD_POINTS_PER_CYCLE, likelihood_stride
+
+    for f0, points_per_cycle in ((5.008, 256), (0.999, 256), (5.0, 128)):
+        fs = f0 * points_per_cycle
+        stride = likelihood_stride(fs, f0)
+        kept = points_per_cycle / stride
+        assert abs(kept - LIKELIHOOD_POINTS_PER_CYCLE) <= 1, (
+            f"f0={f0}: 每周期保留 {kept} 点，应约 {LIKELIHOOD_POINTS_PER_CYCLE}"
+        )
+    with pytest.raises(ValueError):
+        likelihood_stride(0.0, 1.0)
+
+
+def test_likelihood_is_not_pathologically_sharp():
+    """SSR 变差 1% 时对数似然的下降必须是 O(1)，不能是 O(100)。
+
+    这是 docs/项目纠错.md §25 的直接守卫。当时 N 取包络点数（约 27500），
+    SSR 变差 1% 即 ΔlogL = -137，似然尖到 MCMC 接受率归零（R-hat 达 1e13），
+    且若能采样则后验会窄约 14 倍。抽稀到每周期约 4 点后应降到个位数。
+    """
+    import numpy as np
+    from oer_aem.low_dim_fit import likelihood_stride, mle_exp_harm_per
+
+    f0, points_per_cycle, cycles = 5.0, 256, 128
+    fs = f0 * points_per_cycle
+    n = points_per_cycle * cycles
+    rng = np.random.default_rng(0)
+
+    target = np.abs(rng.normal(size=(3, n))) + 1.0
+    residual = rng.normal(scale=0.05, size=(3, n))
+    stride = likelihood_stride(fs, f0)
+
+    base = mle_exp_harm_per(target + residual, target, stride)
+    # 残差放大 sqrt(1.01) => SSR 增加 1%
+    worse = mle_exp_harm_per(target + residual * np.sqrt(1.01), target, stride)
+    drop = base - worse
+
+    assert 0 < drop < 20, f"SSR 变差 1% 时 ΔlogL = {-drop:.1f}，似然过尖或未生效"
+
+    naive = (mle_exp_harm_per(target + residual, target, 1)
+             - mle_exp_harm_per(target + residual * np.sqrt(1.01), target, 1))
+    assert naive > 50 * drop, "抽稀未起作用：与不抽稀的锐度相当"
