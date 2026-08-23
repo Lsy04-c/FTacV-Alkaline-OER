@@ -32,6 +32,15 @@ COMMIT="$(tr -d '\000' < /tmp/oer_remote_commit | grep -av localhost | tail -1 |
 REMOTE_WT="/home/lsy/OER-FTAcV-run-$COMMIT"
 echo "远端 commit=$COMMIT  worktree=$REMOTE_WT"
 
+# 远端拿到的必须就是本地 HEAD。先启动后推送时，远端会静默跑上一个版本
+# ——脚本还没推上去，测试却照常通过，看不出任何异常。
+LOCAL_HEAD="$(git rev-parse --short HEAD)"
+if [ "$COMMIT" != "$LOCAL_HEAD" ]; then
+  echo "拒绝启动：远端 $COMMIT != 本地 HEAD $LOCAL_HEAD"
+  echo "  先 git push，再启动。"
+  exit 3
+fi
+
 ssh -o BatchMode=yes "$HOST" bash -s <<REMOTE
 set -eu
 cd /home/lsy/OER-FTAcV
