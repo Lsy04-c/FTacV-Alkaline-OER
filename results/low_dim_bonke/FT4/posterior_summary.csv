@@ -1,0 +1,9 @@
+dataset,parameter,mean,median,std,q2.5,q97.5,rhat,provenance,lower_source,upper_source,bound_note
+FT4,E0_eff,1.48401,1.47574,0.0260636,1.45569,1.55653,3.1386,fitted,measured,measured,本项目四组数据 H3/H4 包络实测特征 1.52-1.63 V，两侧各留出 EC' 催化步引起的正移余量
+FT4,log10_k0,0.201488,0.112631,0.363116,-0.448174,0.863066,3.0208,fitted,literature,literature,覆盖 Snitkoff-Sol 2022 的 6 s^-1 与 Bonke 2016 的 110-325 s^-1
+FT4,log10_kf,5.40518,5.85399,0.816164,3.91715,5.9926,10.0969,fitted,literature,literature,覆盖 Bonke 2016 的 kf1 = 2e3-4e4 s^-1
+FT4,log10_gamma,-9.80385,-9.75292,0.334231,-10.3049,-9.23484,4.5478,fitted,literature,engineering,下界取 Bonke 2016 的 pmol/cm^2 量级；上界放宽到本项目此前假设的 1e-8，属工程边界，无独立标定支持
+FT4,Ru,10,10,0,10,10,,engineering,,,钉住参数，非拟合量
+FT4,A,1,1,0,1,1,,engineering,,,钉住参数，非拟合量
+FT4,Cdl,2.89e-05,2.89e-05,0,2.89e-05,2.89e-05,,derived_from_data,,,钉住参数，非拟合量
+FT4,alpha,0.5,0.5,0,0.5,0.5,,literature,,,钉住参数，非拟合量

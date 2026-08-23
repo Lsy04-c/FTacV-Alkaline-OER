@@ -1,0 +1,111 @@
+{
+  "generated_utc": "2026-08-22T13:39:23.449850+00:00",
+  "commit": "3af3de012c79012a8b57ca1e358c5d44d7a40353",
+  "python": "3.11.2",
+  "numpy": "2.2.6",
+  "platform": "Linux-6.18.33.1-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+  "hostname": "LAPTOP-JBG0SNHL",
+  "worktree": "/home/lsy/OER-FTAcV-run-3af3de0",
+  "interpreter": "/home/lsy/oer-venv/bin/python",
+  "scipy": "1.16.3",
+  "model": "Bonke molecular catalysis (surface redox + pseudo-first-order catalysis)",
+  "free_parameters": [
+    "E0_eff",
+    "log10_k0",
+    "log10_kf",
+    "log10_gamma"
+  ],
+  "pinned_provenance": {
+    "Ru": "engineering",
+    "A": "engineering",
+    "Cdl": "derived_from_data",
+    "alpha": "literature"
+  },
+  "bound_provenance": {
+    "E0_eff": {
+      "lower_source": "measured",
+      "upper_source": "measured",
+      "note": "本项目四组数据 H3/H4 包络实测特征 1.52-1.63 V，两侧各留出 EC' 催化步引起的正移余量"
+    },
+    "k0": {
+      "lower_source": "literature",
+      "upper_source": "literature",
+      "note": "覆盖 Snitkoff-Sol 2022 的 6 s^-1 与 Bonke 2016 的 110-325 s^-1"
+    },
+    "kf": {
+      "lower_source": "literature",
+      "upper_source": "literature",
+      "note": "覆盖 Bonke 2016 的 kf1 = 2e3-4e4 s^-1"
+    },
+    "gamma": {
+      "lower_source": "literature",
+      "upper_source": "engineering",
+      "note": "下界取 Bonke 2016 的 pmol/cm^2 量级；上界放宽到本项目此前假设的 1e-8，属工程边界，无独立标定支持"
+    }
+  },
+  "fit_harmonics": [
+    2,
+    3,
+    4
+  ],
+  "excluded_from_objective": [
+    "DC (未扣除基底背景)",
+    "H1 (双电层与催化电流主导)"
+  ],
+  "fit_window_V": [
+    1.2,
+    1.65
+  ],
+  "objective_optimiser": "HarmPer (Gundry 2021)",
+  "global_search": "scipy.optimize.differential_evolution (sobol init, no polish)",
+  "objective_bayesian": "MLE-ExpHarmPer, sigma_h profiled out (Jeffreys)",
+  "sampler": "adaptive covariance MCMC (Haario), 4 chains",
+  "args": {
+    "outdir": "results/low_dim_bonke/FT8",
+    "cma_evals": 600,
+    "mcmc_iterations": 8000,
+    "chains": 4,
+    "thin": 4,
+    "workers": 4,
+    "seed": 42,
+    "ru_sensitivity": [
+      5.0,
+      20.0
+    ],
+    "datasets": [
+      "FT8"
+    ]
+  },
+  "datasets": [
+    {
+      "dataset": "FT8",
+      "filename": "ftacv8-ref-5Hz.txt",
+      "f0": 5.00801282051993,
+      "dE": 0.1599857352200634,
+      "v": 0.017578392655906265,
+      "E_fit_lo": 1.200009790218819,
+      "E_fit_hi": 1.646501484375,
+      "n_points": 32768,
+      "Ru": 10.0,
+      "Cdl": 3.08e-05,
+      "best_harmper": 0.40283319366439696,
+      "acceptance": [
+        0.132875,
+        0.09475,
+        0.22975,
+        0.1275
+      ],
+      "implied_sigma": [
+        0.0002732072047959695,
+        3.597565502222281e-05,
+        1.7734422510161816e-05
+      ],
+      "target_peak": [
+        0.0011134816651377276,
+        0.0003518294541135592,
+        0.0001169710122328997
+      ]
+    }
+  ],
+  "scale_degeneracy_note": "Faradaic current scales as gamma*A; with A pinned, reported gamma is gamma*A/A_assumed and must not be read as an absolute site density."
+}
