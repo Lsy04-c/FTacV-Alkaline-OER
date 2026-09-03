@@ -274,11 +274,12 @@ sensitivity_matrix.csv    1381 MB   264 份
 处置：先去重归档，验证通过后再删除 50 个工作树（保留主 checkout）。
 
 ```
-/home/lsy/oer-archive/               183 MB   替代原 6.12 GB
+/home/lsy/oer-archive/               184 MB   替代原 6.12 GB
 ├── large/<sha256>                    92 MB   17 份唯一大文件，按内容 hash 命名
 ├── large-manifest.tsv                       sha256 -> 每一个原始路径（可复原）
 ├── results-small.tar.gz              89 MB   6307 个 <=1MB 文件，保留完整路径
 ├── wf-preserved-small.tar.gz        2.3 MB   _wf_preserved_results 的 228 个文件
+├── misc-orphans.tar.gz              560 KB   见 §6.3，168 个无备份的散落文件
 └── worktree-meta.tar.gz             8.0 KB   16 个工作树根下的 log/manifest
 ```
 
@@ -326,6 +327,29 @@ ln -s /home/lsy/oer-venv /home/lsy/OER-FTAcV/.venv
 验证（2026-09-03，commit `bb2ba01`）：全量测试 **118 passed, 9 skipped**。
 
 **不要把这个软链改回真实目录。**
+
+### 6.3 家目录散落文件（2026-09-03 清理）
+
+`/home/lsy` 下还堆着若干与主线无关的残留。**先按"别处有没有备份"分类**，
+无备份的一律归档进 `misc-orphans.tar.gz`（168 个文件对账通过）再删：
+
+| 项 | 处置 | 依据 |
+|---|---|---|
+| `oer-wf/`（164 文件） | **归档后删** | 不是 git 仓库、无远端，删掉不可恢复；但全项目无代码 `import oer_wf` |
+| `mecsim_xcheck/` | 归档后删 | MECSim 交叉验证已放弃（二进制缺运行时，纠错 §24） |
+| `v5_profile.py`、`formal_result.csv` | 归档后删 | 不在仓库任何分支中 |
+| `OER-FTAcV.bundle`（4.7 MB） | 直接删 | 其 HEAD `c5e8f57` 已在仓库历史中，纯冗余 |
+| `OER-FTAcV.incomplete-20260725/` | 直接删 | 失败 clone 的 `.git` 骨架 |
+| `OER-FTAcV-archive/` | 直接删 | 空目录 |
+| `test-persist.sh`、`systemd-test-finished.txt` | 直接删 | 2026-07-26 WSL 诊断残留 |
+
+清理后 `/home/lsy` 只剩三项：
+
+```
+oer-venv/     411 MB   正式解释器
+oer-archive/  184 MB   全部历史结果（去重归档）
+OER-FTAcV/     59 MB   仓库主 checkout（.venv 为软链）
+```
 
 ## 7. SSH 输出噪声
 
