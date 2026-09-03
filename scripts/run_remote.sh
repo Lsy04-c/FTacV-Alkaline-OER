@@ -89,10 +89,25 @@ echo "远程作业已结束"
 
 if [ -n "$RESULT_DIR" ]; then
   mkdir -p "$LOCAL_ROOT/$RESULT_DIR"
-  for f in $(ssh -o BatchMode=yes "$HOST" "ls '$REMOTE_WT/$RESULT_DIR' 2>/dev/null" \
-      2>/dev/null | tr -d '\000' | grep -av localhost); do
+  REMOTE_FILES=$(ssh -o BatchMode=yes "$HOST" "ls '$REMOTE_WT/$RESULT_DIR' 2>/dev/null" \
+      2>/dev/null | tr -d '\000' | grep -av localhost)
+  n_remote=$(printf '%s\n' "$REMOTE_FILES" | grep -c . || true)
+  n_ok=0
+  for f in $REMOTE_FILES; do
     ssh -o BatchMode=yes "$HOST" "cat '$REMOTE_WT/$RESULT_DIR/$f'" \
       2>/dev/null | tr -d '\000' | grep -av "localhost 代理" > "$LOCAL_ROOT/$RESULT_DIR/$f"
+    [ -s "$LOCAL_ROOT/$RESULT_DIR/$f" ] && n_ok=$((n_ok+1))
     echo "  同步 $RESULT_DIR/$f"
   done
+
+  # legion_environment.md §5 步骤 7：结果确认取回后立即删掉执行目录。
+  # 不做这一步的后果见 §6.1——51 个工作树沉积 6.12 GB，其中 96% 是重复拷贝。
+  if [ "$n_remote" -gt 0 ] && [ "$n_ok" = "$n_remote" ]; then
+    ssh -o BatchMode=yes "$HOST" \
+      "cd /home/lsy/OER-FTAcV && git worktree remove --force '$REMOTE_WT' && git worktree prune" \
+      >/dev/null 2>&1 && echo "已删除远端工作树 $REMOTE_WT（$n_ok/$n_remote 文件已取回）" \
+      || echo "警告：远端工作树未能删除，需手动清理 $REMOTE_WT"
+  else
+    echo "同步不完整（$n_ok/$n_remote），保留远端工作树 $REMOTE_WT 供排查"
+  fi
 fi
